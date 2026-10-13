@@ -219,6 +219,26 @@ const ALIAS_TOOLS: Record<Provider, { invokes: RegExp; dir: RegExp }> = {
     invokes: /(?:^|[\s;&|(])(?:[\w.~/-]*\/)?codex(?=$|[\s;&|)])/,
     dir: /\bCODEX_HOME=(?:"([^"]*)"|'([^']*)'|([^\s;&|]+))/,
   },
+  omp: {
+    invokes: /(?:^|[\s;&|(])(?:[\w.~/-]*\/)?omp(?=$|[\s;&|)])/,
+    dir: /\bOMP_HOME=(?:"([^"]*)"|'([^']*)'|([^\s;&|]+))/,
+  },
+  devin: {
+    invokes: /(?:^|[\s;&|(])(?:[\w.~/-]*\/)?devin(?=$|[\s;&|)])/,
+    dir: /\bDEVIN_HOME=(?:"([^"]*)"|'([^']*)'|([^\s;&|]+))/,
+  },
+  antigravity: {
+    invokes: /(?:^|[\s;&|(])(?:[\w.~/-]*\/)?antigravity(?=$|[\s;&|)])/,
+    dir: /\bANTIGRAVITY_HOME=(?:"([^"]*)"|'([^']*)'|([^\s;&|]+))/,
+  },
+  opencode: {
+    invokes: /(?:^|[\s;&|(])(?:[\w.~/-]*\/)?(?:opencode|open\.code)(?=$|[\s;&|)])/,
+    dir: /\bOPENCODE_HOME=(?:"([^"]*)"|'([^']*)'|([^\s;&|]+))/,
+  },
+  freebuf: {
+    invokes: /(?:^|[\s;&|(])(?:[\w.~/-]*\/)?freebuf(?=$|[\s;&|)])/,
+    dir: /\bFREEBUF_HOME=(?:"([^"]*)"|'([^']*)'|([^\s;&|]+))/,
+  },
 };
 
 /**

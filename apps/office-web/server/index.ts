@@ -36,6 +36,7 @@ import { ClaudeWatcher } from './sources/watcher';
 import { discoverCodexDirs } from './sources/codex/accounts';
 import { CodexHistory } from './sources/codex/history';
 import { CodexSource } from './sources/codex/source';
+import { OmpSource } from './sources/omp/source';
 import { createBuildReader } from './build';
 import { UpdateChecker } from './updates/checker';
 import { tr } from '../shared/i18n';
@@ -101,7 +102,9 @@ const agents = new SourceSet([claude]);
 const codexDirs = config.codex ? discoverCodexDirs(process.env, config.home) : [];
 const codex = codexDirs.length ? new CodexSource({ accounts, office, dirs: codexDirs, env: process.env, home: config.home }) : undefined;
 if (codex) agents.add(codex);
-// Eventos dos hooks do Codex (POST /api/codex/events, mod/habblaud-codex/hook.mjs): vão para a fonte do Codex ao vivo
+const omp = new OmpSource(office);
+agents.add(omp);
+omp.start();
 // (CodexLive); sem ela (nenhuma pasta do Codex ou HABBLAUD_CODEX=0) a rota responde {ok: false}.
 const codexLive: CodexLive | undefined = codex;
 late.office = office;
@@ -151,6 +154,9 @@ const messages = config.messages
       codex: {
         run: codexBin ? createCodexQueueRunner(codexBin) : undefined,
         homeOf: (account) => accounts.entriesOf('codex').find((e) => e.id === account)?.detected.configDir,
+      },
+      omp: {
+        inject: (agentId, text) => omp.injectMessage(agentId, text),
       },
     })
   : undefined;

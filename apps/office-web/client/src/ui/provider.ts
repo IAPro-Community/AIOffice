@@ -8,7 +8,7 @@ import { shortcutHint } from './model';
 import { tr } from '../../../shared/i18n';
 
 /** Nome de cada ferramenta como aparece nos textos. */
-export const PROVIDER_NAME: Record<Provider, string> = { claude: 'Claude Code', codex: 'Codex' };
+export const PROVIDER_NAME: Record<Provider, string> = { claude: 'Claude Code', codex: 'Codex', omp: 'oh-my-pi', devin: 'Devin', antigravity: 'Antigravity', opencode: 'OpenCode', freebuf: 'Freebuf' };
 
 /** Ferramenta de um agente, conta, sessão ou pedido (ausente = Claude Code). */
 export function providerOf(x: { provider?: Provider } | null | undefined): Provider {
@@ -39,28 +39,36 @@ export function accountProvider(account: Pick<AccountInfo, 'provider'> | undefin
  * "?" (como antes). Nunca devolve "." nem vazio.
  */
 export function fallbackShort(id: string, provider: Provider = accountProvider(undefined, id)): string {
+  if (provider === 'omp') return 'O';
   const rest = id
     .replace(/^.*:/, '')
     .replace(/~\d+$/, '')
-    .replace(/^\.?(?:claude|codex)(?=[-_.]|$)[-_.]?/i, '');
+    .replace(/^\.?(?:claude|codex|omp)(?=[-_.]|$)[-_.]?/i, '');
   const letter = /[\p{L}\p{N}]/u.exec(rest)?.[0];
   if (letter) return letter.toUpperCase();
-  return provider === 'codex' ? 'X' : '?';
+  return provider === 'codex' || provider === 'freebuf' ? 'X' : '?';
 }
 
-/** O selo "Codex" ao lado do nome da conta (não repete quando o nome já diz "Codex"). */
+/** O selo de provedor ao lado do nome da conta (não repete quando o nome já diz quem é). */
 export function showsProviderTag(provider: Provider, accountName = ''): boolean {
-  return provider === 'codex' && !/codex/i.test(accountName);
+  // Mostra selo para todos os provedores, exceto quando o nome da conta já inclui o provedor
+  // (para evitar selo duplicado tipo "Codex · Codex" ou "Devin · Devin").
+  if (provider === 'omp') return true;
+  // Para codex: mostra se o nome não inclui "codex"
+  if (provider === 'codex') return !/codex/i.test(accountName);
+  // Para todos os demais provedores (claude, devin, antigravity, opencode, freebuf):
+  // mostra o selo quando o nome não inclui o nome do provedor (case-insensitive)
+  return !new RegExp(`^${provider}`, 'i').test(accountName);
 }
 
 /** Rótulo do chip da conta (dica e leitores de tela): "Conta C (dev@x.com)", "Codex · plano Team". */
 export function accountChipLabel(account: Pick<AccountInfo, 'name' | 'email' | 'plan' | 'provider'> | undefined, fallbackId: string, provider: Provider): string {
-  if (!account) return fallbackId ? `${fallbackId}${provider === 'codex' ? ' · Codex' : ''}` : tr('Conta desconhecida');
+  if (!account) return fallbackId ? `${fallbackId}${provider === 'codex' ? ' · Codex' : provider === 'omp' ? ' · OMP' : ''}` : tr('Conta desconhecida');
+  if (provider === 'omp') return `${account.name} · OMP`;
   if (provider !== 'codex') return `${account.name}${account.email ? ` (${account.email})` : ''}`;
   const tag = showsProviderTag(provider, account.name) ? ' · Codex' : '';
   return `${account.name}${tag}${account.plan ? tr(' · plano {0}', [account.plan]) : ''}`;
 }
-
 /**
  * Texto do escritório vazio. Os atalhos ("atalhos c ou d") são só das contas do Claude Code, que vêm de aliases do
  * shell (a letra de uma conta do Codex não é um atalho); o Codex só entra quando há uma conta dele.

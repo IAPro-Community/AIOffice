@@ -294,6 +294,7 @@ export class TerminalStreams {
         }
         return tr('transcript do agente não encontrado');
       }
+      const parserFor = this.opts.parserFor;
       const createParser = parserFor ? () => parserFor(agentId) ?? this.createParser() : this.createParser;
       const o = { transcriptPathOf: this.opts.transcriptPathOf, createParser, initTailBytes: this.initTailBytes, initEntries: this.initEntries };
       return new TranscriptSource(agentId, path, o, this.pollMs);

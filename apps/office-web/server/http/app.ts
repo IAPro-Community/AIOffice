@@ -301,7 +301,12 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
           sendJson(res, 400, { error: tr('id inválido') });
           return true;
         }
-        terminals.attach(req, res, id);
+        try {
+          terminals.attach(req, res, id);
+        } catch (err) {
+          console.error('[Terminal Attach Error]:', err);
+          fail(res, err);
+        }
       }
       return true;
     }

@@ -237,8 +237,8 @@ export class AccountsService {
         configDir: d.configDir,
         sessions: sessions.get(e.id) ?? 0,
         usageStatus: view.status,
+        usage: view.usage,
       };
-      // Ausente = 'claude' (o snapshot das contas do Claude Code não muda).
       if (e.provider !== 'claude') info.provider = e.provider;
       if (d.email) info.email = d.email;
       if (d.organization) info.organization = d.organization;

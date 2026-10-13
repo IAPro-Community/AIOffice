@@ -10,7 +10,7 @@
 // found for thread id ..."). Se o servidor compartilhado do Codex (daemon) não estiver no ar, o próprio comando o sobe.
 // Node puro e sem dependências: também é importado pelo auxiliar do host (via tsx).
 import { execFile } from 'node:child_process';
-import { accessSync, constants, statSync } from 'node:fs';
+import { accessSync, constants, existsSync, statSync } from 'node:fs';
 import { delimiter, isAbsolute, join } from 'node:path';
 import { tr } from '../../shared/i18n';
 
@@ -34,6 +34,9 @@ export type CodexQueueRunner = (job: CodexQueueJob) => Promise<CodexQueueResult>
 
 function canExecute(p: string): boolean {
   try {
+    if (process.platform === 'win32') {
+      return existsSync(p) && statSync(p).isFile();
+    }
     accessSync(p, constants.X_OK);
     return statSync(p).isFile();
   } catch {
@@ -45,7 +48,8 @@ function canExecute(p: string): boolean {
  * Nome do binário no PATH. No Windows, só o `codex.exe`: o `codex` sem extensão e o `codex.cmd` que o npm põe ao lado
  * são scripts, e o execFile (sem shell) não os roda.
  */
-export const CODEX_BIN_NAME = process.platform === 'win32' ? 'codex.exe' : 'codex';
+export const CODEX_BIN_NAME = process.platform === 'win32' ? 'codex.cmd' : 'codex';
+const CODEX_CANDIDATES = process.platform === 'win32' ? ['codex.cmd', 'codex.exe', 'codex.bat', 'codex'] : ['codex'];
 
 /** Binário do Codex: HABBLAUD_CODEX_BIN (caminho de um executável) ou `codex` no PATH. undefined = não achou. */
 export function findCodexBin(env: NodeJS.ProcessEnv, isExecutable: (p: string) => boolean = canExecute): string | undefined {
@@ -53,15 +57,18 @@ export function findCodexBin(env: NodeJS.ProcessEnv, isExecutable: (p: string) =
   if (explicit) return isExecutable(explicit) ? explicit : undefined;
   for (const dir of (env.PATH ?? '').split(delimiter)) {
     if (!dir || !isAbsolute(dir)) continue;
-    const p = join(dir, CODEX_BIN_NAME);
-    if (isExecutable(p)) return p;
+    for (const name of CODEX_CANDIDATES) {
+      const p = join(dir, name);
+      if (isExecutable(p)) return p;
+    }
   }
   return undefined;
 }
 
 /** Argumentos de `codex queue` (com "=": um texto que começa com "-" nunca vira uma opção). */
 export function queueArgs(thread: string, text: string): string[] {
-  return ['queue', `--thread=${thread}`, `--message=${text}`];
+  const safeText = process.platform === 'win32' ? `"${text.replace(/"/g, '\\"')}"` : text;
+  return ['queue', `--thread=${thread}`, `--message=${safeText}`];
 }
 
 /** Primeira linha não vazia (o Codex escreve o erro como "Error: ..."), cortada. */
@@ -81,9 +88,10 @@ export function createCodexQueueRunner(bin: string, opts: { env?: NodeJS.Process
     new Promise<CodexQueueResult>((done) => {
       if (!THREAD_ID.test(job.thread)) return done({ ok: false, error: tr('id de thread do Codex inválido') });
       if (!isAbsolute(job.codexHome)) return done({ ok: false, error: tr('pasta da conta do Codex inválida') });
+      const binToExec = process.platform === 'win32' ? `"${bin}"` : bin;
       const env = { ...(opts.env ?? process.env), CODEX_HOME: job.codexHome };
       try {
-        execFile(bin, queueArgs(job.thread, job.text), { env, timeout: timeoutMs, maxBuffer: 256 * 1024, windowsHide: true, encoding: 'utf8' }, (err, _stdout, stderr) => {
+        execFile(binToExec, queueArgs(job.thread, job.text), { env, timeout: timeoutMs, maxBuffer: 256 * 1024, windowsHide: true, encoding: 'utf8', shell: process.platform === 'win32' }, (err, _stdout, stderr) => {
           if (!err) return done({ ok: true });
           const e = err as NodeJS.ErrnoException & { killed?: boolean };
           if (e.killed) return done({ ok: false, error: tr('o codex queue não respondeu em {0} s (a mensagem pode ter entrado na fila mesmo assim)', [Math.round(timeoutMs / 1_000)]) });

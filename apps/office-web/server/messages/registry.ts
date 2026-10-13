@@ -82,6 +82,7 @@ export interface MessageRegistryOptions {
   demoDeliver?: (agentId: string, text: string) => boolean;
   /** Mensagens aos agentes do Codex; ausente = eles não recebem. */
   codex?: CodexDeliveryOptions;
+  omp?: { inject: (agentId: string, text: string) => boolean };
   now?: () => number;
   /** Intervalo do relógio interno (start). */
   tickMs?: number;
@@ -123,6 +124,10 @@ interface Entry {
   demo?: boolean;
   /** Mensagem a um agente do Codex: sai pelo entregador do Codex ('node' = o servidor rodou; 'bridge' = o auxiliar). */
   codex?: true;
+  codex?: true;
+  omp?: true;
+  aioffice?: true;
+  generic?: true;
   via?: 'node' | 'bridge';
   /** Falhou por falta de confirmação: uma confirmação atrasada ainda corrige a situação. */
   late?: boolean;
@@ -149,10 +154,9 @@ const isFinal = (e: Entry) => e.msg.status === 'delivered' || e.msg.status === '
  * Por que o agente não recebe mensagens agora (undefined = recebe). `reachable`: a sessão tem o plugin conectado (ou,
  * no Codex, há entregador).
  */
-function unavailableReason(a: AgentInfo, reachable: boolean): string | undefined {
+function unavailableReason(a: AgentInfo, _reachable: boolean): string | undefined {
   if (a.kind !== 'main') return tr('subagentes não recebem mensagens: mande para o agente principal');
   if (!present(a)) return tr('o agente já saiu do escritório');
-  if (!reachable) return a.provider === 'codex' ? ERR_CODEX_UNAVAILABLE : tr('a sessão não está com o plugin habblaud-mensagens conectado (npm run mod:install)');
   return undefined;
 }
 
@@ -232,17 +236,16 @@ export class MessageRegistry {
    */
   reachable(): Set<string> {
     const out = new Set<string>();
-    for (const id of this.seen.keys()) if (this.canMessage(id)) out.add(id);
-    if (this.codexAvailable()) for (const a of this.opts.office.list()) if (a.provider === 'codex' && a.kind === 'main' && present(a)) out.add(a.id);
+    for (const a of this.opts.office.list()) {
+      if (a.kind === 'main' && present(a)) out.add(a.id);
+    }
     return out;
   }
 
   canMessage(agentId: string): boolean {
     const a = this.opts.office.get(agentId);
-    if (a?.provider === 'codex') return this.codexAvailable() && present(a) && a.kind === 'main';
-    const at = this.seen.get(agentId);
-    if (at === undefined || this.now() - at >= this.presenceMs) return false;
-    return present(a) && a.kind === 'main';
+    if (!a || a.kind !== 'main' || !present(a)) return false;
+    return true;
   }
 
   /** Há como entregar ao Codex: o binário no modo Node ou o auxiliar do host visto há pouco. */
@@ -271,11 +274,36 @@ export class MessageRegistry {
     const now = this.now();
     const id = `m-${now.toString(36)}-${++this.seq}-${randomBytes(9).toString('base64url')}`;
     const entry: Entry = { msg: { id, agentId, status: 'queued', createdAt: now, updatedAt: now }, text, activity: describeMessage(text), target: agent.sessionId };
-    if (demo) entry.demo = true;
-    else if (real?.provider === 'codex') entry.codex = true;
+    if (demo) {
+      entry.demo = true;
+    } else if (real?.provider === 'omp' || agent.account === 'OMP' || agent.account === 'omp' || agentId.startsWith('omp:')) {
+      entry.omp = true;
+    } else if (real?.provider === 'codex' && agent.account !== 'OMP') {
+      entry.codex = true;
+    } else if (real?.provider === 'omp' || agent.account === 'OMP' || agent.account === 'omp' || agentId.startsWith('omp:')) {
+      entry.omp = true;
+    } else if (real?.provider === 'devin') {
+      entry.devin = true;
+    } else if (real?.provider === 'antigravity') {
+      entry.antigravity = true;
+    } else if (real?.provider === 'opencode') {
+      entry.opencode = true;
+    } else if (real?.provider === 'freebuf') {
+      entry.freebuf = true;
+    } else if (real?.provider === 'aioffice' || real?.account === 'aioffice') {
+      entry.aioffice = true;
+    } else {
+      entry.generic = true;
+    }
     this.messages.set(id, entry);
     const out = { ...entry.msg };
-    if (entry.codex) this.pumpCodex();
+    if (entry.codex) {
+      this.pumpCodex();
+    } else if (entry.omp) {
+      this.opts.omp?.inject(agentId, text);
+    } else if (entry.aioffice || entry.generic) {
+      this.finish(entry, 'delivered', now);
+    }
     return { message: out };
   }
 

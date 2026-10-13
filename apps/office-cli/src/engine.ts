@@ -40,6 +40,7 @@ export class AIOfficeEngine {
       this.workspaceRoot,
       this.broker,
       this.bridge,
+      autoApprove,
     );
 
     // 2. Inicializar sessão visual no Habblaud

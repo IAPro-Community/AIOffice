@@ -23,6 +23,7 @@
     "start:office": "node apps/office-web/dist/server/index.js",
     "setup": "npm install && npm --prefix apps/office-web install && npm run build",
     "update:habblaud": "node scripts/update-habblaud.mjs",
+    "install:mcp": "node scripts/install-mcp-bridges.mjs",
     "verify": "npm run build && npm test"
   },
   "devDependencies": {

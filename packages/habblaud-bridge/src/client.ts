@@ -5,6 +5,14 @@ import type {
   OfficeApprovalResolution,
 } from './types.js';
 
+export interface OutboxMessage {
+  readonly id: string;
+  readonly agentId: string;
+  readonly status: 'queued' | 'sent' | 'delivered' | 'failed';
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
 export class HabblaudBridgeClient {
   private activeApprovals: Map<string, OfficeApprovalEvent> = new Map();
   private approvalCallbacks: Map<string, (res: OfficeApprovalResolution) => void> = new Map();
@@ -62,5 +70,14 @@ export class HabblaudBridgeClient {
 
   public getPendingApprovalCount(): number {
     return this.activeApprovals.size;
+  }
+
+  public async sendMessage(agentId: string, text: string): Promise<{ ok: boolean; message?: OutboxMessage }> {
+    const res = await this.postJson('/api/messages', { agentId, text });
+    if (!res.ok) {
+      return { ok: false };
+    }
+    const data = res.data as OutboxMessage | undefined;
+    return { ok: true, message: data };
   }
 }

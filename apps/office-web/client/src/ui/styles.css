@@ -360,6 +360,26 @@
     0 var(--step)
   );
 }
+/* Conta do OMP: chip neon esmeralda */
+.ui-acc-chip[data-provider='omp'] {
+  --step: 2px;
+  border-radius: 0;
+  background: #061e1a;
+  color: #10b981;
+  box-shadow:
+    inset 0 0 0 var(--step) #10b981,
+    inset 0 calc(var(--step) * -2) 0 rgba(0, 0, 0, 0.4);
+  clip-path: polygon(
+    var(--step) 0,
+    calc(100% - var(--step)) 0,
+    100% var(--step),
+    100% calc(100% - var(--step)),
+    calc(100% - var(--step)) 100%,
+    var(--step) 100%,
+    0 calc(100% - var(--step)),
+    0 var(--step)
+  );
+}
 
 .ui-acc-chip--lg[data-provider='codex'] {
   --step: 3px;

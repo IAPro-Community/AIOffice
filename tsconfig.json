@@ -7,6 +7,7 @@
     { "path": "packages/credential-store" },
     { "path": "packages/runtime" },
     { "path": "packages/habblaud-bridge" },
+    { "path": "packages/mcp-bridge" },
     { "path": "apps/office-cli" }
   ]
 }
