@@ -300,6 +300,16 @@ export interface AgentFilter {
   hiddenAccounts: ReadonlySet<string>;
 }
 
+const PROVIDER_SEARCH_NAMES: Record<AgentInfo['provider'] & string, string> = {
+  claude: 'Claude Code Claude',
+  codex: 'Codex',
+  omp: 'oh-my-pi OMP',
+  devin: 'Devin',
+  antigravity: 'Antigravity',
+  opencode: 'OpenCode',
+  freebuf: 'Freebuf',
+};
+
 export interface AgentNode {
   agent: AgentInfo;
   /** Subagentes visíveis (após filtros), ordenados por chegada. */
@@ -322,8 +332,7 @@ export interface RoomGroup {
 
 function accountText(account: AccountInfo | undefined): string {
   if (!account) return '';
-  // A ferramenta entra na busca: "codex" acha os agentes do Codex.
-  return [account.short, account.name, account.email ?? '', account.id, account.provider === 'codex' ? 'Codex' : ''].join(' ');
+  return [account.short, account.name, account.email ?? '', account.id, account.provider ? PROVIDER_SEARCH_NAMES[account.provider] : 'Claude Code Claude'].join(' ');
 }
 
 /** Verdadeiro se o agente bate com a busca textual (sem acentos, sem diferenciar maiúsculas). */
@@ -334,6 +343,7 @@ export function matchesQuery(agent: AgentInfo, room: RoomInfo | undefined, accou
     [
       agent.name,
       roleLabel(agent),
+      PROVIDER_SEARCH_NAMES[agent.provider ?? 'claude'],
       agent.title ?? '',
       room?.name ?? '',
       room?.path ?? '',

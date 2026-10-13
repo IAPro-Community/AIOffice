@@ -1,5 +1,5 @@
 // Ajuda ("?"): legenda de status e ícones, controles, o que o escritório mostra, contas e uso, e o Codex.
-import type { AgentStatus } from '../../../shared/types';
+import type { AgentStatus, Provider } from '../../../shared/types';
 import type { HelpSection } from './context';
 import { h, iconButton, prefersReducedMotion } from './dom';
 import { ICONS } from './icons';
@@ -68,6 +68,16 @@ const CODEX_HELP: string[] = [
   tr('Meu dia: o Codex conta tokens, mas não grava custo.'),
 ];
 
+/** O oh-my-pi no escritório: leitura de sessão, terminal e envio pela extensão instalada na sessão. */
+const OMP_HELP: string[] = [
+  tr('Cada sessão aberta do oh-my-pi aparece como agente na sala do projeto; as sessões de outros CLIs na mesma pasta compartilham a sala.'),
+  tr('O terminal mostra prompts, respostas, raciocínio, chamadas de ferramentas e resultados lidos do arquivo de sessão do OMP.'),
+  tr('O histórico do terminal inclui sessões recentes do OMP, abertas ou encerradas.'),
+  tr('Para mandar mensagens pelo escritório, a extensão de integração precisa estar instalada e carregada quando a sessão OMP abrir. Se a sessão estava aberta antes da instalação, feche e abra essa sessão novamente.'),
+  tr('O Habblaud só permite enviar quando a sessão confirma que está consultando a caixa de entrada. Sem essa conexão, use o terminal OMP; a extensão não pode abrir uma sessão encerrada.'),
+  tr('O OMP ainda não fornece dados de uso nem controles de permissão por esta integração.'),
+];
+
 /** O fim da espera (o servidor marca com uma atividade ✅ ou ❌). */
 const SHELL_END_HELP: [string, string][] = [
   ['🎉', tr('Terminou bem: levanta, comemora com confete e uma estrela.')],
@@ -75,7 +85,7 @@ const SHELL_END_HELP: [string, string][] = [
 ];
 
 const INTRO =
-  tr('Cada projeto aberto no Claude Code ou no Codex vira uma sala (os dois no mesmo projeto dividem a sala), e cada sessão aberta é um personagem com nome próprio. ') +
+  tr('Cada projeto aberto no Claude Code, no Codex ou no oh-my-pi vira uma sala (sessões no mesmo projeto dividem a sala), e cada sessão aberta é um personagem com nome próprio. ') +
   tr('Subagentes chegam como colegas novos, trabalham na mesma sala e vão embora quando terminam. ') +
   tr('Quando a última sessão de uma sala é fechada, quem sai apaga a luz e a sala é desmontada.');
 
@@ -144,10 +154,10 @@ export class HelpDialog {
             h('li', { text: tr('Clique em um personagem ou sala para ver os detalhes; duplo clique aproxima a câmera.') }),
             h('li', { text: tr('Passe o mouse sobre um personagem para ver o que ele está fazendo.') }),
             h('li', {
-              text: tr('Nos detalhes de um agente, “Abrir terminal” mostra a conversa da sessão como no Claude Code (ou no Codex), ao vivo (precisa do acesso local, bind 127.0.0.1).'),
+              text: tr('Nos detalhes de um agente, “Abrir terminal” mostra a conversa da sessão do Claude Code, do Codex ou do oh-my-pi ao vivo (precisa do acesso local, bind 127.0.0.1).'),
             }),
             h('li', {
-              text: tr('Com o plugin habblaud-mensagens (npm run mod:install), dá para mandar mensagens ao agente principal pelos detalhes dele ou pela caixa no rodapé do terminal: o texto entra na sessão como se você o tivesse digitado. Enter manda, Shift+Enter quebra a linha.'),
+              text: tr('Para mandar mensagens, Claude Code precisa do plugin habblaud-mensagens, Codex do entregador configurado e oh-my-pi da extensão carregada na sessão. A caixa só libera o envio quando a sessão está conectada. Enter manda, Shift+Enter quebra a linha.'),
             }),
             h('li', {
               text: tr('No terminal: busca (lupa ou Ctrl/⌘+F), filtro “Tudo / Só prompts / Sem ferramentas” e um botão de copiar em cada entrada. O relógio da barra superior abre o histórico das sessões dos últimos 7 dias, inclusive as já encerradas.'),
@@ -160,6 +170,7 @@ export class HelpDialog {
         ),
         this.usageSection(),
         this.codexSection(),
+        this.ompSection(),
       ),
     );
     // Clique no fundo (fora do conteúdo) fecha.
@@ -246,10 +257,10 @@ export class HelpDialog {
       h(
         'ul',
         { class: 'ui-help__list' },
-        h('li', { text: tr('O chip colorido com a letra (C, D…) mostra de qual conta do Claude Code é cada agente: cada atalho de terminal usa uma pasta de configuração diferente.') }),
-        h('li', {}, accountSample('C', '#f08a3c'), tr(' Conta do Claude Code · '), accountSample('X', '#a77bf3', true), tr(' Conta do Codex (chip vazado, com o selo CODEX onde há espaço).')),
+        h('li', { text: tr('O chip colorido identifica a conta e a ferramenta do agente: C para Claude Code, X para Codex e O para oh-my-pi.') }),
+        h('li', {}, accountSample('C', '#f08a3c'), accountSample('X', '#a77bf3', 'codex'), accountSample('O', '#52d6b4', 'omp'), h('span', { text: tr('Claude Code, Codex e oh-my-pi.') })),
         h('li', {
-          text: tr('No topo, cada conta mostra o uso da sessão de 5 horas e da semana. O ↻ indica quando cada limite reinicia (contagem regressiva se faltar menos de um dia). Verde abaixo de 50%, âmbar até 80% e vermelho a partir daí.'),
+          text: tr('No topo, Claude Code e Codex mostram o uso da sessão de 5 horas e da semana quando os dados existem. O oh-my-pi ainda não fornece esses números ao Habblaud.'),
         }),
         h('li', { text: tr('Números antigos ficam acinzentados com a idade ao lado (ex.: “há 3 h”); uma janela que já reiniciou desde a leitura mostra “—” e “renovada”.') }),
       ),
@@ -272,15 +283,27 @@ export class HelpDialog {
     return el;
   }
 
+  private ompSection(): HTMLElement {
+    const el = h(
+      'section',
+      { class: 'ui-help__usage', attrs: { 'aria-labelledby': 'ui-help-omp' } },
+      h('h3', { text: 'oh-my-pi', tabIndex: -1, attrs: { id: 'ui-help-omp' } }),
+      h('ul', { class: 'ui-help__list' }, ...OMP_HELP.map((text) => h('li', {}, ...richText(text)))),
+    );
+    this.sections.set('omp', el);
+    return el;
+  }
+
   get isOpen(): boolean {
     return this.el.open;
   }
 }
 
 /** Um chip de conta de exemplo (legenda). */
-function accountSample(short: string, color: string, codex = false): HTMLElement {
+function accountSample(short: string, color: string, provider?: Provider): HTMLElement {
   const chip = createAccountChip('sm');
-  updateAccountChip(chip, { id: short, short, name: codex ? 'Codex' : tr('Conta {0}', [short]), color, configDir: '', sessions: 0, usageStatus: 'disabled', ...(codex ? { provider: 'codex' as const } : {}) });
+  const name = provider === 'codex' ? 'Codex' : provider === 'omp' ? 'oh-my-pi' : tr('Conta {0}', [short]);
+  updateAccountChip(chip, { id: short, short, name, color, configDir: '', sessions: 0, usageStatus: 'disabled', ...(provider ? { provider } : {}) });
   chip.setAttribute('aria-hidden', 'true');
   return chip;
 }

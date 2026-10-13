@@ -1,8 +1,8 @@
 // Mensagens pelo escritório: a fila do que a página manda aos agentes.
 //
-// A página manda em POST /api/messages; o plugin habblaud-mensagens (mod/habblaud-mensagens, uma rodada a cada 2 s
-// em cada sessão aberta) busca as da própria sessão em POST /api/mod/inbox, entrega cada uma como se o usuário a
-// tivesse digitado e confirma em POST /api/mod/inbox/ack. O registro:
+// A página manda em POST /api/messages; extensões de sessão (habblaud-mensagens no Claude Code e a ponte no OMP)
+// perguntam pela própria sessão em POST /api/mod/inbox, entregam cada mensagem como prompt e confirmam em
+// POST /api/mod/inbox/ack. O registro:
 // - marca a PRESENÇA de cada sessão que pergunta pela caixa de entrada (AgentInfo.canMessage, via Office);
 // - guarda as mensagens de cada agente na ordem e acompanha a situação delas (queued → sent → delivered/failed);
 // - falha as que ninguém buscou, as que a sessão não confirmou, as do agente que saiu e as de uma conversa que já
@@ -12,11 +12,11 @@
 // O texto vai à sessão exatamente como foi digitado (é do próprio usuário) e nunca sai nas respostas da página nem
 // no log; só a atividade do feed leva o começo dele, mascarado e cortado.
 //
-// Agentes do Codex não têm plugin: as mensagens deles vão pelo entregador do Codex (`codex queue`, messages/codex.ts),
+// Agentes do Codex não usam essa caixa: as mensagens deles vão pelo entregador do Codex (`codex queue`, messages/codex.ts),
 // nunca pela caixa de entrada. No modo Node o próprio servidor roda o comando (opção `codex.run`); no Docker, o
 // auxiliar do host (npm run codex:bridge) busca em POST /api/codex/bridge/poll e confirma em
-// POST /api/codex/bridge/ack. Mesmos estados, prazos e limites; canMessage = há entregador (o binário no modo Node ou
-// o auxiliar visto há até PRESENCE_MS). `delivered` = entrou na fila da sessão (entra quando ela ficar ociosa).
+// POST /api/codex/bridge/ack. Mesmos estados, prazos e limites; `canMessage` depende de uma sessão que buscou a caixa
+// há até PRESENCE_MS ou de um entregador Codex ativo. `delivered` = entrou na fila da sessão (entra quando ela ficar ociosa).
 import { randomBytes } from 'node:crypto';
 import { truncate } from '../../shared/activity';
 import { describeMessage, MESSAGE_MAX } from '../../shared/messages';
@@ -42,6 +42,8 @@ export const MAX_OPEN = 5;
 export const INBOX_BATCH = 5;
 
 export const ERR_NOT_FETCHED = tr('a sessão não buscou a mensagem: o plugin habblaud-mensagens está instalado e a sessão aberta?');
+export const ERR_OMP_NOT_FETCHED = tr('a sessão OMP não buscou a mensagem: a extensão do AIOffice está carregada e a sessão aberta?');
+export const ERR_OMP_NOT_CONNECTED = tr('a sessão OMP não conectou a extensão do AIOffice; confira a extensão global e reabra a sessão');
 export const ERR_NOT_CONFIRMED = tr('a sessão não confirmou a entrega');
 export const ERR_GONE = tr('o agente saiu do escritório');
 export const ERR_REFUSED = tr('a sessão não aceitou a mensagem');
@@ -82,7 +84,6 @@ export interface MessageRegistryOptions {
   demoDeliver?: (agentId: string, text: string) => boolean;
   /** Mensagens aos agentes do Codex; ausente = eles não recebem. */
   codex?: CodexDeliveryOptions;
-  omp?: { inject: (agentId: string, text: string) => boolean };
   now?: () => number;
   /** Intervalo do relógio interno (start). */
   tickMs?: number;
@@ -124,9 +125,7 @@ interface Entry {
   demo?: boolean;
   /** Mensagem a um agente do Codex: sai pelo entregador do Codex ('node' = o servidor rodou; 'bridge' = o auxiliar). */
   codex?: true;
-  codex?: true;
   omp?: true;
-  aioffice?: true;
   generic?: true;
   via?: 'node' | 'bridge';
   /** Falhou por falta de confirmação: uma confirmação atrasada ainda corrige a situação. */
@@ -148,15 +147,24 @@ function present(a: AgentInfo | undefined): a is AgentInfo {
   return !!a && a.status !== 'offline' && a.status !== 'done';
 }
 
+function isOmpAgent(a: AgentInfo): boolean {
+  return a.provider === 'omp' || a.account.toLowerCase() === 'omp' || a.id.startsWith('omp:');
+}
+
 const isFinal = (e: Entry) => e.msg.status === 'delivered' || e.msg.status === 'failed';
 
 /**
  * Por que o agente não recebe mensagens agora (undefined = recebe). `reachable`: a sessão tem o plugin conectado (ou,
  * no Codex, há entregador).
  */
-function unavailableReason(a: AgentInfo, _reachable: boolean): string | undefined {
+function unavailableReason(a: AgentInfo, reachable: boolean): string | undefined {
   if (a.kind !== 'main') return tr('subagentes não recebem mensagens: mande para o agente principal');
   if (!present(a)) return tr('o agente já saiu do escritório');
+  if (!reachable) {
+    if (a.provider === 'codex') return ERR_CODEX_UNAVAILABLE;
+    if (isOmpAgent(a)) return ERR_OMP_NOT_CONNECTED;
+    return tr('a sessão não está com o plugin habblaud-mensagens conectado (npm run mod:install)');
+  }
   return undefined;
 }
 
@@ -237,7 +245,7 @@ export class MessageRegistry {
   reachable(): Set<string> {
     const out = new Set<string>();
     for (const a of this.opts.office.list()) {
-      if (a.kind === 'main' && present(a)) out.add(a.id);
+      if (this.canMessage(a.id)) out.add(a.id);
     }
     return out;
   }
@@ -245,7 +253,10 @@ export class MessageRegistry {
   canMessage(agentId: string): boolean {
     const a = this.opts.office.get(agentId);
     if (!a || a.kind !== 'main' || !present(a)) return false;
-    return true;
+    if (a.provider === 'codex') return this.codexAvailable();
+    if (a.account.toLowerCase() === 'aioffice') return true;
+    const seenAt = this.seen.get(agentId);
+    return seenAt !== undefined && this.now() - seenAt < this.presenceMs;
   }
 
   /** Há como entregar ao Codex: o binário no modo Node ou o auxiliar do host visto há pouco. */
@@ -276,22 +287,10 @@ export class MessageRegistry {
     const entry: Entry = { msg: { id, agentId, status: 'queued', createdAt: now, updatedAt: now }, text, activity: describeMessage(text), target: agent.sessionId };
     if (demo) {
       entry.demo = true;
-    } else if (real?.provider === 'omp' || agent.account === 'OMP' || agent.account === 'omp' || agentId.startsWith('omp:')) {
+    } else if (isOmpAgent(agent)) {
       entry.omp = true;
-    } else if (real?.provider === 'codex' && agent.account !== 'OMP') {
+    } else if (real?.provider === 'codex') {
       entry.codex = true;
-    } else if (real?.provider === 'omp' || agent.account === 'OMP' || agent.account === 'omp' || agentId.startsWith('omp:')) {
-      entry.omp = true;
-    } else if (real?.provider === 'devin') {
-      entry.devin = true;
-    } else if (real?.provider === 'antigravity') {
-      entry.antigravity = true;
-    } else if (real?.provider === 'opencode') {
-      entry.opencode = true;
-    } else if (real?.provider === 'freebuf') {
-      entry.freebuf = true;
-    } else if (real?.provider === 'aioffice' || real?.account === 'aioffice') {
-      entry.aioffice = true;
     } else {
       entry.generic = true;
     }
@@ -299,10 +298,6 @@ export class MessageRegistry {
     const out = { ...entry.msg };
     if (entry.codex) {
       this.pumpCodex();
-    } else if (entry.omp) {
-      this.opts.omp?.inject(agentId, text);
-    } else if (entry.aioffice || entry.generic) {
-      this.finish(entry, 'delivered', now);
     }
     return { message: out };
   }
@@ -322,7 +317,7 @@ export class MessageRegistry {
     const session = shortStr(r?.session, ID_MAX);
     if (!r || !session) throw new InvalidRequest('esperado {session, account?}');
     const account = shortStr(r.account, ID_MAX);
-    // O plugin é do Claude Code: agentes do Codex nunca recebem por aqui.
+    // Codex usa a ponte própria; Claude Code, OMP e outras sessões com extensão usam esta caixa.
     const agent = this.opts.office
       .list()
       .find((a) => a.kind === 'main' && a.provider !== 'codex' && a.sessionId === session && (!account || a.account === account) && present(a));
@@ -435,7 +430,11 @@ export class MessageRegistry {
       if (!present(a)) this.fail(e, now, ERR_GONE);
       else if (e.msg.status === 'queued' && a.sessionId !== e.target) this.fail(e, now, ERR_SESSION_CHANGED);
       else if (e.msg.status === 'queued' && now - e.msg.createdAt >= this.queuedTimeoutMs) {
-        this.fail(e, now, !e.codex ? ERR_NOT_FETCHED : this.opts.codex?.run ? ERR_CODEX_SLOW : ERR_CODEX_NOT_FETCHED);
+        this.fail(
+          e,
+          now,
+          e.codex ? (this.opts.codex?.run ? ERR_CODEX_SLOW : ERR_CODEX_NOT_FETCHED) : e.omp ? ERR_OMP_NOT_FETCHED : ERR_NOT_FETCHED,
+        );
       } else if (e.msg.status === 'sent' && now - (e.sentAt ?? now) >= this.sentTimeoutMs) {
         this.fail(e, now, e.codex ? ERR_CODEX_NOT_CONFIRMED : ERR_NOT_CONFIRMED);
         e.late = true;

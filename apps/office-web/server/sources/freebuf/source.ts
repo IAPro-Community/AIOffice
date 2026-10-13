@@ -44,7 +44,9 @@ export class FreebufSource implements AgentSource {
   }
 
   sources(): SourceInfo[] {
-    return [{ id: 'freebuf', provider: 'freebuf', name: 'Freebuf', status: 'ok' }];
+    const ok = existsSync(this.sessionsDir);
+    const sessions = this.office.list().filter((a) => a.provider === 'freebuf' && a.status !== 'offline' && a.status !== 'done').length;
+    return [{ label: 'Freebuf', provider: 'freebuf', path: this.sessionsDir, sessions, ok }];
   }
 
   transcriptPathOf(agentId: string): string | undefined {
@@ -140,7 +142,6 @@ export class FreebufSource implements AgentSource {
           sessionId,
           cwd,
           role: 'Engenheiro (Freebuf)',
-          name: title ? title.slice(0, 25) : 'Agente Freebuf',
           startedAt,
           status,
           provider: 'freebuf',
@@ -160,6 +161,7 @@ export class FreebufSource implements AgentSource {
             id: `${agentId}#act:${mtimeMs}`,
             at: mtimeMs,
             kind: lastActivity.kind === 'tool' ? 'run' : lastActivity.kind === 'respond' ? 'respond' : 'think',
+            icon: lastActivity.kind === 'tool' ? '💻' : lastActivity.kind === 'respond' ? '📨' : '💭',
             text: lastActivity.text,
           },
           true,
@@ -191,6 +193,7 @@ export class FreebufSource implements AgentSource {
           id: `${agentId}#usr:${Date.now()}`,
           at: Date.now(),
           kind: 'think',
+          icon: '📨',
           text: `[Mensagem]: ${text}`,
         },
         false,

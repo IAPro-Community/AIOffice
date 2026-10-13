@@ -1,7 +1,7 @@
 // Rotas da API (/api/*). Respostas JSON; rotas desconhecidas -> 404 JSON.
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { NAME_MAX, parseAppearanceParts, parseCharacterName, parseSeed } from '../../shared/appearance';
-import type { AgentInfo, ModSummary, OfficeSnapshot, SourceInfo, UpdateStatus } from '../../shared/types';
+import type { AgentInfo, AgentStatus, ModSummary, OfficeSnapshot, SourceInfo, UpdateStatus } from '../../shared/types';
 import type { AccountsService } from '../accounts/service';
 import { handleCodexEvent } from '../codex/http';
 import type { DayStatsService } from '../history/daystats';
@@ -393,6 +393,7 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
                   id: `${agentId}#act:${Date.now()}`,
                   at: Date.now(),
                   kind: 'think',
+                  icon: '💭',
                   text: `[${role}] ${taskDesc}`,
                 },
                 true,

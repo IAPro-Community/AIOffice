@@ -225,6 +225,20 @@ Depois, **abra o Codex e aprove os hooks do Habblaud em `/hooks`**: o Codex só 
 aprova (o Habblaud nunca grava essa aprovação). Com o Habblaud no Docker, para mandar mensagens às sessões do Codex
 deixe também `npm run codex:bridge` rodando no Mac (veja [Codex](#codex)).
 
+### 5. oh-my-pi (OMP) no escritório (opcional)
+
+O Habblaud detecta sessões OMP e mostra atividade, conversa e histórico sem configuração. Para mandar mensagens do
+escritório ao terminal OMP, instale a ponte global:
+
+```bash
+npm run omp:install
+npm run omp:status
+```
+
+Abra uma nova sessão OMP para carregar a extensão. A ponte envia a mensagem como prompt da sessão e confirma a entrega
+ao escritório; `npm run omp:uninstall` remove a extensão se ela não tiver sido editada. O envio segue as proteções de
+acesso local e a opção `HABBLAUD_MENSAGENS` do servidor.
+
 ### Abrir no celular (opcional)
 
 Por padrão o Habblaud só aceita conexões do próprio computador. Para abrir no celular (no mesmo Wi-Fi), com Docker:

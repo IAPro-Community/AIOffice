@@ -218,7 +218,8 @@ export class UsageCards {
   }
 
   render(): void {
-    const accounts = this.ctx.store.snapshot?.accounts ?? [];
+    // Só há números de uso confiáveis para Claude Code e Codex; fontes sem esse dado não ganham um cartão vazio.
+    const accounts = (this.ctx.store.snapshot?.accounts ?? []).filter((a) => !a.provider || a.provider === 'codex');
     this.list.sync(accounts);
     this.el.classList.toggle('is-empty', accounts.length === 0);
     setStyleVar(this.el, '--count', String(accounts.length));

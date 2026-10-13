@@ -1,31 +1,14 @@
 # HANDOFF — AIOffice
 
-## Estado Atual
-- Plataforma **AIOffice** totalmente implementada e funcionando de ponta a ponta.
-- Os 5 pilares integrados no monorepo:
-  - **Orquestrador-Maestro**: Governança, router e persistência durável em `DEV/`.
-  - **OpenOrq**: `packages/maestro-contract`, `packages/policy-broker`, `packages/rpc-proxy` e `packages/credential-store`.
-  - **Habblaud**: Servidor e client web pixel-art rodando em `http://localhost:4747`.
-  - **oh-my-pi**: Engine hashline (`PUT`/`CUT`) e subagentes com `packages/runtime`.
-  - **replica-skill**: 11 skills incorporadas em `skills/replica/` e catalogadas no Maestro.
-- **Suíte de Testes**: 18 testes automatizados passando em `npm run verify`.
-- **Servidor Web**: Ativo e servindo em `http://127.0.0.1:4747`.
+## Estado atual — 2026-10-13
 
-## Como Executar
-1. **Acessar o Escritório Virtual**:
-   Abra no navegador: `http://localhost:4747`
-2. **Executar Tarefas pelo Terminal**:
-   ```bash
-   node apps/office-cli/dist/cli.js "Extrair design tokens e cores do aplicativo"
-   ```
-   ou
-   ```bash
-   node apps/office-cli/dist/cli.js "Analisar reviews e concorrentes do mercado"
-   ```
-3. **Verificar a Suíte Completa**:
-   ```bash
-   npm run verify
-   ```
+- A build de cliente e servidor foi ativada no serviço local do Habblaud. O terminal OMP mostra atividade e conversa com o selo de provedor correto.
+- A extensão OMP está versionada em `apps/office-web/mod/omp/aioffice-bridge.ts`. Use `npm run omp:install`, `npm run omp:status` e `npm run omp:uninstall` na pasta `apps/office-web` para instalar, conferir e remover a ponte.
+- Mensagens para Claude Code e OMP só ficam disponíveis quando a extensão da sessão consulta a caixa de entrada; Codex usa o entregador próprio. O estado `delivered` depende de confirmação do agente.
+- Uma sessão OMP que já estava aberta antes da atualização precisa ser reaberta para carregar a extensão. O envio real ainda aguarda confirmação do usuário; nenhum prompt de teste foi enviado nesta preparação da release.
+- Fontes de CLI integradas de ponta a ponta: Claude Code, Codex e OMP. Devin, Antigravity, OpenCode, Freebuf e Gemini CLI ainda não têm cobertura completa. Configuração MCP de IDE não equivale a ingestão de sessão de CLI.
+- A build segue emitindo o aviso do bundle principal acima de 500 kB; a divisão de chunks fica como melhoria futura.
 
-## Próxima Ação Segura
-- O produto está entregue e verificado em funcionamento. O usuário pode adicionar tarefas customizadas de clonagem ou conectar chaves de API adicionais pelo CLI.
+## Próxima ação
+
+Reabrir uma sessão OMP, confirmar que o composer fica disponível e enviar uma mensagem curta pelo escritório; verificar o prompt no OMP e o ACK `delivered`.

@@ -1,9 +1,19 @@
 // Salas do escritório: identidade (cwd normalizado), nome exibido e posição (slot) no prédio.
 
-/** cwd normalizado: sem barras repetidas nem barra final. */
+/** Caminho para exibição: barras consistentes, sem barras repetidas ou barra final. */
+export function displayCwd(cwd: string): string {
+  const input = cwd.trim().replace(/\\/g, '/');
+  const unc = input.startsWith('//');
+  const collapsed = input.replace(/\/{2,}/g, '/');
+  const path = unc ? `/${collapsed}` : collapsed;
+  if (/^[a-z]:\/$/i.test(path)) return path;
+  return path.length > 1 ? path.replace(/\/+$/, '') : path;
+}
+
+/** Identidade da sala: caminhos Windows com caixa diferente apontam para a mesma pasta. */
 export function normalizeCwd(cwd: string): string {
-  const p = cwd.trim().replace(/\/{2,}/g, '/');
-  return p.length > 1 ? p.replace(/\/+$/, '') : p;
+  const path = displayCwd(cwd);
+  return /^[a-z]:\//i.test(path) || path.startsWith('//') ? path.toLowerCase() : path;
 }
 
 function segments(path: string): string[] {

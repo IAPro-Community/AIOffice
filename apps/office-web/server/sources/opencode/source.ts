@@ -44,7 +44,9 @@ export class OpenCodeSource implements AgentSource {
   }
 
   sources(): SourceInfo[] {
-    return [{ id: 'opencode', provider: 'opencode', name: 'OpenCode', status: 'ok' }];
+    const ok = existsSync(this.sessionsDir);
+    const sessions = this.office.list().filter((a) => a.provider === 'opencode' && a.status !== 'offline' && a.status !== 'done').length;
+    return [{ label: 'OpenCode', provider: 'opencode', path: this.sessionsDir, sessions, ok }];
   }
 
   transcriptPathOf(agentId: string): string | undefined {
@@ -140,7 +142,6 @@ export class OpenCodeSource implements AgentSource {
           sessionId,
           cwd,
           role: 'Engenheiro (OpenCode)',
-          name: title ? title.slice(0, 25) : 'Agente OpenCode',
           startedAt,
           status,
           provider: 'opencode',
@@ -160,6 +161,7 @@ export class OpenCodeSource implements AgentSource {
             id: `${agentId}#act:${mtimeMs}`,
             at: mtimeMs,
             kind: lastActivity.kind === 'tool' ? 'run' : lastActivity.kind === 'respond' ? 'respond' : 'think',
+            icon: lastActivity.kind === 'tool' ? '💻' : lastActivity.kind === 'respond' ? '📨' : '💭',
             text: lastActivity.text,
           },
           true,
@@ -191,6 +193,7 @@ export class OpenCodeSource implements AgentSource {
           id: `${agentId}#usr:${Date.now()}`,
           at: Date.now(),
           kind: 'think',
+          icon: '📨',
           text: `[Mensagem]: ${text}`,
         },
         false,

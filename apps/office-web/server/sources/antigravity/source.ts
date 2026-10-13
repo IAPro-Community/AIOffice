@@ -44,7 +44,9 @@ export class AntigravitySource implements AgentSource {
   }
 
   sources(): SourceInfo[] {
-    return [{ id: 'antigravity', provider: 'antigravity', name: 'Antigravity', status: 'ok' }];
+    const ok = existsSync(this.sessionsDir);
+    const sessions = this.office.list().filter((a) => a.provider === 'antigravity' && a.status !== 'offline' && a.status !== 'done').length;
+    return [{ label: 'Antigravity', provider: 'antigravity', path: this.sessionsDir, sessions, ok }];
   }
 
   transcriptPathOf(agentId: string): string | undefined {
@@ -140,7 +142,6 @@ export class AntigravitySource implements AgentSource {
           sessionId,
           cwd,
           role: 'Engenheiro (Antigravity)',
-          name: title ? title.slice(0, 25) : 'Agente Antigravity',
           startedAt,
           status,
           provider: 'antigravity',
@@ -160,6 +161,7 @@ export class AntigravitySource implements AgentSource {
             id: `${agentId}#act:${mtimeMs}`,
             at: mtimeMs,
             kind: lastActivity.kind === 'tool' ? 'run' : lastActivity.kind === 'respond' ? 'respond' : 'think',
+            icon: lastActivity.kind === 'tool' ? '💻' : lastActivity.kind === 'respond' ? '📨' : '💭',
             text: lastActivity.text,
           },
           true,
@@ -191,6 +193,7 @@ export class AntigravitySource implements AgentSource {
           id: `${agentId}#usr:${Date.now()}`,
           at: Date.now(),
           kind: 'think',
+          icon: '📨',
           text: `[Mensagem]: ${text}`,
         },
         false,

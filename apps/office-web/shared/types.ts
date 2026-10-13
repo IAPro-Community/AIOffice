@@ -181,8 +181,8 @@ export interface AgentInfo {
    */
   permission?: PermissionRequestInfo;
   /**
-   * Dá para mandar mensagem a este agente pelo Habblaud (só principais): a sessão tem o plugin habblaud-mensagens
-   * e perguntou pela caixa de entrada há pouco. Ver POST /api/messages.
+   * Dá para mandar mensagem a este agente pelo Habblaud (só principais): sua extensão consultou a caixa de entrada
+   * há pouco ou, no Codex, há um entregador ativo. Ver POST /api/messages.
    */
   canMessage?: boolean;
 }

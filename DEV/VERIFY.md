@@ -1,29 +1,41 @@
 # VERIFY — AIOffice
 
-## Matriz de Verificação & Gates
+## Release v1.1.0 — 2026-10-13
 
-| Gate | Descrição | Critério de Sucesso | Status |
-|---|---|---|---|
-| **G0 — Arquitetura** | Alinhamento dos 5 pilares no plano executivo | `DEV/` inicializado, especificação aprovada | **Aprovado** |
-| **G1 — Monorepo** | Compilação e tipagem estrita do monorepo | `npm run build` (`tsc composite`) sem erros | **Aprovado** |
-| **G2 — Governança B1/B2** | Mediação do `policy-broker`, RPC Proxy e cofre seguro | 11 testes unitários passando em `packages/*` | **Aprovado** |
-| **G3 — Habblaud Bridge** | Eventos do OpenOrq visíveis no Habblaud | Agente aparece em `localhost:4747/api/snapshot` | **Aprovado** |
-| **G4 — Interceptação 1-Click** | Aprovação de escrita no Habblaud | Interceptação confirmada no `PolicyBroker` | **Aprovado** |
-| **G5 — Runtime OMP + Task** | Hashline edits e subagentes | Testes unitários do runtime passando | **Aprovado** |
-| **G6 — E2E Replica** | Clonagem e geração de design tokens | `tokens.json` gerado pelo CLI, registrado no Habblaud | **Aprovado** |
-| **G7 — Terminal Stream Live** | Streaming de terminal para Claude Code, Codex e AIOffice | `HTTP 200 (text/event-stream)` nos endpoints de terminal | **Aprovado** |
-| **G8 — Fila de Mensagens Universal** | Envio de mensagens em qualquer terminal para a fila do agente | `codex queue` executado com status `delivered` confirmado | **Aprovado** |
-| **G9 — OMP Standalone Watcher** | Detecção automática de sessões soltas do `omp` | Sala `Cadete Fibra` e agente OMP renderizados no snapshot | **Aprovado** |
-| **G10 — MCP Bridge IDEs** | Conexão de Cursor, Windsurf, Claude Desktop e Antigravity | MCP Server testado e arquivos `mcp.json` configurados | **Aprovado** |
+### Gates locais
 
-## Evidências Executadas
-1. **`npm run verify`**: 21/21 testes verdes em 8 suítes.
-2. **Sessão OMP Cadete Fibra Detectada**:
-   - Sala: `Cadete Fibra (C:\Users\fbolz\Documents\Code\Cadete Fibra)`
-   - Agente: `Pedro (Agente OMP)`
-   - Título: `🌐 FIBRA: Melhorar conversão da página inicial`
-3. **MCP Bridges Instalados**:
-   - `C:\Users\fbolz\.cursor\mcp.json`
-   - `C:\Users\fbolz\.codeium\windsurf\mcp_config.json`
-   - `%APPDATA%\Claude\claude_desktop_config.json`
-   - `C:\Users\fbolz\.antigravity\mcp.json`
+| Verificação | Resultado |
+|---|---|
+| `npm run typecheck` | Aprovado |
+| `npm --prefix apps/office-web run typecheck` | Aprovado |
+| `npm run build` | Aprovado para cliente e servidor |
+| `npm --prefix apps/office-web run i18n:check` | Aprovado: 2054/2054 textos por idioma; 10 chaves antigas sobram em cada idioma |
+| `git diff --check` | Aprovado; Git avisa sobre normalização LF/CRLF em arquivos modificados |
+| `npm --prefix apps/office-web run omp:status` | Aprovado; extensão local igual à fonte versionada |
+| Importação da extensão com Bun | Aprovado |
+| `GET /api/health` no serviço local | Aprovado; Claude Code, Codex e OMP detectados |
+
+O Vite ainda avisa que o bundle principal passa de 500 kB. Testes automatizados não foram executados nesta preparação.
+
+### Validação operacional pendente
+
+- A extensão OMP usa `sendUserMessage`, monitora troca de sessão e só confirma a entrega após o resultado da chamada.
+- Sessões OMP abertas antes de instalar ou atualizar a extensão precisam ser reabertas para carregá-la.
+- Não foi enviada mensagem de teste nem interrompida uma sessão ativa. O usuário ainda precisa confirmar o envio real e o ACK `delivered`.
+
+## Cobertura atual
+
+| Provedor | Sessões/atividade | Conversa e histórico | Mensagens pelo escritório | Observação |
+|---|---|---|---|---|
+| Claude Code | Integrado | Integrado | Mod instalado na sessão | Acesso local e configuração de mensagens aplicados |
+| Codex | Integrado | Integrado | Entregador Codex | No Docker, requer `npm run codex:bridge` no host |
+| oh-my-pi (OMP) | Integrado | Parser e histórico ligados | Extensão AIOffice | Reabrir a sessão para carregar; teste real pendente |
+| Devin, Antigravity, OpenCode, Freebuf e Gemini CLI | Não integrado de ponta a ponta | Não garantido | Não garantido | Tipos, executáveis locais ou configuração MCP não bastam para declarar suporte |
+
+Conexões MCP de Cursor, Windsurf, Claude Desktop ou Antigravity são uma integração diferente da leitura de sessões de CLI.
+
+## Limites e próximos passos
+
+- Confirmar o ciclo completo de mensagem OMP em uma sessão reaberta.
+- Definir quais CLIs entram na próxima etapa; integrar cada uma por capacidade real (descoberta, atividade, terminal, histórico, mensagens, permissões e uso).
+- Avaliar divisão do bundle principal para remover o aviso de tamanho.

@@ -8,6 +8,8 @@ import { tr } from '../../../shared/i18n';
 
 /** Dica para quem tem o recurso ligado, mas a sessão do agente não está com o plugin conectado. */
 export const PLUGIN_HINT = tr('Para mandar mensagens daqui: npm run mod:install (plugin habblaud-mensagens)');
+/** Dica para uma sessão OMP cuja extensão do AIOffice ainda não consultou a caixa de entrada. */
+export const OMP_HINT = tr('A extensão do AIOffice não conectou a esta sessão OMP; confira ~/.omp/agent/extensions e reabra a sessão');
 /** A mesma dica para um agente do Codex sem entregador (no modo Node o próprio servidor entrega). */
 export const CODEX_BRIDGE_HINT = tr('Para mandar mensagens ao Codex: com o Habblaud no Docker, deixe npm run codex:bridge rodando; no modo Node funciona sozinho');
 
@@ -31,6 +33,19 @@ export function composerMode(agent: AgentInfo | undefined, env: ComposerEnv): Co
   if (env.replaying) return { kind: 'off', text: tr('Sem mensagens no timelapse: o escritório mostrado é o de outro momento') };
   if (agent?.kind === 'sub') return { kind: 'off', text: tr('Subagentes não recebem mensagens: escreva para o agente principal') };
   if (!agent || agent.status === 'offline' || agent.status === 'done') return { kind: 'off', text: tr('Sessão encerrada') };
+  if (!env.enabled) {
+    const text = agent.provider === 'codex'
+      ? tr('Para responder, use o Codex')
+      : agent.provider === 'omp'
+        ? tr('Para responder, use o terminal do OMP')
+        : tr('Para responder, use o terminal do Claude Code');
+    return { kind: 'off', text };
+  }
+  if (!env.local) return { kind: 'off', text: tr('Para mandar mensagens por aqui, abra o Habblaud por http://localhost (ou 127.0.0.1)') };
+  if (agent.canMessage !== true) {
+    const text = agent.provider === 'codex' ? CODEX_BRIDGE_HINT : agent.provider === 'omp' ? OMP_HINT : PLUGIN_HINT;
+    return { kind: 'hint', text };
+  }
   return { kind: 'ready' };
 }
 

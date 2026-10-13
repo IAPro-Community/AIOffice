@@ -1,22 +1,34 @@
-import { appendFileSync, existsSync, readdirSync, readFileSync, statSync, watch, type FSWatcher } from 'node:fs';
-import { randomBytes } from 'node:crypto';
+import { existsSync, readdirSync, readFileSync, statSync, watch, type FSWatcher } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import type { AgentStatus, SourceInfo, TerminalParser, TerminalEntry } from '../../../shared/types.js';
+import type { AgentStatus, SourceInfo } from '../../../shared/types.js';
+import type { DetectedAccount } from '../../accounts/detect.js';
+import type { AccountsService } from '../../accounts/service.js';
 import type { Office } from '../../model/office.js';
 import type { AgentSource } from '../source.js';
-import { createTerminalParser } from '../terminal';
+import { createOmpTerminalParser } from './terminal';
+import type { TerminalParser } from '../terminal';
+import { tr } from '../../../shared/i18n.js';
 
 export class OmpSource implements AgentSource {
   readonly provider = 'omp' as const;
-  private readonly sessionsDir: string;
+  readonly sessionsDir: string;
   private watcher: FSWatcher | null = null;
   private pollTimer: NodeJS.Timeout | null = null;
   private activeFiles = new Map<string, string>();
   private knownMtimes = new Map<string, number>();
+  readonly accountId: string;
 
-  constructor(private readonly office: Office) {
+  constructor(private readonly office: Office, accounts: AccountsService) {
     this.sessionsDir = join(homedir(), '.omp', 'agent', 'sessions');
+    const detected: DetectedAccount = {
+      id: 'OMP',
+      configDir: this.sessionsDir,
+      short: 'O',
+      name: 'oh-my-pi',
+      color: '#52d6b4',
+    };
+    this.accountId = accounts.setProviderAccounts('omp', [{ dir: this.sessionsDir, detected }])[0]?.id ?? 'OMP';
   }
 
   start(): void {
@@ -45,7 +57,9 @@ export class OmpSource implements AgentSource {
   }
 
   sources(): SourceInfo[] {
-    return [{ id: 'omp', provider: 'omp', name: 'oh-my-pi', status: 'ok' }];
+    const ok = existsSync(this.sessionsDir);
+    const sessions = this.office.list().filter((a) => a.provider === 'omp' && a.status !== 'offline' && a.status !== 'done').length;
+    return [{ label: 'oh-my-pi', provider: 'omp', path: this.sessionsDir, sessions, ok, ...(!ok ? { error: tr('pasta de sessões do oh-my-pi não encontrada') } : {}) }];
   }
 
   transcriptPathOf(agentId: string): string | undefined {
@@ -91,35 +105,44 @@ export class OmpSource implements AgentSource {
       let cwd = '';
       let sessionId = '';
       let startedAt = mtimeMs;
-      let lastActivity: { kind: 'think' | 'tool' | 'respond'; text: string } | null = null;
+      let lastActivity: { id: string; kind: 'think' | 'tool' | 'respond'; text: string } | null = null;
       let isWorking = false;
 
-      for (const line of lines) {
+      for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+        const line = lines[lineIndex];
         try {
           const item = JSON.parse(line);
-          if (item.type === 'title') title = item.title;
+          if (item.type === 'title' && typeof item.title === 'string') title = item.title;
           if (item.type === 'session') {
-            sessionId = item.id;
-            cwd = item.cwd;
-            startedAt = new Date(item.timestamp).getTime();
+            if (typeof item.id === 'string') sessionId = item.id;
+            if (typeof item.cwd === 'string') cwd = item.cwd;
+            const timestamp = Date.parse(item.timestamp);
+            if (Number.isFinite(timestamp)) startedAt = timestamp;
           }
           if (item.type === 'message' && item.message) {
             const role = item.message.role;
             const contents = item.message.content || [];
+            const eventId = typeof item.id === 'string' ? item.id : `${mtimeMs}:${lineIndex}`;
             if (role === 'assistant') {
               isWorking = true;
-              for (const c of contents) {
+              for (let blockIndex = 0; blockIndex < contents.length; blockIndex++) {
+                const c = contents[blockIndex];
                 if (c.type === 'thinking' && typeof c.thinking === 'string') {
-                  lastActivity = { kind: 'think', text: c.thinking.slice(0, 120) };
-                } else if (c.type === 'tool_use') {
-                  lastActivity = { kind: 'tool', text: `${c.name}: ${JSON.stringify(c.input || {}).slice(0, 80)}` };
+                  lastActivity = { id: `${eventId}:thinking:${blockIndex}`, kind: 'think', text: c.thinking.slice(0, 120) };
+                } else if (c.type === 'toolCall') {
+                  const name = typeof c.name === 'string' ? c.name : tr('ferramenta');
+                  lastActivity = { id: typeof c.id === 'string' ? c.id : `${eventId}:tool:${blockIndex}`, kind: 'tool', text: name.slice(0, 120) };
                 } else if (c.type === 'text' && typeof c.text === 'string') {
-                  lastActivity = { kind: 'respond', text: c.text.slice(0, 120) };
+                  lastActivity = { id: `${eventId}:text:${blockIndex}`, kind: 'respond', text: c.text.slice(0, 120) };
                   isWorking = false;
                 }
               }
             } else if (role === 'user') {
               isWorking = true;
+            } else if (role === 'toolResult') {
+              isWorking = true;
+              const toolName = typeof item.message.toolName === 'string' ? item.message.toolName : tr('ferramenta');
+              lastActivity = { id: `${eventId}:result`, kind: 'tool', text: tr('{0} terminou', [toolName.slice(0, 100)]) };
             }
           }
         } catch {
@@ -137,11 +160,10 @@ export class OmpSource implements AgentSource {
       if (!this.office.has(agentId)) {
         this.office.addMain({
           id: agentId,
-          account: 'OMP',
+          account: this.accountId,
           sessionId,
           cwd,
           role: 'Engenheiro (oh-my-pi)',
-          name: title ? title.slice(0, 25) : 'Agente OMP',
           startedAt,
           status,
           provider: 'omp',
@@ -158,9 +180,10 @@ export class OmpSource implements AgentSource {
         this.office.addActivity(
           agentId,
           {
-            id: `${agentId}#act:${mtimeMs}`,
+            id: `${agentId}#act:${lastActivity.id}`,
             at: mtimeMs,
             kind: lastActivity.kind === 'tool' ? 'run' : lastActivity.kind === 'respond' ? 'respond' : 'think',
+            icon: lastActivity.kind === 'tool' ? '💻' : lastActivity.kind === 'respond' ? '📨' : '💭',
             text: lastActivity.text,
           },
           true,
@@ -171,52 +194,7 @@ export class OmpSource implements AgentSource {
     }
   }
 
-  public injectMessage(agentId: string, text: string): boolean {
-    const filePath = this.activeFiles.get(agentId);
-    if (!filePath || !existsSync(filePath)) return false;
-    try {
-      const msgEntry = {
-        type: 'message',
-        id: randomBytes(4).toString('hex'),
-        timestamp: new Date().toISOString(),
-        message: {
-          role: 'user',
-          content: [{ type: 'text', text }],
-        },
-      };
-      appendFileSync(filePath, '\n' + JSON.stringify(msgEntry) + '\n', 'utf-8');
-      this.knownMtimes.set(filePath, Date.now());
-      this.office.addActivity(
-        agentId,
-        {
-          id: `${agentId}#usr:${Date.now()}`,
-          at: Date.now(),
-          kind: 'think',
-          text: `[Mensagem]: ${text}`,
-        },
-        false,
-      );
-      this.office.setStatus(agentId, 'working');
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
   terminalParser(agentId: string): TerminalParser | undefined {
-    const filePath = this.activeFiles.get(agentId);
-    if (!filePath) return undefined;
-    const parser = createTerminalParser();
-    // Lê o transcript existente e alimenta o parser
-    try {
-      const raw = readFileSync(filePath, 'utf-8');
-      const lines = raw.trim().split(/\r?\n/).filter(Boolean);
-      for (const line of lines) {
-        parser.push(line);
-      }
-    } catch {
-      // Arquivo indisponível
-    }
-    return parser;
+    return this.activeFiles.has(agentId) ? createOmpTerminalParser() : undefined;
   }
 }

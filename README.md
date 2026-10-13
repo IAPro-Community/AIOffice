@@ -1,4 +1,4 @@
-# 🏢 AIOffice (Beta)
+# 🏢 AIOffice
 
 > **Virtual AI Software Studio & Office** — Um escritório virtual inteligente local-first que une governança, execução de ferramentas de alta performance, playbook de engenharia reversa e interface visual em pixel art.
 
@@ -13,6 +13,17 @@ O **AIOffice** é um monorepo 100% autossuficiente e independente que consolida 
 3. **Orquestrador-Maestro**: Governança explicável, roteamento de intenções, limites de orçamento e rastreabilidade durável com contratos de handoff em `DEV/`.
 4. **oh-my-pi (Runtime Engine)**: Harness de ferramentas ultra-otimizado com edições hashline seguras (`PUT`/`CUT`), suporte a AST/LSP e subagentes isolados em worktrees via ferramenta `task`.
 5. **replica-skill (Playbook de Produto)**: Suíte de 11 skills especializadas para engenharia reversa, clonagem e reconstrução de produtos digitais resolvendo as dores reais dos usuários.
+
+### CLIs conectadas ao escritório
+
+| CLI | Atividade e conversa | Histórico | Mensagens pelo escritório |
+|---|---|---|---|
+| Claude Code | Sim | Sim | Sim, com o mod do Habblaud |
+| Codex | Sim | Sim | Sim; no Docker, requer `npm run codex:bridge` no host |
+| oh-my-pi (OMP) | Sim | Sim | Sim, depois de instalar a ponte com `npm --prefix apps/office-web run omp:install` e abrir uma nova sessão |
+
+Devin, Antigravity, OpenCode, Freebuf e Gemini CLI ainda não têm integração de sessões e mensagens de ponta a ponta.
+Uma conexão MCP de IDE ou desktop também não equivale à leitura de uma sessão de CLI.
 
 ---
 

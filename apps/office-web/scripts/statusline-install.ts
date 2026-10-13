@@ -38,7 +38,7 @@ Opções:
   -h, --help       mostra esta ajuda
 
 Contas: as mesmas do servidor (~/.claude* com projects/ ou sessions/, CLAUDE_CONFIG_DIR ou
-HABBLAUD_CLAUDE_DIRS). Uso capturado em HABBLAUD_USAGE_DIR (padrão ~/.habblaud/usage).`);
+HABBLAUD_CLAUDE_DIRS). Uso capturado em HABBLAUD_USAGE_DIR (padrão ~/.habblaud/usage).`.replace(/\r\n/g, '\n'));
 
 // ---------------------------------------------------------------------------------------------
 // Funções puras (testadas em server/test/statusline-install.test.ts)

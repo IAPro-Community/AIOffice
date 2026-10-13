@@ -2,7 +2,7 @@
 
 ## 1. Identificação do Projeto
 - **Nome**: AIOffice
-- **Status**: Fase 5 Concluída (Entregue e Verificado)
+- **Status**: Fase 5 concluída; auditoria ampla da interface concluída; paridade de provedores aberta
 - **Localização**: Repositório AIOffice
 
 ## 2. Pilares de Integração
@@ -72,3 +72,25 @@ AIOffice/
   4. Interceptação de escrita e aprovação pelo Habblaud.
   5. Testes e handoff final (`DEV/HANDOFF.md` e `DEV/VERIFY.md`).
 - Critério de Aceitação: Aplicação clonada gerada no disco com testes verdes, zero bypass de segurança e log completo no Habblaud.
+
+## 6. Revisão da cobertura de CLIs (2026-10-13)
+- **Cobertura ativa confirmada**: Claude Code, Codex e oh-my-pi.
+- **Gap**: Devin, Antigravity, OpenCode e Freebuf constam no tipo de provedor, mas suas fontes não são iniciadas. Cursor, Gemini CLI e Windsurf não têm fontes de sessão no Habblaud; a configuração de MCP para IDEs é uma integração diferente.
+- **Correção local**: o terminal do OMP agora converte o formato de transcript próprio para as entradas do painel compartilhado. A build foi ativada no serviço local; o envio de mensagem ainda aguarda validação na sessão OMP.
+- **Critério para declarar suporte de um provedor**: detecção de sessão e provedor, presença/busca/filtro no escritório, terminal e mensagens quando suportados, histórico e ajuda; métricas só se houver dados confiáveis.
+- **Escopo ainda aberto**: confirmar quais CLIs locais fazem parte do alvo “todos” antes de criar ou ativar novos adaptadores.
+
+## 7. Auditoria ampla da interface (2026-10-13)
+- **Relatório**: `DEV/UI-AUDIT-2026-10-13.md` registra evidências, achados por prioridade, limites e sequência recomendada.
+- **Critérios para a fase seguinte**: identidade e filtro por provedor sem depender de conta de uso; parser OMP compartilhado por escritório/feed/terminal; estado visível da conexão e entrega; cobertura por capacidade em busca, histórico, estatísticas e ajuda.
+- **Organização**: canonizar caminhos no Windows e oferecer controle para salas temporárias, sem ocultar ou apagar dados por padrão.
+- **UX**: preservar a linguagem pixel-art; confirmar a hierarquia da gaveta e o contexto ao vivo/replay; verificar tamanhos desktop, tablet e celular antes de mudanças visuais.
+- **Pendente de decisão de escopo**: lista de CLIs locais a suportar. Cursor, Windsurf e Claude Desktop via MCP devem permanecer separados da ingestão de sessões de CLI.
+
+## 8. Fechamento das correções de interface (2026-10-13)
+- OMP agora publica uma identidade que alimenta filtros e busca; terminal, atividade e histórico entendem o formato próprio de conversa do OMP.
+- Entrega de mensagem aguarda polling e confirmação da extensão. A extensão foi atualizada para usar a API interativa do OMP; sessão já iniciada precisa ser reaberta para carregar a atualização.
+- A extensão agora usa o timer gerenciado, inicia uma rodada quando o OMP está ocioso e tenta novamente ACKs pendentes; validar a entrega real após reabrir a sessão.
+- Caminhos de projeto são canonizados no Windows para evitar salas duplicadas por diferença de barras e caixa.
+- Build, typecheck e checagem de traduções passaram; a operação real de envio ainda depende de validação do usuário.
+- Fontes ativas continuam Claude Code, Codex e OMP. Os adaptadores Devin, Antigravity, OpenCode e Freebuf permanecem inativos; não anunciar suporte universal.

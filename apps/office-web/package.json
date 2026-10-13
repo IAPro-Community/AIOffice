@@ -41,6 +41,9 @@
     "codex:uninstall": "tsx scripts/codex-install.ts uninstall",
     "codex:status": "tsx scripts/codex-install.ts status",
     "codex:bridge": "tsx scripts/codex-bridge.ts",
+    "omp:install": "tsx scripts/omp-install.ts install",
+    "omp:uninstall": "tsx scripts/omp-install.ts uninstall",
+    "omp:status": "tsx scripts/omp-install.ts status",
     "release": "tsx scripts/release.ts"
   },
   "devDependencies": {

@@ -74,9 +74,11 @@ export function accountChipLabel(account: Pick<AccountInfo, 'name' | 'email' | '
  * shell (a letra de uma conta do Codex não é um atalho); o Codex só entra quando há uma conta dele.
  */
 export function emptyOfficeHint(accounts: readonly Pick<AccountInfo, 'short' | 'provider'>[]): string {
-  const keys = shortcutHint(accounts.filter((a) => !isCodex(a)));
-  if (!accounts.some(isCodex)) return tr('Abra o Claude Code em qualquer projeto{0} e veja seu agente chegar.', [keys ? ` (${keys})` : '']);
-  return tr('Abra o Claude Code{0} ou o Codex em qualquer projeto e veja seu agente chegar.', [keys ? ` (${keys})` : '']);
+  const keys = shortcutHint(accounts.filter((a) => !a.provider));
+  const tools = ['Claude Code'];
+  if (accounts.some(isCodex)) tools.push('Codex');
+  if (accounts.some((a) => a.provider === 'omp')) tools.push('oh-my-pi');
+  return tr('Abra {0} em qualquer projeto e veja seu agente chegar.', [`${tools.slice(0, -1).join(', ')}${tools.length > 1 ? ` ou ${tools.at(-1)}` : ''}${keys ? ` (${keys})` : ''}`]);
 }
 
 /** Algum pedido de permissão do Codex esperando: o prazo é curto e o cartão conta os segundos (relógio de 1 s). */

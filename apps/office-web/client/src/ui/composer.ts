@@ -115,7 +115,7 @@ export class MessageComposer {
     this.mode = mode;
     const ready = mode.kind === 'ready';
     const term = this.variant === 'terminal';
-    this.provider = agent?.provider === 'codex' ? 'codex' : 'claude';
+    this.provider = agent?.provider ?? 'claude';
 
     // Troca de agente (ou a caixa passou a valer/deixou de valer): o conteúdo vem do rascunho guardado.
     const shown = `${key}|${ready}`;
