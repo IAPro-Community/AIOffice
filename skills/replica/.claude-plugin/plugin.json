@@ -1,0 +1,22 @@
+{
+  "name": "replica-skill",
+  "description": "Eleven free Claude skills that clone any app: reverse-engineer it, rebuild it, test it for bugs, then fix what its users hate. Free, MIT.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Jake Schincariol",
+    "url": "https://opusjake.ai"
+  },
+  "homepage": "https://github.com/Jakeschincariol/replica-skill",
+  "repository": "https://github.com/Jakeschincariol/replica-skill",
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "claude-skills",
+    "app-clone",
+    "reverse-engineering",
+    "saas",
+    "indie-hacker",
+    "product"
+  ],
+  "skills": "./"
+}

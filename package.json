@@ -1,0 +1,32 @@
+{
+  "name": "aioffice",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0-beta",
+  "description": "AIOffice - Virtual AI Office & Studio unindo Orquestrador-Maestro, OpenOrq, Habblaud, oh-my-pi e replica-skill",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "tsc --build && npm --prefix apps/office-web run build",
+    "build:packages": "tsc --build",
+    "build:office": "npm --prefix apps/office-web run build",
+    "typecheck": "tsc --build",
+    "clean": "tsc --build --clean",
+    "test": "node --experimental-strip-types --test \"packages/*/test/*.test.ts\" \"apps/office-cli/test/*.test.ts\"",
+    "start": "node apps/office-cli/dist/cli.js",
+    "start:office": "node apps/office-web/dist/server/index.js",
+    "setup": "npm install && npm --prefix apps/office-web install && npm run build",
+    "update:habblaud": "node scripts/update-habblaud.mjs",
+    "verify": "npm run build && npm test"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "typescript": "^5.7.3"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "@aioffice/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/cli.js",
+  "types": "dist/cli.d.ts",
+  "bin": {
+    "aioffice": "dist/cli.js"
+  },
+  "dependencies": {
+    "@aioffice/maestro-contract": "^0.1.0",
+    "@aioffice/policy-broker": "^0.1.0",
+    "@aioffice/rpc-proxy": "^0.1.0",
+    "@aioffice/credential-store": "^0.1.0",
+    "@aioffice/habblaud-bridge": "^0.1.0",
+    "@aioffice/runtime": "^0.1.0"
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "clean": "tsc --build --clean",
+    "start": "node dist/cli.js"
+  }
+}

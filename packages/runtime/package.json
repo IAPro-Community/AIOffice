@@ -1,0 +1,16 @@
+{
+  "name": "@aioffice/runtime",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "dependencies": {
+    "@aioffice/policy-broker": "^0.1.0",
+    "@aioffice/rpc-proxy": "^0.1.0",
+    "@aioffice/habblaud-bridge": "^0.1.0"
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "clean": "tsc --build --clean"
+  }
+}

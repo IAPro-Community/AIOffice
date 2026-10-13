@@ -1,0 +1,12 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/maestro-contract" },
+    { "path": "packages/policy-broker" },
+    { "path": "packages/rpc-proxy" },
+    { "path": "packages/credential-store" },
+    { "path": "packages/runtime" },
+    { "path": "packages/habblaud-bridge" },
+    { "path": "apps/office-cli" }
+  ]
+}

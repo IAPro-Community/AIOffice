@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "references": [
+    { "path": "../../packages/maestro-contract" },
+    { "path": "../../packages/policy-broker" },
+    { "path": "../../packages/rpc-proxy" },
+    { "path": "../../packages/credential-store" },
+    { "path": "../../packages/habblaud-bridge" },
+    { "path": "../../packages/runtime" }
+  ],
+  "include": ["src/**/*"]
+}
