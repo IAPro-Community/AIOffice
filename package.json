@@ -1,5 +1,6 @@
 {
   "name": "aioffice",
+  "desktopName": "aioffice",
   "main": "apps/office-desktop/main.mjs",
   "private": true,
   "type": "module",

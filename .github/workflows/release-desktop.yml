@@ -19,11 +19,11 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.ref }}
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
@@ -61,10 +61,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.ref }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
@@ -159,7 +159,10 @@ jobs:
         run: test -s dist/installers/AIOffice-Setup-macOS-x64.dmg && test -s dist/installers/AIOffice-Setup-macOS-x64.zip
       - name: Validate Linux assets
         if: matrix.id == 'linux-x64'
-        run: test -s dist/installers/AIOffice-Setup-Linux-x64.AppImage && test -s dist/installers/AIOffice-Setup-Linux-x64.deb
+        run: |
+          ls -lh dist/installers
+          test -s dist/installers/AIOffice-Setup-Linux-x64.AppImage
+          test -s dist/installers/AIOffice-Setup-Linux-x64.deb
 
       - name: Upload Windows assets
         if: matrix.id == 'windows-x64'
@@ -205,10 +208,10 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.ref }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
       - uses: actions/download-artifact@v4

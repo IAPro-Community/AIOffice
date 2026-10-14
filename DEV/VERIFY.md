@@ -1,5 +1,15 @@
 # VERIFY — AIOffice
 
+## Matriz nativa v2.3.0 — primeira validação manual, 2026-10-14
+
+| Verificação | Resultado |
+|---|---|
+| `npm run desktop:verify` local | Aprovado: typechecks, build, 22 testes monorepo, 1.257 testes web (10 ignorados), 16 testes desktop e verificações de sintaxe. |
+| Instalador Windows local | `AIOffice-Setup.exe`, versão 2.3.0, 118.453.440 bytes, SHA-256 `65622CD3AD4F2B39BD6431BD3B0CD5E05A872009EFEBD59C106C4A3F0269F1E2`, assinatura `NotSigned`. |
+| Workflow manual `38653090528` | Verificação completa e empacotamento/validação Windows x64, macOS Intel e macOS arm64 aprovados. |
+| Linux x64 | AppImage e `.deb` foram compilados, mas o gate detectou que a ferramenta emitia nomes `...x86_64.AppImage` e `...amd64.deb`, diferentes dos aliases estáveis documentados. |
+| Publicação | Não houve tag nem release. Configuração Linux corrigida para nomes explícitos x64; repetir matriz antes de `v2.3.0`. |
+
 ## Publicação v2.2.1 e correção de detecção no Windows — 2026-10-14
 
 | Verificação | Resultado |

@@ -116,11 +116,12 @@ module.exports = {
   },
   linux: {
     target: ['AppImage', 'deb'],
-    artifactName: 'AIOffice-Setup-Linux-${arch}.${ext}',
+    artifactName: 'AIOffice-Setup-Linux-x64.${ext}',
     category: 'Office',
     executableName: 'aioffice',
     icon: 'apps/office-web/client/public/assets/brand/icon-512.png',
     maintainer: 'IAPro-Community',
+    syncDesktopName: true,
     desktop: { entry: { StartupWMClass: 'aioffice' } },
   },
 };

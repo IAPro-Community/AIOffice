@@ -1,5 +1,12 @@
 # HANDOFF — AIOffice
 
+## Distribuição nativa v2.3.0 — validação em andamento, 2026-10-14
+
+- A release atual continua sendo `v2.2.1`, apenas Windows x64. Não houve tag nem publicação `v2.3.0`.
+- A primeira CI manual `38653090528` aprovou o gate completo, Windows x64 e macOS Intel/Apple silicon. Linux compilou AppImage e `.deb`, mas a etapa de validação detectou os nomes gerados com convenções `x86_64`/`amd64`.
+- Os aliases do Linux foram fixados explicitamente em x64. Reexecute a matriz completa antes de criar a tag; a pipeline publica apenas quando todos os runners e manifestos passam.
+- Os builds macOS estão sem assinatura Apple (não há segredos configurados); o Gatekeeper pode exigir abertura manual e o updater macOS fica desabilitado até assinatura/notarização.
+
 ## Publicação AIOffice v2.2.1 — concluída, 2026-10-14
 
 - A tag/release `v2.2.1` foi criada a partir do commit `3ac5d2e` em `main`; este commit registra a publicação em https://github.com/IAPro-Community/AIOffice/releases/tag/v2.2.1.

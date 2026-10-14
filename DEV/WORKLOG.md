@@ -1,5 +1,11 @@
 # WORKLOG — AIOffice
 
+## 2026-10-14 — Distribuição nativa macOS/Linux (v2.3.0)
+- **Mudança**: matriz de release adiciona macOS Intel/Apple silicon e Linux x64, manifestos para updater, downloads estáveis no README e assinatura Apple opcional.
+- **Verificação**: `npm run desktop:verify` aprovado localmente; instalador Windows x64 2.3.0 empacotado localmente (118.453.440 bytes, SHA-256 `65622CD3AD4F2B39BD6431BD3B0CD5E05A872009EFEBD59C106C4A3F0269F1E2`, `NotSigned`). CI manual `38653090528`: verificação, Windows e os dois builds macOS passaram. Build Linux produziu os pacotes, mas a checagem expôs os nomes nativos `x86_64.AppImage` e `amd64.deb` em vez dos aliases x64 do README.
+- **Correção**: usar nome de asset x64 explícito para ambos os formatos Linux e definir `desktopName=aioffice` com sincronização do arquivo `.desktop`, alinhando launcher e WM_CLASS.
+- **Estado**: nenhuma tag/release `v2.3.0` foi criada; republicar CI manual para conferir o alias Linux antes de publicar.
+
 ## 2026-10-14 — Atualizador Windows pela release oficial do GitHub
 - **Mudança**: o Electron consulta releases estáveis da API GitHub, valida `AIOffice-Setup.exe` pelo tamanho e SHA-256, baixa pela URL específica da tag e abre o instalador interativo após confirmações. A seção **Sobre** recebe estado/progresso por IPC e não recarrega a página. O workflow publica um asset estável Windows x64; assinatura Authenticode tornou-se opcional.
 - **Correção adicional**: corrigi `AgentStats.cost` para o campo compartilhado correto `costUSD`, o que removia uma falha de typecheck na fonte OMP; acrescentei a expectativa correspondente no teste existente.
