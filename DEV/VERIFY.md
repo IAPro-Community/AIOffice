@@ -10,6 +10,15 @@
 | Linux x64 | AppImage e `.deb` foram compilados, mas o gate detectou que a ferramenta emitia nomes `...x86_64.AppImage` e `...amd64.deb`, diferentes dos aliases estáveis documentados. |
 | Publicação | Não houve tag nem release. Configuração Linux corrigida para nomes explícitos x64; repetir matriz antes de `v2.3.0`. |
 
+## Matriz nativa v2.3.0 — builds aprovados, montagem final pendente, 2026-10-14
+
+| Verificação | Resultado |
+|---|---|
+| Workflow manual `38653586066` | Gate completo e pacotes Windows x64, macOS Intel/arm64 e Linux x64 passaram. Actions de artifacts ainda emitiram aviso de runtime Node 20. |
+| Workflow manual `38654072400` | Gate completo e os quatro pacotes passaram novamente. `checkout`/`setup-node` v5 e `upload/download-artifact` v7 usam Node 24; não houve warning de runtime Node 20. |
+| Nomes/saída Linux | O log confirmou nomes estáveis `AIOffice-Setup-Linux-x64.AppImage` e `.deb`; associação de launcher sincronizada com `desktopName=aioffice`. |
+| Publicação | Essas execuções foram disparadas por `workflow_dispatch`; nenhuma tag/release foi criada. Workflow ajustado para também exercitar download dos quatro artifacts, criação dos dois manifestos, notes e conjunto de nove arquivos no próximo preflight manual; `gh release create` só roda para tags. |
+
 ## Publicação v2.2.1 e correção de detecção no Windows — 2026-10-14
 
 | Verificação | Resultado |

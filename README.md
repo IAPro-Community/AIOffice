@@ -31,7 +31,7 @@ Estes links sempre apontam para a **última release publicada**. Uma mudança no
 | Linux x64 | AppImage portátil | [Baixar AIOffice-Setup-Linux-x64.AppImage](https://github.com/IAPro-Community/AIOffice/releases/latest/download/AIOffice-Setup-Linux-x64.AppImage) |
 | Linux x64 | Pacote Debian/Ubuntu `.deb` | [Baixar AIOffice-Setup-Linux-x64.deb](https://github.com/IAPro-Community/AIOffice/releases/latest/download/AIOffice-Setup-Linux-x64.deb) |
 
-Os instaladores macOS desta release não têm assinatura Apple configurada. O Gatekeeper pode impedir a primeira abertura; siga o procedimento de abertura manual do macOS. O atualizador automático do macOS só é habilitado em builds assinadas e notarizadas. No Linux, a atualização em segundo plano é compatível com o AppImage; o `.deb` é atualizado pelo gerenciador de pacotes. No Windows, o app consulta releases em background, sem recarregar a página, e valida o instalador pelo SHA-256 publicado pelo GitHub antes de pedir confirmação para instalá-lo. O instalador Windows ainda pode exibir SmartScreen enquanto não houver certificado Authenticode.
+Os instaladores macOS desta release não têm assinatura Apple configurada. Para instalar, abra o `.dmg` e arraste **AIOffice** para **Aplicativos**. Se o Gatekeeper bloquear o primeiro início, abra o app uma vez, vá a **Ajustes do Sistema → Privacidade e Segurança → Segurança → Abrir Mesmo Assim** e confirme somente se o arquivo foi baixado diretamente desta release oficial. O atualizador automático do macOS só é habilitado em builds assinadas e notarizadas. No Linux, a atualização em segundo plano é compatível com o AppImage; o `.deb` é atualizado pelo gerenciador de pacotes. No Windows, o app consulta releases em background, sem recarregar a página, e valida o instalador pelo SHA-256 publicado pelo GitHub antes de pedir confirmação para instalá-lo. O instalador Windows ainda pode exibir SmartScreen enquanto não houver certificado Authenticode.
 
 O desktop inclui o runtime Node e inicia o servidor e a interface local. Claude Code, Codex e oh-my-pi são ferramentas separadas: instale e autentique cada uma conforme seu próprio fluxo. AIOffice identifica disponibilidade local; não cria nem valida suas contas nesses provedores.
 
@@ -56,7 +56,7 @@ Escolha paleta, cenário, calendário de datas comemorativas, horários e idioma
 
 ### Usar o aplicativo desktop
 
-Baixe o pacote correspondente ao seu sistema na tabela acima e abra **AIOffice**. O aplicativo sobe a interface local em `http://127.0.0.1:4747` automaticamente. O instalador inclui o runtime necessário; não precisa instalar Node.js para executar o desktop. No macOS, escolha `arm64` para Apple silicon e `x64` para Intel. No Linux, o AppImage é portátil; o `.deb` integra com Debian e Ubuntu.
+Baixe o pacote correspondente ao seu sistema na tabela acima e abra **AIOffice**. O aplicativo sobe a interface local em `http://127.0.0.1:4747` automaticamente. O instalador inclui o runtime necessário; não precisa instalar Node.js para executar o desktop. No macOS, escolha `arm64` para Apple silicon e `x64` para Intel; abra o `.dmg` e arraste o app para **Aplicativos**. No Linux, marque o AppImage como executável (`chmod +x AIOffice-Setup-Linux-x64.AppImage`) e abra-o; o `.deb` pode ser instalado por um gerenciador de pacotes Debian/Ubuntu.
 
 ### Executar pelo código-fonte
 

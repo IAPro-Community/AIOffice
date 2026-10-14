@@ -4,7 +4,8 @@
 
 - A release atual continua sendo `v2.2.1`, apenas Windows x64. Não houve tag nem publicação `v2.3.0`.
 - A primeira CI manual `38653090528` aprovou o gate completo, Windows x64 e macOS Intel/Apple silicon. Linux compilou AppImage e `.deb`, mas a etapa de validação detectou os nomes gerados com convenções `x86_64`/`amd64`.
-- Os aliases do Linux foram fixados explicitamente em x64. Reexecute a matriz completa antes de criar a tag; a pipeline publica apenas quando todos os runners e manifestos passam.
+- Os aliases do Linux foram fixados explicitamente em x64. A matriz `38653586066` aprovou os quatro empacotamentos. A execução `38654072400` aprovou de novo o gate e os quatro empacotamentos com actions Node 24. Falta validar em um run manual a montagem dos nove assets e os manifestos antes de criar a tag.
+- O workflow agora também monta/valida os assets em `workflow_dispatch`; a etapa que cria uma release só roda após push de tag estável. A release automática continua condicionada a todos os runners e manifestos passarem.
 - Os builds macOS estão sem assinatura Apple (não há segredos configurados); o Gatekeeper pode exigir abertura manual e o updater macOS fica desabilitado até assinatura/notarização.
 
 ## Publicação AIOffice v2.2.1 — concluída, 2026-10-14
