@@ -3,18 +3,16 @@
 All notable changes to AIOffice will be documented in this file.
 
 ## [Não lançado]
-### Corrigido
-- **Atividades e linha do tempo do OMP (oh-my-pi):** remoção do flood repetitivo de eventos genéricos ("bash", "bash terminou", "read", "read terminou"). As ferramentas do OMP (`bash`, `read`, `write`, `edit`, `glob`, `grep`, `task`, `todo`, `eval`, `web_search`, `ask`) agora são descritas detalhadamente em português com ícones próprios, correspondendo ao comportamento de agentes Claude Code e Codex. Chamadas de ferramentas, tokens de entrada/saída, custos e modelo agora alimentam corretamente as estatísticas e linha do tempo do agente.
-
+Nenhuma mudança registrada.
 
 ## [v2.2.0] - 2026-10-14
 
 ### Adicionado
 - **Acesso pelo celular com código de uso único:** Quick Tunnel da Cloudflare com ações locais para iniciar/parar, link copiável e QR gerado no navegador. O painel emite um código alfanumérico de seis caracteres, válido por cinco minutos e um login; ele não aparece no link nem no QR. O túnel não inicia automaticamente e `cloudflared` é instalado pelo operador.
 - **Gestão de sessões móveis:** o painel local lista navegador/plataforma aproximados, horário de entrada, última atividade e validade; é possível revogar um dispositivo individualmente. Registros são efêmeros, duram até 12 horas e não guardam IP nem User-Agent bruto.
-- **Aplicativo desktop para Windows, macOS e Linux:** serviços locais supervisionados, dados em `userData`, migração não destrutiva de configurações legadas, instaladores nativos e canal de atualização estável.
+- **Aplicativo desktop Electron:** serviços locais supervisionados, dados em `userData`, migração não destrutiva de configurações legadas e fluxo de atualização estável no Windows. Esta release publica o instalador Windows x64; instaladores macOS/Linux ainda não estão publicados.
 - **Orquestrador-Maestro pelo NPM:** instalação e verificação do pacote oficial na inicialização, consulta de versões e atualização iniciada pela pessoa na interface. O Docker prepara a camada central em volume persistente.
-- **Pipeline de release desktop:** workflow por tag valida código e artefatos nos runners Windows, macOS e Linux; exige assinatura/notarização nas plataformas correspondentes antes de publicar os instaladores e metadados.
+- **Pipeline de release desktop:** workflow por tag valida o código e compila o instalador Windows x64, publicando um único asset `AIOffice-Setup.exe`. O SHA-256 do GitHub é validado pelo atualizador. Authenticode é opcional; instalações sem assinatura podem exibir o aviso do SmartScreen.
 - Instalação/verificação opcional de `habblaud-mensagens` nas contas Claude Code detectadas, controlada por `HABBLAUD_MENSAGENS`.
 - Comando `npm run release` para validar e pré-visualizar as notas antes da publicação explícita.
 
@@ -26,6 +24,7 @@ All notable changes to AIOffice will be documented in this file.
 ### Corrigido
 - O handshake do processo Electron agora libera a janela após o health check; falhas de renderer, versão divergente e conflito de porta recebem diagnóstico acionável.
 - QR do Quick Tunnel é gerado localmente, sem enviar a URL a um serviço externo. Códigos temporários e sessões são invalidados ao parar o túnel ou reiniciar o servidor.
+- **Atividades e linha do tempo do OMP (oh-my-pi):** removida a repetição excessiva de eventos genéricos ("bash", "bash terminou", "read", "read terminou"). As ferramentas do OMP (`bash`, `read`, `write`, `edit`, `glob`, `grep`, `task`, `todo`, `eval`, `web_search`, `ask`) agora são descritas detalhadamente em português com ícones próprios. Chamadas de ferramentas, tokens de entrada/saída, custos e modelo alimentam corretamente as estatísticas e a linha do tempo do agente.
 
 ### Segurança
 - O código de acesso existe em memória somente como hash, não é persistido nem aparece em URL, QR ou logs. Listagem e revogação de sessões aceitam somente acesso local; a lista não armazena IP nem User-Agent bruto.
