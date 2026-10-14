@@ -9,6 +9,7 @@ import type {
   AgentStats,
   AgentStatus,
   FeedItem,
+  MaestroUpdateStatus,
   Notice,
   NoticeLevel,
   OfficeSnapshot,
@@ -76,6 +77,8 @@ export interface OfficeDeps {
   messages?: () => ReadonlySet<string>;
   /** Verificação de versão nova no GitHub (ver OfficeSnapshot.meta.updates). */
   updates?: () => UpdateStatus;
+  /** Instalação NPM do Orquestrador-Maestro (ver OfficeSnapshot.meta.maestro). */
+  maestro?: () => MaestroUpdateStatus;
   /** Listener HTTPS separado para acesso por celular (sem expor credenciais). */
   remoteAccess?: () => RemoteAccessStatus;
   /** Terminais interativos (PtyManager): estado do recurso e os abertos. */
@@ -1003,6 +1006,7 @@ export class Office {
         messages: this.deps.messages !== undefined,
         ...(ptys ? { pty: ptys.status } : {}),
         updates: this.deps.updates?.(),
+        maestro: this.deps.maestro?.(),
         remoteAccess: this.deps.remoteAccess?.(),
       },
     };

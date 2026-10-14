@@ -423,7 +423,8 @@ async function main(): Promise<void> {
   process.exitCode = run(parsed, { env: process.env, home, now: new Date(), tapPath: TAP_SCRIPT, out: (l) => console.log(l) });
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+const invokedScript = process.argv[1]?.replaceAll('\\', '/').split('/').at(-1);
+if (invokedScript === 'statusline-install.ts' && process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   main().catch((err: unknown) => {
     console.error(err instanceof FatalError ? tr('[usage] Erro: {0}', [err.message]) : tr('[usage] Erro inesperado: {0}', [String(err)]));
     process.exitCode = 1;

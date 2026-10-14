@@ -50,6 +50,7 @@
   "devDependencies": {
     "@fontsource/pixelify-sans": "^5.3.0",
     "@types/node": "^22.20.5",
+    "@types/qrcode": "^1.5.6",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
     "esbuild": "^0.28.2",
@@ -65,6 +66,7 @@
     "node-pty": "^1.1.0"
   },
   "dependencies": {
-    "aioffice": "file:../.."
+    "aioffice": "file:../..",
+    "qrcode": "^1.5.4"
   }
 }

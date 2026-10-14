@@ -45,6 +45,8 @@ export interface ServerConfig {
   timeline: boolean;
   /** Raiz do projeto (onde fica o package.json); serve dist/client a partir daqui. */
   rootDir: string;
+  /** Arquivo persistente de ambiente. No desktop fica em userData, fora do app bundle. */
+  envFile: string;
   version: string;
   /** Repositório no GitHub ("dono/nome", do campo `repository` do package.json) onde saem as versões novas. */
   repo?: string;
@@ -52,7 +54,7 @@ export interface ServerConfig {
   updateCheck: boolean;
   /** Observa as sessões do Codex (sources/codex/); HABBLAUD_CODEX=0 desliga. */
   codex: boolean;
-  /** Porta HTTPS autenticada para acesso pela LAN/VPN; ausente por padrão. */
+  /** Porta HTTPS autenticada, ligada ao loopback e publicada somente pelo Quick Tunnel ativo. */
   remote?: RemoteConfig;
   /** Flag persistida; instalações antigas sem flag continuam ativas quando configuradas. */
   remoteEnabled?: boolean;
@@ -182,6 +184,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, argv: string[] 
     messages: messagesOffReason(env, host, inDocker) === undefined,
     timeline: !env.HABBLAUD_TIMELINE?.trim() || isTruthy(env.HABBLAUD_TIMELINE),
     rootDir,
+    envFile: resolve(env.HABBLAUD_ENV_FILE?.trim() || join(rootDir, '.env')),
     version: pkg.version,
     repo: pkg.repo,
     updateCheck: !env.HABBLAUD_UPDATE_CHECK?.trim() || isTruthy(env.HABBLAUD_UPDATE_CHECK),

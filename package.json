@@ -1,8 +1,9 @@
 {
   "name": "aioffice",
+  "main": "apps/office-desktop/main.mjs",
   "private": true,
   "type": "module",
-  "version": "2.0.0",
+  "version": "2.2.0",
   "description": "AIOffice - Virtual AI Office & Studio unindo Orquestrador-Maestro, OpenOrq, Habblaud, oh-my-pi e replica-skill",
   "license": "MIT",
   "repository": {
@@ -21,14 +22,25 @@
     "build": "tsc --build && npm --prefix apps/office-web run build",
     "build:packages": "tsc --build",
     "build:office": "npm --prefix apps/office-web run build",
+    "desktop:dev": "npm run build:office && electron .",
+    "desktop:build": "npm run build:office && electron-builder --config apps/office-desktop/electron-builder.config.cjs --dir --publish never",
+    "desktop:package": "npm run build:office && electron-builder --config apps/office-desktop/electron-builder.config.cjs --publish never",
+    "desktop:package:win": "npm run build:office && electron-builder --config apps/office-desktop/electron-builder.config.cjs --win nsis --x64 --publish never",
+    "desktop:package:mac": "npm run build:office && electron-builder --config apps/office-desktop/electron-builder.config.cjs --mac dmg zip --publish never",
+    "desktop:package:linux": "npm run build:office && electron-builder --config apps/office-desktop/electron-builder.config.cjs --linux AppImage deb --x64 --publish never",
+    "desktop:test": "node --test apps/office-desktop/test/*.test.mjs",
+    "desktop:doctor": "node apps/office-desktop/doctor.mjs",
+    "desktop:verify": "npm run typecheck && npm --prefix apps/office-web run typecheck && npm run build && npm test && npm --prefix apps/office-web run i18n:check && npm --prefix apps/office-web run test -- --testTimeout=15000 && npm run desktop:test && node --check apps/office-desktop/main.mjs && node --check apps/office-desktop/service.mjs && node --check apps/office-desktop/preload.cjs && node --check scripts/release-aioffice.mjs",
     "typecheck": "tsc --build",
     "clean": "tsc --build --clean",
     "test": "node --experimental-strip-types --test \"packages/*/test/*.test.ts\" \"apps/office-cli/test/*.test.ts\"",
+    "prestart": "node apps/office-web/scripts/maestro.mjs ensure",
     "start": "node apps/office-cli/dist/cli.js",
     "start:office": "node apps/office-web/scripts/start-managed.mjs",
+    "dev": "start \"AIOffice Dev\" /B cmd /c \"cd apps/office-web && npm run dev\" && start http://localhost:4747",
     "remote:setup": "npm --prefix apps/office-web run remote:setup --",
     "remote:off": "npm --prefix apps/office-web run remote:setup -- --off",
-    "setup": "npm install && npm --prefix apps/office-web install && npm run build",
+    "setup": "npm install && npm --prefix apps/office-web install && node apps/office-web/scripts/maestro.mjs ensure && npm run build",
     "check:habblaud-upstream": "node scripts/check-habblaud-upstream.mjs",
     "release": "node scripts/release-aioffice.mjs",
     "install:mcp": "node scripts/install-mcp-bridges.mjs",
@@ -36,6 +48,12 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.5",
+    "electron": "^44.7.2",
+    "electron-builder": "^26.15.3",
     "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9",
+    "node-pty": "^1.1.0"
   }
 }

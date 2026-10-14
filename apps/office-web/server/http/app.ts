@@ -1,7 +1,7 @@
 // Rotas da API (/api/*). Respostas JSON; rotas desconhecidas -> 404 JSON.
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { NAME_MAX, parseAppearanceParts, parseCharacterName, parseSeed } from '../../shared/appearance';
-import type { AgentInfo, AgentStatus, ModSummary, OfficeSnapshot, RemoteAccessStatus, SourceInfo, UpdateInstallationStatus, UpdateStatus } from '../../shared/types';
+import type { AgentInfo, AgentStatus, MaestroUpdateStatus, ModSummary, OfficeSnapshot, RemoteAccessStatus, SourceInfo, UpdateInstallationStatus, UpdateStatus } from '../../shared/types';
 import type { AccountsService } from '../accounts/service';
 import { handleCodexEvent } from '../codex/http';
 import type { DayStatsService } from '../history/daystats';
@@ -10,7 +10,7 @@ import type { CodexLive } from '../sources/codex/live';
 import { RemoteAccessError } from '../remote/runtime';
 import type { SessionLookup } from '../sources/source';
 import { isJsonContentType, isLoopbackHost } from './guard';
-import { isRemoteRequest, safeEqual } from './remote';
+import { isRemoteRequest, safeEqual, type RemoteSessionInfo } from './remote';
 import { handleSessionsRoute } from './sessions';
 import type { Hub } from './sse';
 import { handleStatsRoute } from './stats';
@@ -68,6 +68,13 @@ export interface ApiDeps {
     /** Instala somente a release oficial solicitada; o gerenciador valida origem, árvore e rollback. */
     install?: (target: string) => Promise<UpdateInstallationStatus>;
   };
+  /** Pacote NPM oficial do Orquestrador-Maestro e sua camada compartilhada. */
+  maestro?: {
+    status(): MaestroUpdateStatus;
+    check(opts: { manual?: boolean }): Promise<MaestroUpdateStatus>;
+    install(): MaestroUpdateStatus;
+    update(target: string): MaestroUpdateStatus;
+  };
   /** Valores efêmeros e ações usados somente pelo worker local de atualização. */
   updateNonce?: () => string | undefined;
   updateShutdownStarted?: () => boolean;
@@ -78,10 +85,12 @@ export interface ApiDeps {
   /** Conta e ciclo da porta HTTPS, controlados apenas pelo navegador local. */
   remoteAccess?: {
     status(): RemoteAccessStatus;
-    configure(user: unknown, password: unknown): Promise<RemoteAccessStatus>;
+    configure(): Promise<RemoteAccessStatus>;
     start(): Promise<RemoteAccessStatus>;
     stop(): Promise<RemoteAccessStatus>;
-    ca(): string | undefined;
+    generateCode(): Promise<{ code: string; expiresAt: number }>;
+    listSessions(): RemoteSessionInfo[];
+    revokeSession(id: string): boolean;
   };
 }
 
@@ -274,28 +283,45 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
         sendJson(res, 503, { error: 'Gerenciamento de acesso remoto indisponível.' });
         return true;
       }
-      if (path === '/api/remote-access/status' || path === '/api/remote-access/ca') {
+      if (path === '/api/remote-access/status') {
         req.resume();
         if (method !== 'GET') methodNotAllowed(res, 'GET');
-        else if (path.endsWith('/status')) sendJson(res, 200, { remoteAccess: access.status() });
-        else {
-          const ca = access.ca();
-          if (!ca) sendJson(res, 404, { error: 'A CA pública ainda não está disponível. Configure o acesso primeiro.' });
-          else {
-            res.writeHead(200, {
-              'Content-Type': 'application/x-x509-ca-cert',
-              'Content-Disposition': 'attachment; filename="aioffice-ca.crt"',
-              'Content-Length': Buffer.byteLength(ca),
-              'Cache-Control': 'no-store',
-              'X-Content-Type-Options': 'nosniff',
-              'Cross-Origin-Resource-Policy': 'same-origin',
-            });
-            res.end(ca);
-          }
+        else sendJson(res, 200, { remoteAccess: access.status() });
+        return true;
+      }
+      const revokeSession = /^\/api\/remote-access\/sessions\/([^/]+)\/revoke$/.exec(path);
+      if (path === '/api/remote-access/sessions' || revokeSession) {
+        const listing = path === '/api/remote-access/sessions';
+        const origin = req.headers.origin;
+        if (
+          (origin !== undefined && origin !== `http://${req.headers.host}`) ||
+          (!listing && origin === undefined) ||
+          req.headers['sec-fetch-site'] === 'cross-site'
+        ) {
+          req.resume();
+          sendJson(res, 403, { error: 'Origem não permitida. Abra o AIOffice pelo navegador neste computador.' });
+        } else if (listing) {
+          req.resume();
+          if (method !== 'GET') methodNotAllowed(res, 'GET');
+          else sendJson(res, 200, { sessions: access.listSessions() });
+        } else if (method !== 'POST') {
+          req.resume();
+          methodNotAllowed(res, 'POST');
+        } else {
+          readJson(req, true).then((body) => {
+            if (typeof body !== 'object' || body === null || Array.isArray(body) || Object.keys(body).length !== 0) {
+              throw new HttpError(400, 'Envie um objeto JSON vazio.');
+            }
+            const id = revokeSession![1];
+            if (!/^[A-Za-z0-9_-]{32}$/.test(id) || !access.revokeSession(id)) {
+              throw new HttpError(404, 'Sessão de acesso remoto não encontrada.');
+            }
+            sendJson(res, 200, { ok: true });
+          }).catch((err) => fail(res, err));
         }
         return true;
       }
-      if (!['/api/remote-access/configure', '/api/remote-access/start', '/api/remote-access/stop'].includes(path)) {
+      if (!['/api/remote-access/configure', '/api/remote-access/start', '/api/remote-access/stop', '/api/remote-access/code'].includes(path)) {
         req.resume();
         sendJson(res, 404, { error: tr('rota desconhecida') });
       } else if (method !== 'POST') {
@@ -310,8 +336,12 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
       } else {
         readJson(req, true).then(async (body) => {
           if (typeof body !== 'object' || body === null || Array.isArray(body)) throw new HttpError(400, 'Envie um objeto JSON.');
-          const fields = body as Record<string, unknown>;
-          const status = path.endsWith('/configure') ? await access.configure(fields.user, fields.password)
+          if (path.endsWith('/code')) {
+            const loginCode = await access.generateCode();
+            sendJson(res, 200, { loginCode });
+            return;
+          }
+          const status = path.endsWith('/configure') ? await access.configure()
             : path.endsWith('/start') ? await access.start() : await access.stop();
           sendJson(res, 200, { remoteAccess: status });
         }).catch((error: unknown) => {
@@ -331,6 +361,11 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
     if (path === '/api/snapshot') {
       if (!isRead) methodNotAllowed(res, 'GET');
       else sendJson(res, 200, hub.current());
+      return true;
+    }
+    if (path === '/api/poll') {
+      if (!isRead) methodNotAllowed(res, 'GET');
+      else sendJson(res, 200, { snapshot: hub.current(), feed: office.recentFeed(50) });
       return true;
     }
     if (path === '/api/health') {
@@ -708,6 +743,50 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
             .check({ manual: true })
             .then((status) => sendJson(res, 200, { version: deps.version, ...status }))
             .catch((err) => fail(res, err));
+      }
+      return true;
+    }
+    if (path === '/api/maestro') {
+      if (!isRead) methodNotAllowed(res, 'GET');
+      else if (!deps.maestro) sendJson(res, 503, { error: tr('O gerenciador do Orquestrador-Maestro não está disponível.') });
+      else sendJson(res, 200, deps.maestro.status());
+      return true;
+    }
+    if (path === '/api/maestro/check' || path === '/api/maestro/install' || path === '/api/maestro/update') {
+      const action = path.slice('/api/maestro/'.length);
+      if (method !== 'POST') methodNotAllowed(res, 'POST');
+      else if (
+        isRemoteRequest(req) ||
+        !isLoopbackHost(req.headers.host) ||
+        (!deps.inDocker && !isLoopbackAddress(req.socket.remoteAddress)) ||
+        req.headers.origin !== `http://${req.headers.host}`
+      ) {
+        sendJson(res, 403, { error: tr('Instalação e atualização do Orquestrador-Maestro só podem ser controladas pelo próprio computador.') });
+      } else if (!deps.maestro) {
+        sendJson(res, 503, { error: tr('O gerenciador do Orquestrador-Maestro não está disponível.') });
+      } else if (action === 'check') {
+        readJson(req)
+          .then(() => deps.maestro!.check({ manual: true }))
+          .then((status) => sendJson(res, 200, status))
+          .catch((err) => fail(res, err));
+      } else if (action === 'install') {
+        readJson(req)
+          .then(() => {
+            const status = deps.maestro!.install();
+            sendJson(res, status.state === 'blocked' ? 409 : 202, status);
+          })
+          .catch((err) => fail(res, err));
+      } else {
+        readJson(req)
+          .then((body) => {
+            const target = (body as { version?: unknown } | null)?.version;
+            if (typeof target !== 'string' || !/^\d{1,6}\.\d{1,6}\.\d{1,6}(?:-[0-9A-Za-z.-]{1,40})?$/.test(target)) {
+              throw new HttpError(400, tr('Informe a versão do Orquestrador-Maestro publicada no NPM.'));
+            }
+            const status = deps.maestro!.update(target);
+            sendJson(res, status.state === 'blocked' ? 409 : 202, status);
+          })
+          .catch((err) => fail(res, err));
       }
       return true;
     }

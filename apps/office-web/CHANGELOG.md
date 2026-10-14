@@ -11,6 +11,7 @@ do meio (0.**3**.0).
 ## [Não lançado]
 
 ### Corrigido
+- Atividades e linha do tempo de agentes oh-my-pi (OMP) detalhadas em português com ícones adequados (git, leitura/escrita de arquivos, buscas, tarefas, delegação) em vez de mensagens genéricas repetidas ("bash", "bash terminou", "read", "read terminou").
 
 - No timelapse, os avisos do canto ficam acima da barra de reprodução, em vez de cobrir a linha do tempo e os botões.
 - Com muitas contas ou a janela estreita, os cartões de uso vão para uma segunda linha da barra superior, em vez de

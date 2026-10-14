@@ -23,6 +23,7 @@ services:
       - "${HABBLAUD_BIND:-127.0.0.1}:${HABBLAUD_PORT:-4747}:4747"
     volumes:
       - habblaud-data:/data
+      - habblaud-maestro:/maestro
     # Opções que podem vir do .env (ou do ambiente) para dentro do container.
     environment:
       HABBLAUD_ALLOWED_HOSTS: ${HABBLAUD_ALLOWED_HOSTS:-}
@@ -51,3 +52,4 @@ services:
 
 volumes:
   habblaud-data:
+  habblaud-maestro:

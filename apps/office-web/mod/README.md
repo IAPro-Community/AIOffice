@@ -4,6 +4,8 @@ O repositório é também um marketplace de plugins do Claude Code: `.claude-plu
 lista o marketplace `habblaud` com três plugins, um em cada pasta daqui: o mod `habblaud` (só observa),
 `habblaud-permissoes` (responder permissões pelo escritório) e `habblaud-mensagens` (mandar mensagens pelo
 escritório). O `npm run mod:install` instala os três; `--sem-permissoes` e `--sem-mensagens` deixam o seu de fora.
+Quando as mensagens estão habilitadas, o servidor local e `npm run docker:up` também instalam/verificam
+`habblaud-mensagens` automaticamente nas contas Claude Code detectadas.
 As versões acompanham o `package.json` (o teste `server/test/mod.test.ts` falha se divergirem).
 
 Testado com o **Claude Code 2.1.293** (o `habblaud-mensagens`, por enquanto só pelo `claude plugin test` do
@@ -96,9 +98,9 @@ esquema do `hooks.json`).
   depois desses 2 s não chega à página.
 
 Fica separado do mod `habblaud` de propósito: aquele só observa; este age, digitando na sessão em seu nome. Para
-ficar sem ele: `npm run mod:install -- --sem-mensagens` (um já instalado continua; para tirar:
-`claude plugin uninstall habblaud-mensagens@habblaud`). O `npm run docker:up` atualiza o plugin de quem já o tem,
-mas não o instala sozinho: numa conta com o mod e sem ele, só dá a dica de rodar o `npm run mod:install`.
+desligar o recurso e evitar a instalação automática, defina `HABBLAUD_MENSAGENS=0`; para remover o plugin já
+instalado: `claude plugin uninstall habblaud-mensagens@habblaud`. O `npm run mod:install -- --sem-mensagens`
+continua útil para deixar o plugin fora da instalação manual inicial.
 
 ### O que ele acessa
 

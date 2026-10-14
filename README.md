@@ -1,141 +1,140 @@
 # 🏢 AIOffice
 
-> **Virtual AI Software Studio & Office** — Um escritório virtual inteligente local-first que une governança, execução de ferramentas de alta performance, playbook de engenharia reversa e interface visual em pixel art.
+<p align="center"><strong>Seu escritório virtual para Claude Code, Codex e oh-my-pi.</strong><br />Projetos, agentes, tarefas e atividade recente em uma interface pixel art, com governança e segurança no mesmo monorepo.</p>
 
----
+<p align="center">
+  <img alt="Última release" src="https://img.shields.io/github/v/release/IAPro-Community/AIOffice?label=release&color=7357d5" />
+  <img alt="Node.js 22.12+" src="https://img.shields.io/badge/Node.js-22.12%2B-339933?logo=node.js&logoColor=white" />
+  <img alt="Licença MIT" src="https://img.shields.io/github/license/IAPro-Community/AIOffice?color=blue" />
+</p>
 
-## 🎯 Visão Geral
+<p align="center">
+  <a href="https://github.com/IAPro-Community/AIOffice/releases/latest">📦 Releases</a> ·
+  <a href="CHANGELOG.md">📝 Changelog</a> ·
+  <a href="DEV/DESKTOP.md">🖥️ Desktop e distribuição</a> ·
+  <a href="apps/office-web/README.pt-BR.md">🎮 Guia do escritório</a>
+</p>
 
-O **AIOffice** é um monorepo 100% autossuficiente e independente que consolida cinco grandes iniciativas do ecossistema open-source:
+![Visão da sala virtual do AIOffice com projetos e agentes de demonstração](apps/office-web/docs/screenshots/readme-office.png)
 
-1. **Habblaud (Visual Office)**: Interface web em pixel art retro (`http://localhost:4747`) com salas por projeto, baias por especialidade, elevador animado de subagentes e aprovação 1-click.
-2. **OpenOrq (Security & Mediation Core)**: Interceptação canônica de escritas e diffs (`policy-broker`), allowlist RPC B1 para subprocessos (`rpc-proxy`) e cofre de credenciais local BYOK (`credential-store`).
-3. **Orquestrador-Maestro**: Governança explicável, roteamento de intenções, limites de orçamento e rastreabilidade durável com contratos de handoff em `DEV/`.
-4. **oh-my-pi (Runtime Engine)**: Harness de ferramentas ultra-otimizado com edições hashline seguras (`PUT`/`CUT`), suporte a AST/LSP e subagentes isolados em worktrees via ferramenta `task`.
-5. **replica-skill (Playbook de Produto)**: Suíte de 11 skills especializadas para engenharia reversa, clonagem e reconstrução de produtos digitais resolvendo as dores reais dos usuários.
+> Todas as capturas deste README foram feitas com o simulador local do aplicativo. Projetos, agentes, tarefas e contas são fictícios.
 
-### CLIs conectadas ao escritório
+## Downloads
 
-| CLI | Atividade e conversa | Histórico | Mensagens pelo escritório |
+A versão da tabela é a **última release publicada**. O código no repositório pode conter mudanças posteriores; confira os artefatos na página de [releases](https://github.com/IAPro-Community/AIOffice/releases/latest).
+
+| Sistema | Pacote | Download | Disponibilidade |
 |---|---|---|---|
-| Claude Code | Sim | Sim | Sim, com o mod do Habblaud |
-| Codex | Sim | Sim | Sim; no Docker, requer `npm run codex:bridge` no host |
-| oh-my-pi (OMP) | Sim | Sim | Sim, depois de instalar a ponte com `npm --prefix apps/office-web run omp:install` e abrir uma nova sessão |
+| Windows x64 | Instalador `.exe` | [Baixar AIOffice-Setup.exe](https://github.com/IAPro-Community/AIOffice/releases/download/v2.1.0/AIOffice-Setup.exe?nocache=987654321) | `v2.1.0` publicado; o instalador atual não tem assinatura Authenticode. |
+| macOS | `.dmg` / `.zip` | [Ver releases](https://github.com/IAPro-Community/AIOffice/releases/latest) | Ainda sem compilado publicado. |
+| Linux | `.AppImage` / `.deb` | [Ver releases](https://github.com/IAPro-Community/AIOffice/releases/latest) | Ainda sem compilado publicado. |
 
-Devin, Antigravity, OpenCode, Freebuf e Gemini CLI ainda não têm integração de sessões e mensagens de ponta a ponta.
-Uma conexão MCP de IDE ou desktop também não equivale à leitura de uma sessão de CLI.
+Os links de macOS e Linux levam à página oficial para evitar downloads quebrados: os arquivos só estarão disponíveis depois que os respectivos jobs de release forem executados e publicados. O instalador Windows disponível é da `v2.1.0`; mudanças posteriores no repositório ainda não fazem parte desse pacote.
 
----
+O desktop inclui o runtime Node e inicia o servidor e a interface local. Claude Code, Codex e oh-my-pi são ferramentas separadas: instale e autentique cada uma conforme seu próprio fluxo. AIOffice identifica disponibilidade local; não cria nem valida suas contas nesses provedores.
 
-## 🤝 Créditos e Projetos Base (Upstreams)
+## O que você encontra no AIOffice
 
-O AIOffice é construído com base e respeito ao trabalho dos seguintes projetos de código aberto:
+- **Escritório visual:** salas por projeto, agentes em pixel art, subagentes, tarefas, esperas por shell e feed de atividade.
+- **Acompanhamento de sessões:** lê sessões locais de Claude Code, Codex e OMP; integrações e capacidades variam por ferramenta.
+- **Controles pelo escritório:** acompanha pedidos de permissão e permite enviar mensagens conforme a bridge de cada provedor esteja instalada e ativa.
+- **Orquestrador-Maestro:** roteamento de intenções, limites e registro de decisões operacionais em `DEV/`.
+- **OpenOrq:** mediação de escritas, controle de subprocessos e armazenamento local de credenciais BYOK.
+- **Aplicativo desktop:** janela nativa Electron com servidor local integrado, diagnóstico e fluxo de atualização próprio.
 
-| Projeto | Autor / Comunidade | Licença | O que fornece ao AIOffice |
-|---|---|---|---|
-| [**Habblaud**](https://github.com/marmottajr/habblaud) | [Márcio Junior](https://github.com/marmottajr) | **MIT** | Toda a interface visual do escritório pixel-art, renderização de avatares, salas de projetos, balões de status, animação do elevador e servidor SSE/WebSocket em tempo real. |
-| [**OpenOrq**](https://github.com/IAPro-Community/Orquestrador-Maestro) | Comunidade OpenOrq / Fernando Bolzan | **MIT** | Núcleo de governança de segurança: `policy-broker` (mediação de escritas), `rpc-proxy` (gate B1 de subprocessos), `credential-store` (criptografia local DPAPI BYOK) e arquitetura de adaptação de runtime. |
-| [**Orquestrador-Maestro**](https://github.com/IAPro-Community/Orquestrador-Maestro) | [IAPro-Community](https://github.com/IAPro-Community) | **Apache-2.0** | A inteligência de orquestração: constituição (`rules.md`, `maestro.md`, `PERSISTENCE.md`), router de skills explicável, limites orçamentários e padrão de evidências em `DEV/`. |
-| [**oh-my-pi (omp)**](https://github.com/can1357/oh-my-pi) | [can1357](https://github.com/can1357) / Stencil Labs (fork do Pi por [Mario Zechner](https://github.com/mariozechner)) | **MIT** | O motor de runtime de alta performance: sistema de edição hashline (`PUT`/`CUT`), ferramentas de AST/LSP e arquitetura de subagentes paralelos via ferramenta `task`. |
-| [**replica-skill**](https://github.com/Jakeschincariol/replica-skill) | [Jakeschincariol](https://github.com/Jakeschincariol) | **MIT** | As 11 skills de metodologia de produto e engenharia reversa (`replica-recon`, `replica-entrepreneur`, `replica-brand`, `replica-design`, `replica-build`, `replica-test`, `replica-fix`, `replica-deploy`, etc.). |
+![Detalhes de um agente, tarefas, shells e atividade recente](apps/office-web/docs/screenshots/readme-agent.png)
 
----
+### Configurações e temas
 
-## 📁 Estrutura do Monorepo
+Escolha paleta, cenário, calendário de datas comemorativas, horários e idioma.
 
-```
-aioffice/
-├── apps/
-│   ├── office-web/       # Habblaud (Frontend React/Vite + Servidor Fastify/WS)
-│   └── office-cli/       # CLI executável e host de orquestração
-├── packages/
-│   ├── maestro-contract/ # Schemas e roteador de intenções
-│   ├── policy-broker/    # Interceptador de gravações e diffs
-│   ├── rpc-proxy/        # Gate B1 de segurança para subprocessos
-│   ├── credential-store/ # Cofre seguro local com criptografia AES-256-GCM
-│   ├── runtime/          # RuntimeAdapter com engine hashline e subagentes
-│   └── habblaud-bridge/  # Ponte de telemetria e aprovação com o Habblaud
-├── skills/
-│   └── replica/          # As 11 skills especializadas de engenharia reversa
-└── DEV/                  # Documentação e persistência viva do projeto
-```
+![Configurações do AIOffice com paletas, cenários e programação por horário](apps/office-web/docs/screenshots/readme-settings.png)
 
----
+## Começar
 
-## 🚀 Como Começar
+### Usar o aplicativo desktop
 
-### Pré-requisitos
-- **Node.js**: `>= 22.0.0`
-- **npm**: `>= 10.0.0`
+Baixe o instalador Windows disponível na tabela acima, instale e abra **AIOffice** pelo menu Iniciar ou atalho. O aplicativo sobe a interface em `http://127.0.0.1:4747` automaticamente. O suporte de distribuição para macOS e Linux depende dos artefatos publicados na página de releases.
 
-### 1. Instalação e Compilação
+### Executar pelo código-fonte
+
+**Requisitos:** Node.js `>=22.12` e npm `>=10`.
+
 ```bash
+git clone https://github.com/IAPro-Community/AIOffice.git
+cd AIOffice
 npm run setup
-```
-*(Executa o `npm install`, instala as dependências do servidor web e compila todos os pacotes.)*
-
-### 2. Iniciar o Escritório Virtual
-```bash
 npm run start:office
 ```
-Abra no navegador: **[http://localhost:4747](http://localhost:4747)**
 
-### 3. Preparar ou executar uma tarefa pelo Terminal
+Abra [http://localhost:4747](http://localhost:4747). Para subir pelo Docker, use `npm --prefix apps/office-web run docker:up`.
+
+O setup instala dependências, prepara os pacotes e verifica a camada do Orquestrador-Maestro. Em **Configurações → Orquestrador-Maestro**, a busca por atualização acontece em segundo plano; aplicar uma atualização exige clicar no botão. O atualizador **Sobre** acompanha as releases do AIOffice.
+
+Para preparar uma tarefa no terminal, o padrão mostra apenas o roteamento:
+
 ```bash
-# Por padrão, mostra o roteamento sem iniciar um executor
 npm start -- "Extrair design tokens e cores do aplicativo"
-
-# Ativa explicitamente o executor Maestro como último recurso
-npm start -- --maestro-fallback "Extrair design tokens e cores do aplicativo"
-```
-O fallback atual é uma demonstração: ele grava artefatos no workspace e aprova essas escritas automaticamente. Use-o somente quando os executores preferenciais estiverem indisponíveis.
-
-### 4. Rodar a Suíte de Verificação
-```bash
-npm run verify
 ```
 
----
+O executor de fallback do Maestro exige a opção explícita `--maestro-fallback`; esse fluxo é demonstrativo e aprova automaticamente escritas de artefatos no workspace.
 
-## 🔄 Atualizações do AIOffice e integração do Habblaud
+## Acesso pelo celular
 
-### Para quem usa o AIOffice
+O painel local pode criar um Cloudflare Quick Tunnel a pedido do usuário em **Configurações → Acesso pelo celular**. Instale [`cloudflared`](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) e deixe-o disponível no `PATH` do AIOffice. O túnel não inicia automaticamente. Depois de iniciar, abra no telefone o link HTTPS ou o QR atual e digite o código de seis caracteres gerado no painel. O código vale por cinco minutos e um único login; não é incluído no link nem no QR.
 
-O verificador em **Configurações → Sobre** acompanha exclusivamente as releases do repositório AIOffice; a versão do Habblaud upstream nunca aciona o selo. Quando houver uma release nova, o botão **Baixar e atualizar** obtém a tag oficial do AIOffice, instala dependências e compila em uma pasta separada. Para reinício gerenciado, inicie pela raiz com `npm run start:office`; o instalador exige checkout Git oficial e limpo, modo Node, sem opções ou supervisor externo e sem sessões interativas ativas. Ele preserva os artefatos de runtime para recuperação, reinicia o servidor e só remove o aviso quando a instância nova confirma a versão alvo. Docker, modo de desenvolvimento e instalações fora desses critérios recebem o motivo do bloqueio para seguir as instruções manuais da release.
+O acesso passa pela infraestrutura Cloudflare e fica disponível pela internet enquanto o computador, o AIOffice e o túnel estiverem ativos. Compartilhe link e código com cuidado. Se o Chrome exibir um aviso de site perigoso, não prossiga nem informe o código. A sessão remota tem controles por dispositivo e expira em até 12 horas; parar ou reiniciar o servidor encerra as sessões.
 
-As mudanças do [Habblaud upstream](https://github.com/marmottajr/habblaud) passam primeiro pela equipe do AIOffice. Não adicione esse repositório como remoto para mesclar diretamente no seu AIOffice.
-
-### Para a equipe que mantém o AIOffice
-
-Consulte o upstream com o verificador somente de leitura:
+## Compilar e verificar
 
 ```bash
-npm run check:habblaud-upstream
+npm run desktop:dev
+npm run desktop:build
+npm run desktop:package:win
+npm run desktop:package:mac
+npm run desktop:package:linux
+npm run desktop:verify
 ```
 
-O comando consulta a API do GitHub, compara a release upstream mais recente com o marco registrado em `apps/office-web/upstream-habblaud.json` e mostra o link do diff. Ele não executa `git fetch` ou `git merge`, nem baixa código, instala dependências ou altera arquivos. Revise cada mudança em uma branch de integração; porte apenas as partes compatíveis, confira dependências, permissões, segurança e validação, e registre o que foi adotado ou adiado no manifesto. Para preparar uma release AIOffice, `npm run release` mostra as notas sem publicar. `npm run release -- --publish` exige a branch principal limpa e sincronizada e publica somente no repositório AIOffice. Nunca publique uma release do Habblaud como atualização do produto.
+Cada instalador deve ser criado no sistema operacional correspondente. O workflow oficial usa runners Windows, macOS e Linux e só publica quando todos os jobs passam. Windows exige certificado Authenticode; macOS exige assinatura Apple e notarização. Consulte [DEV/DESKTOP.md](DEV/DESKTOP.md) para detalhes, requisitos e limites atuais.
 
-### Acesso remoto (opcional)
+## Integrações
 
-O acesso remoto usa uma segunda porta HTTPS com usuário e senha; o painel local continua em `http://127.0.0.1:4747`. No modo Node, configure a conta e o certificado com:
+| Ferramenta | O que aparece no escritório | Observações |
+|---|---|---|
+| Claude Code | Sessões, atividade, histórico, uso e recursos de mensagem/permissão | Mod e plugins habilitam recursos adicionais. |
+| Codex CLI / app | Sessões, histórico, atividade e uso local | Hooks precisam ser aprovados; no Docker, mensagens exigem `npm run codex:bridge` no host. |
+| oh-my-pi (OMP) | Sessões, histórico e atividade | Instale a bridge com `npm --prefix apps/office-web run omp:install` e abra uma nova sessão. |
 
-```bash
-npm run remote:setup
-npm run start:office
+Devin, Antigravity, OpenCode, Freebuf e Gemini CLI não têm integração de sessões e mensagens de ponta a ponta. Uma conexão MCP também não equivale à leitura de uma sessão de CLI.
+
+## Estrutura
+
+```text
+apps/
+  office-web/       Habblaud: interface React/Vite e servidor HTTP/SSE
+  office-desktop/   Shell Electron e ciclo de atualização
+  office-cli/       CLI e host de orquestração
+packages/
+  maestro-contract/ Contratos e roteamento de intenções
+  policy-broker/    Mediação de escritas e diffs
+  rpc-proxy/        Controle de subprocessos
+  credential-store/ Cofre local de credenciais
+  runtime/          Adaptadores de runtime e subagentes
+DEV/                Contexto, especificações, decisões e verificações
 ```
 
-O assistente mostra os endereços da rede local e o caminho da CA pública. Transfira `ca.crt` ao celular por um canal confiável e confira sua impressão digital antes de instalar/confiar no certificado. Na mesma rede Wi‑Fi, abra o endereço HTTPS exibido e entre com as credenciais escolhidas. O padrão remoto é somente leitura. Use `--allow permissions`, `--allow messages` ou `--allow terminal` para liberar cada capacidade explicitamente; mensagens enviam texto às sessões, e `terminal` revela conversas completas. O acesso remoto nunca pode criar ou encerrar processos.
+O escritório visual é baseado no [Habblaud](https://github.com/marmottajr/habblaud) (MIT). Outros projetos-base e licenças estão documentados em [`apps/office-web/README.md`](apps/office-web/README.md) e nos avisos de terceiros que acompanham o aplicativo.
 
-Fora de casa, conecte computador e celular à mesma VPN privada (por exemplo, Tailscale). Rode o assistente enquanto a VPN estiver conectada; para um endereço MagicDNS, informe `--domain <nome-do-computador>` já na primeira configuração. Se a CA existente precisar cobrir um nome novo, repita com `--domain <nome-do-computador> --new-ca`; remova a CA antiga de cada dispositivo e instale a nova. Não encaminhe portas do roteador nem use Funnel. `npm run remote:off` remove a configuração de login; reinicie o AIOffice para aplicar.
+## Segurança e privacidade
 
----
+- O servidor local aceita conexões de loopback por padrão; não exponha a porta HTTP diretamente à rede.
+- O acesso remoto é opcional e usa um túnel Cloudflare, com autenticação por código temporário de uso único.
+- A integração de cada ferramenta lê dados locais conforme suas capacidades; não confunda disponibilidade no `PATH` com conta autenticada.
+- Chaves BYOK ficam armazenadas localmente no cofre do AIOffice. O túnel móvel encaminha tráfego pela infraestrutura Cloudflare.
 
-## 🔒 Segurança e Privacidade
-- **BYOK (Bring Your Own Key)**: Chaves de API nunca são enviadas para servidores externos e ficam armazenadas com segurança local no seu sistema (`~/.aioffice/credentials.enc.json`).
-- **Zero Vazamento de Dados Pessoais**: Nenhum caminho absoluto ou dado da sua máquina é versionado.
-- **Mediação Canônica**: Nenhuma ferramenta altera arquivos no disco sem passar pelo `PolicyBroker` para validação prévia.
+Veja também [`DEV/CONTEXT.md`](DEV/CONTEXT.md), [`DEV/VERIFY.md`](DEV/VERIFY.md) e [`DEV/DESKTOP.md`](DEV/DESKTOP.md).
 
----
+## Changelog e licença
 
-## 📄 Licença
-Distribuído sob licença [MIT](LICENSE).
+Veja as notas em [`CHANGELOG.md`](CHANGELOG.md). O projeto é distribuído sob licença [MIT](LICENSE); projetos-base podem manter licenças próprias.

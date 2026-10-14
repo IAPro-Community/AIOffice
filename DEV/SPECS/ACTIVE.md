@@ -2,7 +2,7 @@
 
 ## 1. Identificação do Projeto
 - **Nome**: AIOffice
-- **Status**: Fase 5 concluída; auditoria ampla da interface concluída; paridade de provedores aberta
+- **Status**: Fase 5 concluída; desktop Electron implementado e empacotado para Windows; auditoria ampla da interface concluída; paridade de provedores aberta; acesso móvel por Quick Tunnel com QR local; ativação gerenciada e validação operacional pendentes
 - **Localização**: Repositório AIOffice
 
 ## 2. Pilares de Integração
@@ -129,11 +129,84 @@ AIOffice/
 
 ## 13. Atualização e acesso remoto do AIOffice (2026-10-13)
 - **Versão**: no monorepo, o selo consulta somente `IAPro-Community/AIOffice`; versões do Habblaud upstream são metadados de integração da equipe.
-- **Canal seguro na interface**: badge, notificação, botão de verificação e instalação só podem usar updates cujo repositório seja exatamente `IAPro-Community/AIOffice`. Se o servidor anunciar Habblaud ou nenhum canal, explicar que é necessário iniciar o backend gerenciado.
+- **Canal seguro na interface**: badge, notificação, botão de verificação e instalação só podem usar updates cujo repositório seja exatamente `IAPro-Community/AIOffice`. A experiência AIOffice não apresenta controles de versão do Habblaud; o upstream permanece como metadado de manutenção.
 - **Instalação**: **Baixar e atualizar** prepara a tag AIOffice e as dependências em pasta externa ao checkout. Só instala via Node gerenciado, origem Git oficial, árvore limpa, sem Docker/dev, supervisão extra, submódulos, dados dentro do checkout ou PTYs ativos.
 - **Confirmação**: o servidor encerra cooperativamente, o instalador troca código e artefatos de runtime sem `git clean`, reinicia e valida versão + nonce + PID em loopback. O cliente só limpa a badge quando o snapshot ao vivo anuncia a versão alvo.
 - **Recuperação**: falha de build ou health check restaura commit e runtime anterior quando possível; backup e journal permanecem para recuperação manual. Nunca encerrar PTYs à força.
-- **Acesso remoto**: porta HTTPS autenticada separada, desligada por padrão; somente leitura como padrão e allowlist opt-in para permissões, mensagens e leitura de transcripts. LAN e VPN privada; sem porta encaminhada e sem provisionar credenciais/CA/VPN/firewall automaticamente. Docker continua sem acesso remoto.
-- **Conexão móvel**: Configurações → **Acesso pelo celular** permite cadastrar usuário/senha uma vez, iniciar e parar o listener sem reiniciar o servidor e visualizar URLs privadas, usuário e impressão SHA-256 da CA. O stop mantém a configuração e a próxima ativação é explícita. As rotas de controle são exclusivas do loopback; nenhum segredo aparece no status; ausência de `meta.remoteAccess` identifica servidor antigo e orienta iniciar o AIOffice gerenciado.
-- **Identidade de versão**: selo superior e painel **Sobre** só mostram número, badge, novidades ou link de release quando `meta.updates.repo` é exatamente `IAPro-Community/AIOffice`. Habblaud upstream e canal desconhecido não podem ser rotulados como versão do produto.
-- **Gates**: `npm run typecheck`, `npm --prefix apps/office-web run typecheck`, `npm run build`, `npm --prefix apps/office-web run i18n:check`, `git diff --check` e revisão de segurança do diff.
+- **Acesso móvel vigente — 2026-10-14**: Quick Tunnel Cloudflare, com `cloudflared` instalado e disponível no `PATH` do AIOffice. Link e QR abrem a tela remota; para autenticar, o painel local gera um código alfanumérico aleatório de seis caracteres, válido por cinco minutos e um único login.
+- **Credencial temporária**: o código é entregue somente pela API local protegida, fica em memória, não entra no URL/QR, `.env` ou logs, e é descartado após login, parada, falha/fim do túnel ou reinício do servidor. Gerar outro código invalida o anterior. Senhas mestras antigas são removidas do `.env` quando a configuração Quick Tunnel é inicializada.
+- **Configuração e ciclo de vida**: Configurações → **Acesso pelo celular** cria a configuração sem senha e inicia o túnel. A interface oferece **Iniciar**, **Parar**, **Copiar link**, QR, geração e cópia do código. O túnel nunca inicia automaticamente ao ligar o servidor; após reiniciar, exige **Iniciar** e um novo código. O CLI legado `remote:setup`/`remote:off` apenas orienta ao painel e não altera credenciais, certificados ou acesso LAN/VPN. **Parar** no painel encerra túnel, códigos e sessões.
+- **Inicialização e término do túnel**: o AIOffice espera até dois minutos pelo URL inicial do Quick Tunnel. Não existe encerramento automático por falta de conexão móvel. O túnel termina quando parado no painel, quando o servidor desliga ou se `cloudflared` encerra; saída inesperada registra código/sinal e diagnóstico stderr sanitizado.
+- **Timers de sessão**: conexões longas autenticadas revalidam a sessão a cada 10 s para fechar streams de um dispositivo revogado; esse timer não controla nem encerra o Quick Tunnel.
+- **Sessões e dispositivos — 2026-10-14**: cada login remoto cria um registro efêmero com ID aleatório opaco, rótulo de navegador/plataforma, horários de login e última atividade e validade de 12 horas. **Configurações → Acesso pelo celular** lista os registros no horário local e permite revogar somente a sessão escolhida. Lista e revogação só aceitam acesso local; o listener público recusa essas rotas. Não armazenar IP, User-Agent bruto ou material de cookie/assinatura. O painel atualiza em background enquanto estiver aberto, com aba visível e túnel ativo; sem reload integral.
+- **Verificação de sessões — 2026-10-14**: 24 testes focados, suíte web 1.249 aprovados/10 ignorados, typecheck, i18n 2.369/2.369, bundles isolados cliente/servidor e diff check aprovados. Health observado `ok` na versão instalada `2.1.0`; o túnel ficou `disabled` no fim. Nenhuma reinicialização ou abertura pública foi feita. Para ativar o código novo e validar por dispositivos, iniciar a próxima build normal e iniciar um túnel novo no painel.
+- **Identidade de versão**: selo superior e painel **Sobre** só mostram número, badge, novidades ou link de release quando `meta.updates.repo` é exatamente `IAPro-Community/AIOffice`. Os controles de versão Habblaud são removidos da experiência AIOffice.
+- **Atualização de estado**: os dados do escritório devem ser atualizados em segundo plano, sem recarga total automática. O banner de cliente novo só recarrega após clique explícito do usuário.
+- **Safe Browsing**: classificar o campo como código de uso único reduz confusão com senhas salvas, mas não altera nem contorna a reputação do hostname `trycloudflare.com`. Se Chrome mostrar **Perigoso**, não prossiga nem informe o código.
+- **Aceitação operacional pendente**: build e reinício normal confirmados; health respondeu `ok` e o túnel permaneceu desligado, sem início automático. Geração/cópia do novo código, login pelo celular, expiração/uso único, parada e invalidação de sessões via túnel real continuam pendentes. Os registros anteriores de LAN/VPN/usuário/CA permanecem apenas como histórico em handoff, worklog e verify.
+- **Gates**: build raiz, typecheck do app, i18n (2.353 por idioma), `git diff --check` e 10 testes focados aprovados. QA visual ao vivo e operação real do Quick Tunnel continuam pendentes; o bundle principal do Vite ainda supera o limite de aviso de 500 kB.
+
+## 14. Aplicativo Desktop (2026-10-14)
+- Electron inicia um utility process supervisionado para hospedar o servidor real do Habblaud e só abre a janela depois de confirmar health e a versão local correta.
+- Renderer mantém `contextIsolation`, sandbox, `webSecurity` e `nodeIntegration: false`; o preload limita IPC e navegação remota abre somente URLs permitidas no navegador do SO.
+- Estado Habblaud, `.env`, TLS e logs vivem em `userData`; migração inicial copia sem mover/sobrescrever `.habblaud`, `.codetown` ou arquivos de configuração encontrados. CLIs externas continuam separadas; runtime Node vem com Electron.
+- Antes de abrir a janela, detectar conflito na porta; pedir shutdown autenticado a serviços reconhecidos do AIOffice e usar sinal somente no PID identificado como AIOffice quando necessário. Respeitar recusa por sessões interativas quando oferecida pelo protocolo; identificar outros donos e mostrar diagnóstico acionável. Não adicionar reload integral ou refresh periódico.
+- **Causa de janela ausente**: o pai recebia o payload do evento `UtilityProcess` diretamente, mas o código lia `event.data`, deixando o desktop esperando o handshake mesmo com o servidor saudável. A trava de instância única escondia as próximas tentativas.
+- **Correção e aceite**: validar o payload direto, registrar handshake/janela, reportar falha de renderer ou versão incompatível, recuperar a janela numa segunda abertura e iniciar a checagem PowerShell da porta sem mostrar console. O executável empacotado confirmou health em `4747` e abriu janela com HWND válido; nenhum reload integral periódico foi adicionado.
+- O setup `AIOffice-Setup.exe` da release existente `v2.1.0` foi substituído por esse build. Hash/tamanho e conteúdo ASAR foram conferidos. Para a instalação imediata, usar o link direto registrado em `DEV/HANDOFF.md`; o alias `latest/download` ainda respondeu com asset antigo em cache durante esta verificação.
+- Testes automatizados não foram executados; Authenticode continua `NotSigned`. O build NSIS padrão falhou com `EPERM` na pasta existente, mas o empacotamento foi concluído em saída limpa.
+- NSIS `.exe`, macOS `.dmg`/`.zip`, Linux `.AppImage`/`.deb`; o Windows consulta a API da release estável e valida o digest GitHub do instalador único. `electron-updater` nativo permanece para builds macOS assinadas e Linux AppImage. `.deb` orienta atualização manual pelo sistema.
+- O workflow tag-gated atual publica apenas Windows x64 com asset `AIOffice-Setup.exe`; Authenticode é opcional. macOS/Linux aguardam runners e artefatos verificados.
+- Validação obrigatória: `npm run desktop:verify`, pacote Windows local e `git diff --check`; macOS/Linux dependem da execução real nos runners correspondentes. Atualizações reais só após publicação.
+- Detalhes operacionais em `DEV/DESKTOP.md`; atualizar este contrato com os resultados após validar.
+
+## 15. Orquestrador-Maestro obrigatório pelo NPM (2026-10-14)
+- **Pacote oficial**: instalar somente `@iapro/orquestrador-maestro-cli` e validar `name`, `version`, `repository` e o binário antes da execução. Não aceitar alias, fork ou pacote com repositório diferente.
+- **Escopo da instalação**: usar `install/update/verify --core-only --home-path <perfil>` para preparar a camada compartilhada `.orquestrador`; não instalar perfis de ferramentas de IA como efeito colateral.
+- **Pré-requisito**: `npm run setup` instala a última versão `latest`; toda inicialização do servidor confirma pacote e arquivos centrais e corrige/instala se necessário. Se NPM, pacote oficial ou verificação falhar, o servidor não inicia e explica o erro.
+- **Atualização**: status mostra versão instalada e versão `latest` consultada no NPM, com verificação periódica de seis horas e ação manual. A instalação de atualização só começa pelo botão local; resultado é transmitido via snapshot/SSE sem recarga nem reinício do AIOffice.
+- **Desktop**: incluir CLI NPM e todas as dependências de runtime em `resources/npm`, usar `ELECTRON_RUN_AS_NODE` nos processos filhos quando aplicável e guardar prefixo/cache NPM no userData para não exigir permissão administrativa. O perfil Maestro continua sendo o perfil do usuário.
+- **Docker**: compilar/semear a camada central na imagem e manter prefixo/cache/home em volume gravável persistente `/maestro`; atualizações do Maestro podem então funcionar com rootfs read-only.
+- **MCP**: `aioffice_get_context` exige a camada instalada e devolve rules, maestro, persistence e contexto ativo do projeto.
+- **Separação**: a release do AIOffice continua no updater GitHub existente; a versão do Maestro é independente e vem do NPM. Nenhum desses fluxos deve causar recarga da página ao atualizar somente o Maestro.
+- **Gates**: root/app typecheck, builds root e desktop quando disponível, `i18n:check`, validação de sintaxe e `git diff --check`; testes só quando solicitados.
+
+## 16. Launcher normal, QR e hostname Cloudflare (2026-10-14)
+- `start-aioffice.bat` compila e sobe `npm run start:office`; ele se recusa a assumir 4747 ocupada e nunca encerra processos Node. O alias `.bat` legado e o atalho PowerShell também seguem esse modo normal.
+- O QR do Quick Tunnel é gerado localmente no navegador, acompanha a URL ativa e some quando o túnel para; não há requisição a um gerador externo nem reload de página.
+- O Quick Tunnel anuncia hostname temporário `trycloudflare.com`. A aplicação informa que ela não pode remover uma classificação Safe Browsing; se o Chrome disser **Perigoso**, não informe o código. Uso estável requer um domínio próprio configurado no Cloudflare, sem garantia de alterar classificações já existentes.
+- A instância antiga em dev deve ser fechada manualmente antes de iniciar o launcher. A instalação atual continua com alterações locais; o updater oficial do AIOffice não instalará sobre essa árvore suja.
+
+## 16. Instalação automática de mensagens do Claude Code (2026-10-14)
+- Com `HABBLAUD_MENSAGENS` habilitado, o servidor local e `npm run docker:up` instalam/verificam `habblaud-mensagens` nas contas Claude Code detectadas.
+- A automação instala somente esse plugin; o mod Habblaud e o plugin de permissões continuam sob o comando manual `npm run mod:install`.
+- O instalador usa `HABBLAUD_CLAUDE_BIN`, a instalação nativa em `~/.local/bin` ou o `claude` no `PATH`; exige Claude Code 2.1.287 ou mais novo e não bloqueia o boot quando falha.
+- Sessões já abertas precisam de `/reload-plugins` após a primeira instalação. `HABBLAUD_MENSAGENS=0` desliga a entrega e evita a instalação automática.
+- **Aceitação**: instalação manual verificada na conta local; typecheck/build/i18n e `git diff --check` registrados em `DEV/VERIFY.md`. Testes automatizados não foram solicitados.
+
+## 17. Candidata de release AIOffice v2.2.0 — 2026-10-14
+- **Escopo**: consolidar no changelog as mudanças de acesso móvel e sessões, desktop Electron, atualização do Orquestrador-Maestro, launchers e publicação multiplataforma.
+- **Versão**: `package.json` e `package-lock.json` usam `2.2.0`; notas da candidata estão em `CHANGELOG.md` e as notas de `v2.1.0` foram recuperadas da release oficial.
+- **Gates locais**: `npm run desktop:verify`, `npm run release -- --dry-run` e `git diff --check` passaram; instalador Windows x64 local produzido sem assinatura para inspeção.
+- **Compatibilidade**: não há migração de banco nesta versão. O desktop copia configurações/dados legados para `userData` somente quando o destino não existe; falhas de update mantêm a versão ativa e preservam os dados.
+- **Ordem de publicação**: revisar e integrar sobre a `main` atualizada; verificar a candidata; enviar `v2.2.0` pelo helper; acompanhar Actions e conferir que a release contém somente `AIOffice-Setup.exe` e digest.
+- **Rollback/monitoramento**: falha de runner não cria a release; falha ao instalar preserva a versão e os dados anteriores. Depois de publicar, conferir o estado do workflow e os assets por plataforma. Responsabilidade operacional: mantenedores do AIOffice.
+- **Publicação**: requer integrar a candidata sobre a `main` oficial atualizada, árvore limpa e sucesso do workflow tag-gated. Signing Windows é opcional; a candidata permanece sem commit, tag ou release até revisão humana.
+- **Documentação pública**: o README raiz apresenta capturas sintéticas da interface e os downloads efetivamente publicados; no estado atual, só há instalador Windows `v2.1.0`. Os quatro guias Habblaud foram atualizados para o login móvel com código de uso único.
+
+## 18. Diagnóstico inicial da atualização automática — 2026-10-14 (estado anterior à implementação abaixo)
+- **Observado**: a aplicação instalada é `2.1.0`, a mesma versão da release estável mais recente no GitHub.
+- **Verificação da UI**: o desktop sempre passa `HABBLAUD_UPDATE_CHECK=0` ao servidor embutido, deixando a verificação da seção Sobre em `off`.
+- **Instalação nativa**: a versão local do updater habilita Windows apenas para builds com assinatura Authenticode/publisher. O executável instalado não está assinado e a release tem somente `AIOffice-Setup.exe`, sem manifesto `latest.yml` ou blockmap.
+- **Fonte de release**: o `origin/main` mais recente é `01e59b3`/`v2.1.0` e não contém o app desktop nem workflow de release; esses arquivos estão na árvore local candidata `2.2.0`, ainda sem publicação.
+- **Aceitação para habilitar**: integrar a fonte/workflow no `main`, provisionar signing via GitHub secrets/variables, publicar release estável posterior com metadados do updater, e verificar a detecção/instalação sem recarregar a página inteira. A listagem no escopo do repositório não mostrou configuração de assinatura; secrets de organização não foram inspecionados. Não habilitar instalação unsigned como atalho.
+- **Evidência**: `DEV/DESKTOP.md` e `DEV/VERIFY.md`; nenhuma publicação foi feita nesta etapa.
+
+## 19. Atualizador Windows via digest da release — 2026-10-14
+- **Descoberta**: `HABBLAUD_UPDATE_CHECK=0` desliga apenas o checker web/Node, que não pode instalar um pacote Electron. O `electron-updater` também não serve para a release Windows unsigned existente, que não tem manifesto `latest.yml`.
+- **Implementação candidata**: o processo principal consulta a API oficial do GitHub no início e a cada seis horas, valida release estável/tag/asset único e só baixa `AIOffice-Setup.exe` da tag específica. Exige o digest `sha256:` retornado pela API, confere tamanho, final de redirecionamento e hash antes de manter/executar o arquivo.
+- **UX e comportamento**: status do atualizador chega ao painel **Sobre** via IPC. A checagem ocorre em background sem refresh da página; download, abertura do instalador e fechamento/reinício do app exigem confirmação.
+- **Workflow**: workflow local tag-gated para Windows x64 publica somente um asset `AIOffice-Setup.exe`. Authenticode pode ser configurado, mas a checagem do digest não depende de certificado; SmartScreen ainda pode mostrar aviso em binário unsigned.
+- **Limite do bootstrap**: release pública e instalação atual são `2.1.0`, mesma versão. O executável existente não contém o novo código; ele requer uma instalação manual única de uma versão publicada posterior. `v2.2.0`, fonte desktop e workflow não estão no GitHub.
+- **Validação local**: root/app typecheck, build, i18n, sintaxe desktop, presença dos arquivos no ASAR, parse do workflow YAML e `git diff --check` passaram. NSIS local é `2.2.0` sem Authenticode. Suítes automatizadas não foram executadas nesta rodada.
+- **Operação pendente**: Actions não foram executadas e não há release `v2.2.0` publicada. O instalador `2.1.0` instalado requer bootstrap manual; detecção/download/instalação contra uma release posterior continuam pendentes de revisão humana, tag e smoke test.

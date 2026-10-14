@@ -1,0 +1,11 @@
+# Context Snapshot — mobile session management
+
+- **Task**: keep a Cloudflare Quick Tunnel available for the lifetime of the AIOffice server process; show logged-in mobile devices with login/activity times and allow revoking one session.
+- **Desired outcome**: local settings can list remote sessions, label a device/browser, display local date/time for login and last activity, and revoke one session immediately. Tunnel has no idle-close behavior; it ends only on explicit stop, server/process shutdown, or `cloudflared` exit.
+- **Known facts**: access uses a six-character, five-minute, one-use code. `RemoteSessions` issues signed 12-hour cookies with a random 128-bit nonce, but currently has no active-session inventory. The listener runs on loopback behind Quick Tunnel. `/api/remote-access/*` is already restricted to local loopback requests and same-origin mutations. Current remote session manager exists only while tunnel is active; restart/stop invalidates all sessions.
+- **Constraints**: preserve the dirty working tree and prior user edits; never commit/push; do not start a public tunnel or generate a public link for testing; do not add inactivity timers or page reloads; never expose session cookies/signatures; keep device controls local-only.
+- **Unknowns**: exact device label quality from `User-Agent`; whether user expects a session to survive server restart (current security contract invalidates it; retain that behavior unless evidence contradicts).
+- **Likely touchpoints**: `apps/office-web/server/http/remote.ts`, `server/http/app.ts`, `server/remote/runtime.ts`, server tests, `client/src/ui/settings.ts`, `client/src/ui/styles.css`, `shared/locales/*.ts`, DEV handoff/spec/verify/worklog.
+- **Current phase**: intake complete; implementation design uses two independent lanes: backend/session inventory and frontend local panel, with API contract `{sessions:[{id,device,loggedInAt,lastSeenAt,expiresAt}]}` and `POST /api/remote-access/sessions/:id/revoke`.
+- **Next action**: implement backend and UI in non-overlapping files; inspect actual diff and session revocation boundaries.
+- **Validation**: focused remote session tests, remote runtime tests, app typecheck, i18n check, full build, `git diff --check`, local health/static smoke; no Quick Tunnel smoke.

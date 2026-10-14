@@ -17,8 +17,9 @@
 // `npm run docker:up` faz isso sozinho para quem já instalou).
 //
 // Mensagens pelo escritório (habblaud-mensagens, o plugin que digita na sessão em seu nome): vai junto por padrão;
-// com --sem-mensagens fica de fora, e um já instalado continua (como o de permissões com --sem-permissoes). O
-// docker:up nunca o instala sozinho: numa conta com o mod e sem ele, só dá a dica de rodar o mod:install.
+// com --sem-mensagens fica de fora da instalação manual. Quando as mensagens estão habilitadas, o servidor e o
+// docker:up garantem o plugin automaticamente nas contas Claude Code observadas. HABBLAUD_MENSAGENS=0 desliga o
+// recurso e evita a instalação automática no servidor local.
 //
 // Migração do jeito antigo: o mod grava o uso no mesmo arquivo do tap de statusline (usage:install) e o plugin
 // de permissões faz o mesmo que o settings hook PermissionRequest (hooks:install). Na instalação, cada um sai do
@@ -33,12 +34,14 @@
 // saídas documentadas que já resolvem escopo, ligado/desligado e CLAUDE_CODE_PLUGIN_CACHE_DIR. Os arquivos
 // <conta>/plugins/installed_plugins.json e known_marketplaces.json são internos do Claude Code e podem mudar de
 // formato (o primeiro já está na versão 2).
-import { spawnSync } from 'node:child_process';
+import { execFile, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
+import { promisify } from 'node:util';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { discoverClaudeDirs, expandHome, isDefaultDir } from '../server/accounts/detect';
+import { claudeBinFrom } from '../server/pty/manager';
 import { LEGACY_NAME } from '../server/legacy';
 import { DEFAULT_PORT, installedHook, planUninstall as planHookUninstall } from './hooks-install';
 import {
@@ -76,6 +79,7 @@ export const MIN_CLAUDE_VERSION = '2.1.287';
 const SCOPE = 'user';
 /** Tempo máximo de cada chamada ao CLI (o add/update de um diretório local leva poucos segundos). */
 const CLI_TIMEOUT_MS = 120_000;
+const execFileAsync = promisify(execFile);
 
 const USAGE = tr('Uso: npm run mod:<install|uninstall|status> [-- opções]\n\n  install     instala o mod do Habblaud no Claude Code de cada conta (marketplace desta pasta + plugins)\n              e tira o que ele substitui: o tap de statusline e o hook de permissão antigos e o mod do\n              nome antigo (codetown)\n  uninstall   tira os plugins e o marketplace do Habblaud de cada conta (e os do nome antigo, se sobraram)\n  status      mostra, por conta, o marketplace, os plugins (e versões) e o que sobrou do jeito antigo\n\nOpções:\n  --sem-permissoes   não instala o plugin de responder permissões pelo escritório (e mantém o hook antigo)\n  --sem-mensagens    não instala o plugin de mandar mensagens pelo escritório (um já instalado continua)\n  --conta <pasta>    só esta conta (ex.: --conta ~/.claude-conta2); pode repetir\n  --dry-run          mostra o que faria, sem instalar nem gravar nada\n  --claude <cmd>     comando do Claude Code (padrão: claude, do PATH)\n  -h, --help         mostra esta ajuda\n\nPrecisa do Claude Code {0} ou mais novo. Em versões anteriores, use o jeito antigo:\nnpm run usage:install (uso ao vivo) e npm run hooks:install (responder permissões); mandar mensagens pelo\nescritório só existe com o mod.\n\nContas: as mesmas do servidor (~/.claude* com projects/ ou sessions/, CLAUDE_CONFIG_DIR ou\nHABBLAUD_CLAUDE_DIRS). Uso capturado em HABBLAUD_USAGE_DIR (padrão ~/.habblaud/usage).', [MIN_CLAUDE_VERSION]);
 
@@ -107,6 +111,32 @@ export function makeClaudeRunner(cmd = 'claude'): ClaudeRunner {
     return { code: r.status, stdout: r.stdout ?? '', stderr: r.stderr ?? '' };
   };
 }
+
+/** Runner assíncrono usado pelo servidor para não bloquear a interface durante a instalação automática. */
+export function makeAsyncClaudeRunner(cmd = 'claude'): AsyncClaudeRunner {
+  return async (args, env) => {
+    try {
+      const result = await execFileAsync(cmd, args, {
+        env,
+        encoding: 'utf8',
+        timeout: CLI_TIMEOUT_MS,
+        maxBuffer: 2 * 1024 * 1024,
+        windowsHide: true,
+      });
+      return { code: 0, stdout: String(result.stdout), stderr: String(result.stderr) };
+    } catch (err) {
+      const failure = err as NodeJS.ErrnoException & { stdout?: unknown; stderr?: unknown };
+      return {
+        code: typeof failure.code === 'number' ? failure.code : null,
+        stdout: String(failure.stdout ?? ''),
+        stderr: String(failure.stderr ?? ''),
+        ...(typeof failure.code === 'string' ? { error: failure.message } : {}),
+      };
+    }
+  };
+}
+
+export type AsyncClaudeRunner = (args: string[], env: NodeJS.ProcessEnv) => Promise<ClaudeResult>;
 
 /**
  * Ambiente do CLI para uma conta. A conta padrão (~/.claude) roda SEM CLAUDE_CONFIG_DIR, como o `claude` puro:
@@ -668,6 +698,19 @@ export function readAccountState(claude: ClaudeRunner, env: NodeJS.ProcessEnv): 
   return { marketplace: markets.find((m) => m.name === MARKETPLACE), legacyMarketplace: markets.find((m) => m.name === LEGACY_MARKETPLACE), plugins };
 }
 
+/** Versão assíncrona para o boot do servidor, sem bloquear a resposta HTTP enquanto consulta o CLI. */
+async function readAccountStateAsync(claude: AsyncClaudeRunner, env: NodeJS.ProcessEnv): Promise<AccountState | { error: string }> {
+  const mr = await claude(['plugin', 'marketplace', 'list', '--json'], env);
+  if (mr.error || mr.code !== 0) return { error: tr('não consegui listar os marketplaces ({0})', [cliMessage(mr)]) };
+  const markets = parseMarketplaceList(mr.stdout);
+  if (!markets) return { error: tr('não entendi a lista de marketplaces do Claude Code') };
+  const pr = await claude(['plugin', 'list', '--json'], env);
+  if (pr.error || pr.code !== 0) return { error: tr('não consegui listar os plugins ({0})', [cliMessage(pr)]) };
+  const plugins = parsePluginList(pr.stdout);
+  if (!plugins) return { error: tr('não entendi a lista de plugins do Claude Code') };
+  return { marketplace: markets.find((m) => m.name === MARKETPLACE), legacyMarketplace: markets.find((m) => m.name === LEGACY_MARKETPLACE), plugins };
+}
+
 /** Pastas das contas: as de --conta (que precisam existir) ou as detectadas. */
 function accountDirs(opts: RunOptions, env: NodeJS.ProcessEnv, home: string): string[] {
   if (!opts.accounts.length) return discoverClaudeDirs(env, home);
@@ -903,6 +946,75 @@ export interface ModUpdateResult {
 }
 
 /**
+ * Garante que o plugin de mensagens esteja disponível nas contas Claude Code observadas pelo Habblaud.
+ * Instala somente `habblaud-mensagens`; a instalação do mod e do plugin de permissões continua explícita.
+ */
+export async function ensureMessagesPluginInstalled(
+  accounts: Array<{ dir: string; label: string }>,
+  ctx: { env: NodeJS.ProcessEnv; home: string; root: string; version: string; claude: AsyncClaudeRunner },
+): Promise<ModUpdateResult> {
+  const res: ModUpdateResult = { installed: false, unavailable: false, lines: [] };
+  if (!accounts.length) return res;
+
+  const probe = await ctx.claude(['--version'], ctx.env);
+  if (probe.error || probe.code !== 0) {
+    res.unavailable = true;
+    res.lines.push({ level: 'warn', text: tr('não consegui conferir o plugin de mensagens do Claude Code ({0}).', [cliMessage(probe)]) });
+    return res;
+  }
+  const versionText = `${probe.stdout} ${probe.stderr}`;
+  if (!versionAtLeast(versionText, MIN_CLAUDE_VERSION)) {
+    res.unavailable = true;
+    const version = parseVersion(versionText)?.join('.') ?? '?';
+    res.lines.push({ level: 'warn', text: tr('instalação automática do plugin de mensagens requer Claude Code {0} ou mais novo; encontrado {1}.', [MIN_CLAUDE_VERSION, version]) });
+    return res;
+  }
+
+  for (const { dir, label } of accounts) {
+    const env = accountEnv(ctx.env, dir, ctx.home);
+    const before = await readAccountStateAsync(ctx.claude, env);
+    if ('error' in before) {
+      res.lines.push({ level: 'warn', text: tr('plugin de mensagens na {0}: {1}', [label, before.error]) });
+      continue;
+    }
+    const current = userInstall(before, MESSAGES_PLUGIN);
+    if (current?.enabled && current.version === ctx.version && before.marketplace?.path && sameDir(before.marketplace.path, ctx.root)) {
+      res.installed = true;
+      continue;
+    }
+
+    const plan = planInstall(before, { root: ctx.root, version: ctx.version, permissions: false, messages: true });
+    // O boot só gere o plugin de mensagens e o marketplace. O resto continua sob controle do comando mod:install.
+    const steps = cliSteps(plan).filter((step) =>
+      step.plugin === MESSAGES_PLUGIN ||
+      (step.args[0] === 'plugin' && step.args[1] === 'marketplace' && ['add', 'update'].includes(step.args[2] ?? '') && step.args[3] === MARKETPLACE),
+    );
+    let failure: string | undefined;
+    for (const step of steps) {
+      const result = await ctx.claude(step.args, env);
+      if (result.error || result.code !== 0) {
+        failure = `${step.message.split(':')[0]}: ${cliMessage(result)}`;
+        break;
+      }
+    }
+    if (failure) {
+      res.lines.push({ level: 'warn', text: tr('não consegui instalar o plugin de mensagens na {0}: {1}', [label, failure]) });
+      continue;
+    }
+
+    const after = await readAccountStateAsync(ctx.claude, env);
+    const issues = 'error' in after ? [after.error] : verifyInstall(after, [MESSAGES_PLUGIN], ctx.version);
+    if (issues.length) {
+      res.lines.push({ level: 'warn', text: tr('plugin de mensagens na {0}: {1}', [label, issues.join('; ')]) });
+      continue;
+    }
+    res.installed = true;
+    res.lines.push({ level: 'info', text: tr('plugin habblaud-mensagens instalado/verificado automaticamente na {0}; sessões abertas: /reload-plugins', [label]) });
+  }
+  return res;
+}
+
+/**
  * Para cada conta com o mod instalado numa versão diferente da do package.json: relê o catálogo e atualiza os
  * plugins instalados. Com restos do nome antigo, só avisa (a troca é do mod:install). Com o mod e sem o plugin de
  * mensagens, dá a dica de rodar o mod:install. Nunca instala nada e nunca lança: qualquer falha vira um aviso.
@@ -974,12 +1086,13 @@ async function main(): Promise<void> {
     now: new Date(),
     root: ROOT,
     version: readPackageVersion(ROOT),
-    claude: makeClaudeRunner(parsed.claudeCmd),
+    claude: makeClaudeRunner(parsed.claudeCmd ?? claudeBinFrom() ?? 'claude'),
     out: (l) => console.log(l),
   });
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+const invokedScript = process.argv[1]?.replaceAll('\\', '/').split('/').at(-1);
+if (invokedScript === 'mod-install.ts' && process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   main().catch((err: unknown) => {
     console.error(err instanceof FatalError ? tr('[mod] Erro: {0}', [err.message]) : tr('[mod] Erro inesperado: {0}', [String(err)]));
     process.exitCode = 1;

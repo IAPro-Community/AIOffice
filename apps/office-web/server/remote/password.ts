@@ -1,7 +1,7 @@
 // Senha do acesso remoto guardada como hash scrypt (nunca em texto puro no .env).
 //
 // Formato: scrypt:<log2 N>:<r>:<p>:<sal base64url>:<hash base64url>. Sem "$" de propósito: o Docker Compose interpola
-// "$" no .env. Gerado por `npm run remote:setup` (scripts/remote-setup.ts) e conferido no login (http/remote.ts).
+// "$" no .env. Definido pelo painel local AIOffice e conferido no login do túnel (http/remote.ts).
 import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 
 export interface PasswordHash {

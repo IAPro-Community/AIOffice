@@ -1,5 +1,142 @@
 # WORKLOG — AIOffice
 
+## 2026-10-14 — Atualizador Windows pela release oficial do GitHub
+- **Mudança**: o Electron consulta releases estáveis da API GitHub, valida `AIOffice-Setup.exe` pelo tamanho e SHA-256, baixa pela URL específica da tag e abre o instalador interativo após confirmações. A seção **Sobre** recebe estado/progresso por IPC e não recarrega a página. O workflow publica um asset estável Windows x64; assinatura Authenticode tornou-se opcional.
+- **Correção adicional**: corrigi `AgentStats.cost` para o campo compartilhado correto `costUSD`, o que removia uma falha de typecheck na fonte OMP; acrescentei a expectativa correspondente no teste existente.
+- **Verificação**: typecheck root/app, build, i18n, sintaxe desktop, inspeção do ASAR, parse YAML do workflow e `git diff --check` passaram. NSIS `2.2.0` gerado em `dist/installers-aioffice-updater-final2`; 117.969.885 bytes, SHA-256 `2927ACEFD31A08E26AE9BA4E7100E7906481960E2896C15AFF325BB70F48BA10`, `NotSigned`. Suítes automatizadas e update via release futura não foram executados.
+- **Estado**: GitHub ainda só publica `v2.1.0`; o app instalado `2.1.0` não contém o atualizador novo e precisa receber a primeira versão posterior manualmente. Sem commit, tag ou push; integração/publicação requer revisão humana. Vite mantém aviso conhecido de bundle acima de 500 kB.
+
+## 2026-10-14 — README e documentação da distribuição
+- **Mudança**: reestruturei o README público com galeria de capturas atuais, quick start, integrações, segurança e downloads por sistema; sincronizei os guias Habblaud nos quatro idiomas e a documentação operacional/release.
+- **Capturas**: sala, detalhes do agente e Configurações produzidos em Chromium pelo simulador local (`?mock=1`), sem sessões ou contas reais.
+- **Precisão de distribuição**: última release pública `v2.1.0` contém somente `AIOffice-Setup.exe` Windows x64. README aponta macOS/Linux para a página de releases e informa que ainda não há binários publicados. A candidata local `v2.2.0` continua sem release.
+- **Verificação**: capturas inspecionadas; referências locais conferidas; `git diff --check` aprovado com avisos de normalização LF/CRLF. Sem testes de código nesta etapa documental.
+
+## 2026-10-14 — Preparar candidata de release AIOffice v2.2.0
+- **Mudança**: alinhei versão e lockfile em `2.2.0`, organizei as notas completas da release e repus a seção histórica `v2.1.0` a partir das notas oficiais.
+- **Motivo**: reunir os updates de acesso móvel, desktop, Maestro, launchers e pipeline sob a próxima versão sem publicar uma árvore incompleta.
+- **Verificação**: `npm run desktop:verify` aprovado; `npm run release -- --dry-run` gerou as notas; `git diff --check` aprovado; instalador NSIS x64 local produzido sem assinatura (117.961.753 bytes).
+- **Estado/continuação**: candidato não commitado/tagueado/publicado. A branch diverge da `main`, e os secrets/variables remotos de assinatura não estão configurados; integrar em `main`, configurar credenciais e validar macOS/Linux no CI antes de publicar.
+
+## 2026-10-14 — Corrigir janela que não abria após iniciar o servidor
+- **Causa**: o evento `message` do Electron `UtilityProcess` entrega o objeto publicado pelo servidor diretamente. O main lia `event.data`, mantinha `backendReady=false` e esperava até seis minutos mesmo com a API saudável; sem `serverUrl`, a janela não era criada e uma segunda abertura batia na trava de instância única.
+- **Correção**: o main valida a mensagem direta, registra o handshake e cria/recupera a janela; falhas de carregamento, encerramento do renderer e divergência de versão agora geram diagnóstico. A consulta PowerShell da porta recebe `-WindowStyle Hidden`. Nenhum reload periódico ou mudança no renderer foi introduzido.
+- **Verificação local**: `node --check` passou; build do cliente/servidor e NSIS x64 concluíram numa saída limpa após `EPERM` na pasta de saída padrão. O ASAR contém os caminhos corrigidos. O executável empacotado foi iniciado: log confirmou handshake, health na porta `4747` e janela pronta; Windows reportou título `Habblaud` e HWND não nulo.
+- **Release**: substituído o único asset `AIOffice-Setup.exe` da release existente `v2.1.0`; 117.961.903 bytes, SHA-256 `d0eb5a9656fb7dc72bcbcdf37ef74a642768008c75303405a6dd1d4dfe113ee7`. `gh release view` confirmou tamanho/hash. O alias `latest/download` ainda servia um redirecionamento em cache durante a verificação; o link direto à tag com query de cache retornou o tamanho atual.
+- **Próxima ação**: instalar o setup pelo link direto registrado em `DEV/HANDOFF.md` para substituir os arquivos instalados. Authenticode continua `NotSigned`; testes automatizados não foram executados.
+
+## 2026-10-14 — Persistência do túnel e gestão de sessões móveis
+- **Pedido**: manter o túnel ativo enquanto o AIOffice estiver rodando, sem encerramento por inatividade, e mostrar dispositivos autenticados com data/hora e revogação individual.
+- **Túnel**: auditoria confirmou que o gerenciador não tem timer de inatividade; seus timers são a espera de até dois minutos pela URL inicial e a tolerância de dois segundos para o processo sair ao ser parado. Há uma revalidação de sessão a cada 10 s para desconectar streams revogados, sem desligar o túnel. Não foi adicionado timer de ociosidade. Parar explicitamente, desligar o servidor ou a saída do `cloudflared` encerram o listener.
+- **Servidor**: cada login cria registro efêmero com ID aleatório separado do token, etiqueta aproximada de navegador/plataforma, entrada, última atividade e expiração de 12 horas. Listagem projeta somente esses metadados; logout, revogação e fechamento do listener removem o registro.
+- **Proteção**: endpoints exigem loopback local; `isRemoteRequest`, origem externa e `Sec-Fetch-Site: cross-site` são rejeitados. Revogação exige Origin local exato e JSON vazio. O listener público continua recusando `/api/remote-access/*`.
+- **Interface**: lista responsiva com horário local, validade, estados de carregamento/vazio/erro e botão por sessão. Faz fetch pontual e atualiza DOM; polling de 15 s roda só com painel aberto, aba visível e túnel ativo. Nenhum `location.reload` foi adicionado.
+- **Verificação**: suíte web 1.249 aprovados e 10 ignorados; 24 testes focados; typecheck; i18n 2.369/2.369 por idioma; bundles cliente/servidor produzidos em pasta temporária para preservar a instância instalada; `git diff --check` passou. O aviso de bundle do Vite acima de 500 kB permanece.
+- **Operação**: health local `ok`, versão `2.1.0`; túnel estava desligado no encerramento da verificação. Não reiniciei o app nem iniciei um túnel público para preservar a instância. O app instalado não carregou as alterações do workspace; a próxima build/start normal é necessária antes da validação real com dispositivos.
+- **Causa do encerramento anterior**: o log mostrou o servidor pronto para ouvir às 14:12 UTC, mas sem handshake confiável recebido pelo desktop; após 360 segundos, `waitForServer` encerrou o processo local. O handler antigo esperava `event.data`, embora o Electron 44 entregue o payload diretamente. A fonte atual valida o payload direto com nonce e versão; uma execução posterior registrou handshake e health aprovados. Esse timeout era de inicialização do desktop, não de inatividade do túnel.
+- **Estado ao concluir a checagem operacional**: serviço local respondeu `ok`; acesso remoto reportou `disabled` e `configured=false`. Nenhum túnel foi iniciado. O timeout de 120 segundos continua valendo somente para a partida que não recebeu URL inicial; não há prazo de inatividade após o túnel ficar ativo.
+
+## 2026-10-14 — QA visual isolado da gestão de sessões
+- Prévia em Chrome headless com sessões sintéticas e painel aberto em 390×844, 768×1024, 1280×800 e 1440×900; diálogo dentro do viewport, sem overflow horizontal e sem erros do browser.
+- Dois botões **Revogar** tinham nomes acessíveis. O mock removeu somente a sessão escolhida, mantendo a segunda. Capturas temporárias em `%TEMP%/aioffice-mobile-session-{390,768,1280,1440}.png`.
+- Nenhuma sessão real ou túnel público foi usado; login e revogação reais seguem pendentes da próxima build carregada.
+
+## 2026-10-14 — Recuperação segura da porta no desktop
+- **Relato**: o servidor encerrava na abertura porque `4747` já estava ocupada; log confirmou `EADDRINUSE`.
+- **Correção**: Electron verifica listeners antes de iniciar. Pode cooperar com o servidor via nonce local; para serviço legado, sinaliza somente o PID identificado como utilitário Electron próprio ou `start-managed.mjs`. Se a API recusar por PTYs ativos, não mata. Outro processo fica intacto e gera diagnóstico com nome/PID. `HABBLAUD_PORT` inválida agora informa faixa e valor aceito.
+- **Erros de partida**: mensagens específicas para conflito de porta, sessões abertas, bootstrap do Maestro, instalação incompleta, permissões/bloqueio de processo e timeout, mantendo as últimas mensagens e caminho do log.
+- **Verificação/publicação**: Node syntax checks, smoke da porta e leitura do ASAR aprovados. Build do cliente/servidor passou; após `EPERM` ao renomear a pasta temporária para a saída padrão, o NSIS foi concluído numa saída limpa. Setup `AIOffice-Setup.exe` da release `v2.1.0` substituído; 117.957.737 bytes, SHA-256 `aeb0166547d5b578d28e94f9084aa8710003f1152b0a13c8ab7f418d8f65591c`; release continua com um único asset e URL estável HTTP 200.
+- **Limites**: sem testes automatizados nem início/parada funcional do servidor, pois `4747` estava ocupada por `start-managed.mjs` e pode haver sessões em andamento. Authenticode permanece `NotSigned`. Nenhum refresh de página foi adicionado; nenhuma fonte foi enviada.
+
+## 2026-10-14 — Login móvel por código temporário
+- **Pedido**: manter Quick Tunnel + links aleatórios/QR, substituir senha mestra e ajustar o campo do celular para código.
+- **Implementação**: painel local emite código aleatório alfanumérico de seis caracteres, válido por cinco minutos e uma autenticação; segredo só em memória (hash), fora de URL/QR, `.env` e logs. Trocar, usar, parar ou reiniciar invalida o código; parar também derruba sessões. Campo remoto usa `autocomplete=one-time-code` e entrada de texto normalizada.
+- **Segurança**: emissão limitada a POST local por loopback + Origin; gerenciamento segue negado pelo listener remoto; throttle de login permanece. Aviso Chrome/Safe Browsing é preservado e não pode ser removido pelo código.
+- **Persistência**: `.env` não armazena mais senha de acesso; credenciais antigas são removidas na inicialização configurada.
+- **Revisão final**: cada listener agora mistura um nonce efêmero na chave das sessões, então cookies antigos deixam de valer mesmo se não for possível gravar a rotação do segredo em disco. A resposta 401 da API também orienta a usar o código temporário, não a senha antiga.
+- **Túnel**: início agora espera até dois minutos pela URL; não há encerramento por ausência de acesso móvel. Saída inesperada registra código/sinal e stderr sanitizado; timeout de início também registra o stderr disponível.
+- **Verificação**: build raiz, typecheck do app, i18n 2.353/2.353 por idioma, `git diff --check` e 10 testes focados passaram. Vite ainda avisa que o bundle principal supera 500 kB. Quick Tunnel real e inspeção visual ao vivo não foram testados.
+- **Ativação**: launcher normal reiniciou o servidor; health `ok`, versão `2.1.0`. O túnel ficou desligado, porta 4748 fechada e sem processo `cloudflared`; o próximo início manual gera outro link/QR.
+
+## 2026-10-14 — Corrige bootstrap NPM no prefix global vazio
+- **Sintoma**: depois da correção que incluiu `graceful-fs`, o primeiro início parava porque `npm root --global` retornava um caminho válido que ainda não tinha sido criado; `globalRoot()` exigia a existência física antes de instalar o pacote.
+- **Correção**: validar caminho absoluto e aceitar diretório global ausente, para que a instalação inicial do Maestro possa criá-lo.
+- **Artefato**: `AIOffice-Setup.exe` substituído novamente na release `v2.1.0`; 117.950.187 bytes; SHA-256 `169884c17cde04e61641b95d3ca8478cbf8b264dafce4f6f410401657d07fd4d`. A URL estável retornou HTTP 200 e o digest GitHub coincidiu.
+- **Verificação**: `node --check`, `npm run desktop:package:win`, CLI NPM interna `11.12.1` e consulta `root --global` com o prefixo ainda inexistente. Não executei instalação global nem suítes automatizadas.
+- **Próximo passo**: baixar novamente o setup atualizado e executar. O servidor inteiro não foi iniciado durante a verificação; código-fonte não foi enviado ao GitHub.
+
+## 2026-10-14 — Corrige setup que encerrava no primeiro início
+- **Sintoma reproduzido**: o NPM empacotado não encontrava `graceful-fs`; `npm-cli.js` e `lib/cli.js` estavam presentes, mas `resources/npm/node_modules` não foi copiado. O servidor abortava antes de abrir a janela do Electron.
+- **Correção**: o Electron Builder agora inclui a pasta de dependências do NPM como conjunto de recursos independente e exige uma instalação NPM completa na máquina de build.
+- **Artefato**: `AIOffice-Setup.exe` substituído na release existente `v2.1.0`; 117.950.239 bytes; SHA-256 `f796f82dcbea7d119fbeff30acfac44068eaa31ad4ecad77c23681e15eeb5479`. Link estável respondeu HTTP 200 e digest do GitHub coincide.
+- **Verificação**: `node --check`, `npm run desktop:package:win` e inicialização da CLI NPM dentro do pacote (respondeu `11.12.1`); dependências essenciais presentes. Suítes não executadas; servidor completo não iniciado para evitar instalar componentes no perfil local.
+- **Próximo passo**: usuário deve baixar novamente e executar o setup atualizado; nenhum dado de `userData` precisa ser apagado. Código-fonte não foi enviado ao GitHub.
+
+## 2026-10-14 — Túnel móvel ainda servia o Vite
+- **Causa**: o processo encontrado era `server/index.ts --dev`. O login remoto redirecionava para `/`, onde o middleware do Vite recusava o hostname aleatório do Quick Tunnel.
+- **Correção**: túnel bloqueado em modo dev com orientação visível para usar `start-aioffice.bat`; `findCloudflared` reconhece o MSI oficial em `Program Files (x86)` e o launcher inclui essa pasta no `PATH`.
+- **Ambiente**: `cloudflared` 2026.10.0 já estava instalado e assinado pela Cloudflare. O `.bat` apontava para `start-aioffice.ps1`, que estava ausente; restaurei o arquivo e o alias legado `start-aioffice-dev.bat`.
+- **Validação operacional**: `start-aioffice.bat` compilou e iniciou `start-managed.mjs`. `/` em 4747 e `/login` em HTTPS 4748 responderam 200 sem `/@vite/client`; `/api/remote-access/status` retornou `available=true`, `configured=true`, `state=disabled`.
+- **Validação de código**: `npm run build`, i18n (2.346 textos em inglês, espanhol e francês), parse do PowerShell e `git diff --check` passaram. Não foi iniciado Quick Tunnel real; clique em **Iniciar túnel** para gerar o link/QR novo.
+
+## 2026-10-14 — Setup Windows na release desktop atual
+- **Erro de inicialização**: `electron-updater` publica CommonJS; o import nomeado `autoUpdater` falhava antes da janela abrir. O main agora importa o módulo pelo default e acessa o getter `autoUpdater`; um teste de regressão verifica esse contrato sem instanciar Electron.
+- **Versão**: manifesto e lockfile locais foram alinhados a `2.1.0` para corresponder ao GitHub; nenhuma tag ou commit foi criado.
+- **Primeiro instalador**: a build NSIS foi publicada inicialmente como único asset `AIOffice-Setup.exe` na release GitHub `v2.1.0`, com 115.750.420 bytes e SHA-256 `7dd1d0c8379ac6abf1b927d36e21a0c657cc6fb001c5ad9ab62e2411c987bd4e`. O bug e a substituição pelo setup corrigido estão registrados na entrada mais recente acima.
+- **Limites da publicação**: o asset atual está sem assinatura Authenticode. Nenhum `latest.yml` ou blockmap foi enviado; é uma instalação manual, e builds existentes não se atualizam por este asset. O código-fonte local e o workflow não foram enviados.
+- **Verificação**: `npm run desktop:verify` passou na versão `2.1.0` (raiz 22, web 1.233 aprovados + 10 ignorados em 103 arquivos, desktop 13); o instalador foi empacotado e sua versão, assinatura, hash e URL pública foram conferidos.
+
+## 2026-10-14 — Instalação automática do plugin de mensagens
+- **Regra**: quando o recurso estiver habilitado, o servidor local e `docker:up` instalam/verificam somente `habblaud-mensagens` nas contas Claude Code observadas. Falhas são avisos, não bloqueiam a inicialização; `HABBLAUD_MENSAGENS=0` desliga a entrega e a automação.
+- **Resolução do CLI**: `HABBLAUD_CLAUDE_BIN`, instalação nativa `~/.local/bin/claude` (`claude.exe` no Windows), depois PATH; Claude Code 2.1.287+ requerido. O pacote desktop inclui e descompacta marketplace e fontes do plugin para leitura pelo CLI externo.
+- **Instalação local**: atualizei Claude Code de 2.1.170 para 2.1.299 e rodei `npm run mod:install`; `npm run mod:status` confirmou marketplace e os três plugins ativos em `~/.claude`.
+- **Verificação**: typecheck raiz/app, build web, `i18n:check` (2.345/2.345 por idioma), `desktop:build` e `git diff --check` aprovados. Testes automatizados não foram executados.
+- **Limite**: sessões abertas antes da instalação exigem `/reload-plugins`. A lógica automática será observada na próxima inicialização limpa do servidor; nenhuma sessão recebeu mensagem de teste.
+
+## 2026-10-14 — Launcher normal, QR e alerta do link móvel
+- **Launcher**: novo `start-aioffice.bat` executa build e servidor Node gerenciado; o script recusa a porta 4747 ocupada e não mata processos. Os nomes/atalhos antigos passam a usar modo normal.
+- **QR**: Configurações gera o QR do link Cloudflare localmente no navegador e remove o código quando o túnel para; nenhuma recarga completa foi adicionada.
+- **Chrome**: o campo de login estava funcionando como `type=password`; o rótulo **Perigoso** vem do navegador e pode aparecer após digitar credenciais num hostname temporário. O login agora avisa para não prosseguir diante desse alerta; a aplicação não tenta desativar a proteção.
+- **Limite**: Quick Tunnel usa hostname temporário. Para um endereço estável, é preciso domínio próprio na conta Cloudflare. A instância dev já ativa não foi fechada; o usuário precisará encerrá-la manualmente antes de rodar o launcher normal.
+- **Verificação**: root/app typecheck, build, i18n (2.345), root tests 22/22 e app tests 1.233 aprovados + 10 ignorados; smoke do QR local, parse PowerShell, BOM UTF-8 e `git diff --check` aprovados. Audit de produção: 0; auditoria completa reporta 8 moderadas em ferramentas de build Electron já presentes. Nenhum launcher ou serviço foi iniciado/reiniciado.
+
+## 2026-10-14 — Aplicativo desktop Electron
+- **Aplicativo**: adicionado shell Electron com servidor supervisionado, janela isolada, preload IPC restrito, migração de dados sem mover a origem, diagnóstico e instalador NSIS x64. O servidor só libera a janela após confirmar por IPC sua própria inicialização e responder health check com a versão esperada.
+- **Atualizações**: downloads nativos pedem confirmação; installs locais sem assinatura não ativam atualizações verificáveis no Windows/macOS. AppImage verifica metadados por HTTPS/SHA-512; `.deb` segue o gerenciador do sistema. CI exige artefatos e certificados antes de publicar.
+- **Refresh da página**: não há timer que recarregue a página. Estado do escritório e confirmação de release chegam em background por SSE/polling; o banner deixa a recarga a cargo do usuário. `location.reload()` da troca de idioma só ocorre após seleção explícita.
+- **Teste MCP**: o teste de heartbeat deixou de depender da porta fixa 4747 e usa um servidor HTTP efêmero, o que mantém a suíte determinística em CI sem serviço externo.
+- **Verificação na implementação inicial**: `npm run desktop:verify` aprovado; raiz 22/22, web 1.232 aprovados + 10 ignorados em 102 arquivos, desktop 12/12. O instalador NSIS inicial tinha 115.690.061 bytes. A correção do import e o novo alias estão registrados na entrada de 14/10 acima.
+- **Limites**: instalador local está `NotSigned`; macOS/Linux, CI real, assinatura/notarização e update de release publicada não foram exercitados neste host.
+
+## 2026-10-14 — Orquestrador-Maestro obrigatório com instalação NPM
+- **Inicialização**: `npm run setup` prepara a CLI oficial `@iapro/orquestrador-maestro-cli@latest`; o servidor também executa `ensure` antes de abrir a porta e não inicia se a camada central não puder ser instalada ou verificada. O escopo usa `--core-only` e preserva perfis de ferramentas.
+- **Atualização**: Configurações → **Orquestrador-Maestro** mostra versão instalada e última versão do NPM, consulta automaticamente a cada seis horas e instala/atualiza após clique. A consulta e o trabalho do NPM ocorrem no servidor; a interface recebe snapshots/SSE e não recarrega a página nem reinicia o servidor.
+- **Distribuição**: o desktop inclui a CLI do NPM e usa prefixo/cache persistentes em userData. Docker semeia o pacote no build e persiste `/maestro` em volume gravável, inclusive com rootfs read-only. A ponte MCP também exige as três regras centrais instaladas. O updater GitHub do AIOffice segue separado.
+- **Verificação**: typechecks raiz/app, build web, i18n, build desktop `--dir`, sintaxe do helper e `git diff --check` aprovados. A checagem NPM somente leitura confirmou CLI `1.0.1` instalada e `1.0.1` como latest. O build desktop incluiu `resources/npm/bin/npm-cli.js` e o helper em `app.asar.unpacked`. Não rodei testes automatizados nem o helper de instalação/atualização. Docker permanece sem build/execução nesta rodada.
+- **Recarga**: a busca no componente novo não encontrou `location.reload`; as recargas existentes para troca de idioma e para carregar uma release nova do próprio AIOffice permanecem ações explícitas e independentes.
+
+## 2026-10-14 — Migração das instruções móveis e desativação do CLI legado
+- **Contrato vigente**: Configurações → **Acesso pelo celular**, cadastro de senha mestra e início de Quick Tunnel Cloudflare ao concluir a configuração. `cloudflared` instalado no `PATH` é requisito. O painel oferece **Iniciar**, **Parar** e **Copiar link**; o celular autentica com a senha mestra.
+- **Ciclo de vida**: o túnel nunca inicia automaticamente ao ligar o servidor. Depois de reiniciar, a ativação é explícita pelo painel; o link pode mudar ao reativar.
+- **CLI**: `remote:setup` e `remote:off` agora só imprimem orientações. O script não lê/grava configuração, não recebe senha e não provisiona credenciais, CA ou LAN/VPN. A parada real é pelo botão **Parar**.
+- **Documentação**: READMEs, handoff, spec ativa e verify atualizados. Controles de versão Habblaud saem da descrição da experiência AIOffice; instruções upstream e diagnósticos antigos ficam identificados como histórico.
+- **Atualização de estado**: dados do escritório atualizados em segundo plano, sem recarga total automática; o banner só recarrega o cliente após clique explícito. A troca de idioma recarrega apenas após escolha da pessoa.
+- **Disponibilidade do túnel**: a tela distingue execução em Docker da ausência do `cloudflared`; depois da instalação, orienta reiniciar o AIOffice para atualizar o `PATH` do processo.
+- **Gates revalidados**: typecheck raiz/app, build web, i18n (2.332/2.332 por idioma), suíte app (102 arquivos, 1.232 testes aprovados e 10 ignorados) e `git diff --check` aprovados. O Vite mantém o aviso do bundle acima de 500 kB.
+- **Verificação documental/CLI**: revisão de ortografia/UTF-8 sem texto quebrado; `git diff --check` aprovado com avisos LF/CRLF. `npm run remote:setup -- --help` e `npm run remote:off` concluíram com exit code 0 e apenas as instruções do painel.
+- **Pendente**: validação operacional com `cloudflared`, link real, autenticação no celular, parada/reativação e reinício sem partida automática. `cloudflared` não foi instalado nem verificado nesta sessão; nenhum túnel real foi aberto e o serviço em 4747 não foi reiniciado.
+
+> Os registros abaixo preservam a implementação anterior e seus resultados na data indicada. LAN/VPN, usuário/CA e partida por configuração antiga não representam o contrato móvel vigente.
+
+## 2026-10-14 — Controle móvel integrado e canal AIOffice
+- **Leitura das capturas do usuário**: `npm run remote:setup` gravou as credenciais/CA e indicou reinício; a tentativa no celular recebeu conexão recusada porque o backend antigo ainda não abriu a porta 4748. A configuração existente foi preservada, sem recriar senha ou CA.
+- **Acesso pelo celular**: Configurações → **Acesso pelo celular** agora tem configuração inicial e ações confirmadas de iniciar/parar, estado consultável, URLs HTTPS privadas, usuário, impressão SHA-256 e download da CA. As ações administrativas só aceitam navegador local; o listener usa HTTPS e leitura por padrão. Docker informa que o fluxo não está disponível.
+- **Atualização**: chip e avisos só reconhecem `IAPro-Community/AIOffice`; o About deixa de rotular versão Habblaud/desconhecida como AIOffice. O botão oficial baixa/aplica release no servidor gerenciado, e a badge só some após o snapshot ao vivo confirmar a versão.
+- **Texto do produto**: avisos de recarga e estado de verificação desativada não atribuem atualização ao Habblaud nem expõem a variável interna `HABBLAUD_UPDATE_CHECK`.
+- **Revisão adversarial**: sincroniza a cópia pública da CA sem trocar a CA válida, permite no guard o domínio VPN anunciado e alinha a validação NFC/surrogates no CLI.
+- **Gates**: root/app typecheck e build passaram; app tests passaram (101 arquivos, 1.219 aprovados, 10 ignorados); i18n passou (2.336/2.336 por idioma). A suíte root teve 21/22: `packages/mcp-bridge/test/mcp.test.ts` espera uma resposta bem-sucedida da API ao vivo em 4747; a alteração não foi tocada. A UI foi conferida na instância de demonstração isolada e em 390 px. O harness Visual QA automático não achou Playwright instalado. O build mantém o aviso do bundle acima de 500 kB.
+- **Ativação**: nenhuma instância ou listener real foi reiniciado. O usuário já executou `npm run remote:setup`; após iniciar a nova build com `npm run start:office`, o backend lerá essa configuração e tentará abrir a porta HTTPS. Não houve commit, push, release, publicação ou mudança no serviço em 4747.
+
 ## 2026-10-13 — Diagnóstico final do canal e do acesso pelo celular
 - **API ao vivo em `127.0.0.1:4747`**: ainda informa AIOffice `0.10.0`, consulta `marmottajr/habblaud` e oferece `v0.11.0`; não anuncia estado `remoteAccess` nem capacidade de instalação. Esse processo não é o backend gerenciado atualizado do AIOffice.
 - **Correção da interface**: o cliente só considera versão disponível quando `meta.updates.repo` é exatamente `IAPro-Community/AIOffice`; release do Habblaud não deve gerar badge, notificação, verificação ou instalação do AIOffice. O bundle atual (`main-DoVwioVj.js` → `app-CWocrG6d.js`) contém o aviso de canal incorreto.
@@ -111,3 +248,28 @@
 - **Configuração**: preferências persistidas incluem liga/desliga das datas comemorativas e quatro horários configuráveis com um tema por faixa; eventos têm prioridade. Timelapse acompanha a data/hora reproduzida.
 - **Visual**: cenários comemorativos receberam paletas e motivos pixel-art próprios; o painel de configurações se adapta e rola em telas menores.
 - **Verificação**: typecheck, build, i18n e QA visual passaram em 390/768/1280/1440 px; 320 px conferido sem overflow. Testes automatizados não foram executados.
+
+## 2026-10-14 — Diagnóstico de atualização automática do desktop
+- **Causa visível**: `serverEnvironment()` força `HABBLAUD_UPDATE_CHECK=0`; a API da instância instalada confirmou estado `off` e o log explica a mesma configuração.
+- **Causa da instalação**: o updater Electron está desativado para builds Windows sem assinatura/publisher; o executável instalado não tem assinatura e a release `v2.1.0` só publica o setup, sem manifesto `latest.yml` ou blockmap.
+- **Estado GitHub**: `origin/main` e o checkout limpo separado estão no commit `01e59b3`/`v2.1.0`; o desktop e a candidata `2.2.0` existem apenas na árvore local modificada. Não apareceram secrets/variables de signing no escopo do repositório; secrets de organização não foram inspecionados.
+- **Limite da rodada**: investigação somente leitura; nenhum código de updater, release, tag, commit ou publicação foi alterado. Requisitos e evidências em `DEV/DESKTOP.md` e `DEV/VERIFY.md`.
+
+## 2026-10-14 — Atividades e linha do tempo detalhadas para o OMP (oh-my-pi)
+- **Problema Reportado**: Nas atividades (feed) e na linha do tempo do agente OMP (Jorge), aparecia repetidamente apenas o nome cru da ferramenta e conclusão genérica ("bash", "bash terminou", "read", "read terminou", "glob", "glob terminou"), sem detalhamento em português como acontece no Claude ou Codex.
+- **Causa Raiz**:
+  1. `OmpSource.processSessionFile` gerava texto fixo igual ao nome da ferramenta (`c.name`), sem interpretar os argumentos (`command`, `path`, etc.) nem os intents (`i`/`intent`).
+  2. Em `toolResult`, gerava forçadamente a mensagem `{toolName} terminou` para todo retorno com sucesso, poluindo a linha do tempo e balão com repetições.
+  3. As mensagens de `user` (prompt), `thinking` e `text` do assistente não alimentavam a linha do tempo de forma encadeada e com histórico incremental; apenas a última linha sobrescrevia o estado.
+  4. Métricas e estatísticas do OMP (chamadas de ferramenta, tokens in/out, modelo, custos e tarefas do `todo`) não eram repassadas para o `office.applyTranscript`.
+- **Correção**:
+  - Criada a função `describeOmpTool` mapeando todas as ferramentas do OMP (`bash`, `read`, `write`, `edit`, `glob`, `grep`, `task`, `todo`, `eval`, `web_search`, `ask`, `wait`, além de URIs internas `pr://`, `issue://`, `skill://`, etc.) para atividades legíveis em português, com ícones adequados (`🌿`, `📖`, `✏️`, `📝`, `🔎`, `👥`, `✅`, `🌐`, etc.) e detalhamento via `describeCommand` e `describeTool`.
+  - Removida a emissão de `{toolName} terminou` em `toolResult` de sucesso, alinhando com a experiência do Claude Code e Codex. Apenas erros (`isError: true`) emitem atividade de alerta (`⚠️ Erro em {toolName}: {motivo}`).
+  - Implementado tracking incremental de sessões OMP (`OmpSessionTracker`), evitando reprocessamento redundante, alimentando `describePrompt`, `SPECIAL.think()`, chamadas de ferramentas e respostas com seus timestamps reais.
+  - Carga inicial (`live: false`) popula o histórico e linha do tempo sem disparar spam de avisos no feed ao vivo; eventos subsequentes entram ao vivo.
+  - Integração com `office.applyTranscript` para preencher chamadas de ferramenta, tokens de entrada/saída, custo, modelo e tarefas do `todo`.
+  - Atualizadas traduções em EN, ES e FR e adicionada suíte de testes unitários dedicada em `apps/office-web/server/sources/omp/source.test.ts`.
+- **Verificação**:
+  - Suíte completa de testes (`npm --prefix apps/office-web test`): 105 arquivos, 1.256 testes passando (incluindo os 7 testes dedicados do OMP).
+  - Validação de i18n (`npm --prefix apps/office-web run i18n:check`): 2.382/2.382 textos traduzidos (100%).
+  - Build do cliente e servidor (`npm run build`): concluído com sucesso.

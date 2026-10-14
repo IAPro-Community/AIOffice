@@ -2,7 +2,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { readPackage } from './config';
+import { loadConfig, readPackage } from './config';
 
 const temporary: string[] = [];
 
@@ -48,5 +48,24 @@ describe('readPackage', () => {
     });
 
     expect(readPackage(app)).toEqual({ version: '0.10.0', repo: 'marmottajr/habblaud' });
+  });
+});
+
+describe('loadConfig', () => {
+  it('usa o arquivo de ambiente persistente quando é fornecido pelo desktop', () => {
+    const root = tempRoot();
+    const dataDir = join(root, 'AIOffice', 'habblaud');
+    const envFile = join(root, 'AIOffice', '.env');
+    const config = loadConfig({
+      HOME: root,
+      HABBLAUD_IN_DOCKER: '0',
+      HABBLAUD_DATA_DIR: dataDir,
+      HABBLAUD_ENV_FILE: envFile,
+      HABBLAUD_HOST: '127.0.0.1',
+      HABBLAUD_REMOTE_ENABLED: '0',
+    }, []);
+
+    expect(config.dataDir).toBe(dataDir);
+    expect(config.envFile).toBe(envFile);
   });
 });

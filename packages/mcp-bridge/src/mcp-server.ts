@@ -1,5 +1,6 @@
 import { createInterface } from 'node:readline';
 import { existsSync, readFileSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { HabblaudBridgeClient, type OfficeAgentStatus } from '@aioffice/habblaud-bridge';
 import type { McpRequest, McpResponse, McpToolDefinition } from './types.js';
@@ -172,9 +173,24 @@ export class AIOfficeMcpServer {
 
         if (toolName === 'aioffice_get_context') {
           const ws = String(args['workspacePath'] || process.cwd());
+          const home = process.env.HOME || process.env.USERPROFILE || homedir();
+          const maestroFiles = [
+            ['REGRAS GLOBAIS DO MAESTRO', join(home, '.orquestrador', 'rules.md')],
+            ['CONTRATO DO MAESTRO', join(home, '.orquestrador', 'maestro.md')],
+            ['PERSISTÊNCIA DO MAESTRO', join(home, '.orquestrador', 'PERSISTENCE.md')],
+          ] as const;
+          const missing = maestroFiles.filter(([, path]) => !existsSync(path)).map(([name]) => name);
+          if (missing.length) throw new Error(`Orquestrador-Maestro não instalado ou incompleto: faltam ${missing.join(', ')}.`);
           const handoffPath = join(ws, 'DEV', 'HANDOFF.md');
           const specsPath = join(ws, 'DEV', 'SPECS', 'ACTIVE.md');
-          let summary = 'Contexto AIOffice carregado.\n';
+          let summary = 'Contexto AIOffice e Orquestrador-Maestro carregado.\n';
+          for (const [name, path] of maestroFiles) {
+            summary += `\n--- ${name} ---\n${readFileSync(path, 'utf-8')}`;
+          }
+          const projectAgentsPath = join(ws, 'AGENTS.md');
+          if (existsSync(projectAgentsPath)) {
+            summary += '\n--- INSTRUÇÕES DO PROJETO ---\n' + readFileSync(projectAgentsPath, 'utf-8');
+          }
           if (existsSync(handoffPath)) {
             summary += '\n--- HANDOFF ATIVO ---\n' + readFileSync(handoffPath, 'utf-8');
           }

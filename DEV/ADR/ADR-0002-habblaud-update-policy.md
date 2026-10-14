@@ -15,8 +15,8 @@ O AIOffice adapta o Habblaud dentro de um monorepo. Mesclar o upstream diretamen
 - O verificador acompanha exclusivamente `IAPro-Community/AIOffice`; versões do Habblaud upstream nunca controlam o selo do produto.
 - O botão pode instalar automaticamente uma release oficial do AIOffice somente em uma instalação local Node compatível, gerenciada, limpa e sem sessões PTY ativas. O processo valida a release/tag, prepara a build fora da instalação ativa, preserva os artefatos locais, encerra o servidor de forma coordenada, confirma a nova versão e faz rollback se a inicialização falhar. Docker, desenvolvimento, checkout modificado ou inicialização sem o modo gerenciado ficam no fluxo manual.
 - O selo só é removido quando o servidor em execução confirma a versão alvo. Falha, bloqueio ou download incompleto não altera a versão mostrada.
-- `npm run release` é uma simulação local; `npm run release -- --publish` exige origem canônica, branch principal limpa e sincronizada, versão/changelog válidos e uma tag inédita antes de publicar a release AIOffice.
-- O acesso remoto é uma porta HTTPS separada com autenticação, desligada por padrão e leitura apenas inicialmente. Usuário, senha, certificados, capabilities, VPN e firewall não são provisionados sem configuração explícita; acesso via rede pública direta não é o caminho suportado.
+- `npm run release` é uma simulação local; `npm run release -- --publish` exige origem canônica, branch principal limpa e sincronizada, versão/changelog válidos e uma tag inédita. A pipeline cria a release AIOffice somente depois de compilar e validar os artefatos das plataformas.
+- O acesso pelo celular usa um Cloudflare Quick Tunnel temporário sob demanda. O painel configura uma senha mestra e oferece ações para iniciar/parar; o link é mostrado para abrir e copiar, e o telefone entra com essa senha. O processo exige `cloudflared`, não inicia o túnel automaticamente e mantém a origem HTTPS autenticada presa ao loopback. O login remoto permanece somente leitura por padrão.
 - `npm run check:habblaud-upstream` é uma consulta somente de leitura para mantenedores; nunca baixa ou mescla código.
 
 ## Alternativas consideradas
@@ -36,5 +36,6 @@ O AIOffice adapta o Habblaud dentro de um monorepo. Mesclar o upstream diretamen
 ## Verificação e revisão
 
 - Referências upstream fixadas: `v0.10.0` (`e3204a6a533089fa9df74970ddc4340ecc1c8cd4`) a `v0.11.0` (`4ccce2537472fe5a8d432f06974494d2e778ff15`).
-- Referências e contrato revistos em 2026-10-13 após a solicitação explícita de atualização automática com segurança e acesso remoto por LAN/VPN.
+- Atualização e política do Habblaud upstream revistas em 2026-10-13. Em 2026-10-14, a conexão móvel passou de LAN/VPN com CA no telefone para Quick Tunnel Cloudflare; a decisão vale apenas ao AIOffice.
+- Quick Tunnels são links públicos temporários, sem SLA, adequados a teste/desenvolvimento; a interface alerta sobre a exposição do link e não inicia serviço por conta própria.
 - Revisar se o método de distribuição mudar ou se a equipe quiser suportar Docker, update packages assinados, ditado ou novos poderes remotos.

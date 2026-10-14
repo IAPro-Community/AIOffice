@@ -7,9 +7,9 @@ import { isValidThemeSchedule, type UiPrefs } from './prefs';
 import { SoundSettingsGroup } from './settings-sound';
 import type { SoundControl } from './sound';
 import { AboutGroup } from './version';
-import { LOCALE_STORAGE_KEY, LOCALES, normalizeLocale, tr, type Locale } from '../../../shared/i18n';
+import { MaestroUpdateGroup } from './maestro-update';
+import { intlLocale, LOCALE_STORAGE_KEY, LOCALES, normalizeLocale, tr, type Locale } from '../../../shared/i18n';
 import { DEFAULT_THEME_SCHEDULE, type SeasonalTheme, type ThemeSchedule } from '../world/api';
-import type { RemoteAccessStatus } from '../../../shared/types';
 
 type LanguageChoice = 'auto' | Locale;
 
@@ -113,6 +113,7 @@ export class SettingsPopover implements UiComponent {
   private soundGroup: SoundSettingsGroup;
   private demoGroup: HTMLElement;
   private about: AboutGroup;
+  private maestro: MaestroUpdateGroup;
   private mobileAccess: MobileAccessGroup;
   private demoBusy = false;
   private anchor: HTMLElement | null = null;
@@ -249,6 +250,7 @@ export class SettingsPopover implements UiComponent {
     );
 
     this.about = new AboutGroup(ctx);
+    this.maestro = new MaestroUpdateGroup(ctx);
     this.mobileAccess = new MobileAccessGroup(ctx);
 
     const close = iconButton(ICONS.close, tr('Fechar configurações'), () => this.hide(), 'ui-icon-btn--sm');
@@ -276,6 +278,7 @@ export class SettingsPopover implements UiComponent {
       h('div', { class: 'ui-set-group' }, h('h3', { text: tr('Idioma') }), this.language.row),
       this.demoGroup,
       this.mobileAccess.el,
+      this.maestro.el,
       this.about.el,
     );
     this.el.addEventListener('toggle', () => {
@@ -324,6 +327,7 @@ export class SettingsPopover implements UiComponent {
   /** Com o popover aberto, os avisos recolhem (não aparecem por trás nem ao lado dele). */
   private syncRootClass(): void {
     this.ctx.root.classList.toggle('has-popover', this.isOpen);
+    this.mobileAccess.setVisible(this.isOpen);
   }
 
   render(): void {
@@ -348,6 +352,7 @@ export class SettingsPopover implements UiComponent {
     this.soundGroup.render();
     setHidden(this.demoGroup, this.ctx.store.mock);
     this.mobileAccess.render();
+    this.maestro.render();
     this.about.render();
 
     const notif = this.switches.get('browserNotifications')!;
@@ -401,122 +406,330 @@ export class SettingsPopover implements UiComponent {
   }
 }
 
-type MobileAccessAction = 'configure' | 'start' | 'stop';
-
-// Somente mensagens sanitizadas conhecidas são apresentadas; erros inesperados usam uma orientação segura.
-const REMOTE_ACCESS_ERRORS = new Map<string, string>([
-  ["Use um usuário de 1 a 64 caracteres: letras, números, ponto, hífen, sublinhado ou @.", tr("Use um usuário de 1 a 64 caracteres: letras, números, ponto, hífen, sublinhado ou @.")],
-  ["Use uma senha com pelo menos 12 caracteres Unicode válidos.", tr("Use uma senha com pelo menos 12 caracteres Unicode válidos.")],
-  ["A senha excede 1024 bytes.", tr("A senha excede 1024 bytes.")],
-  ["Evite espaços no começo ou no fim da senha.", tr("Evite espaços no começo ou no fim da senha.")],
-  ["A senha deve ser diferente do usuário.", tr("A senha deve ser diferente do usuário.")],
-  ["A porta HTTPS já está em uso. Libere a porta e tente iniciar novamente.", tr("A porta HTTPS já está em uso. Libere a porta e tente iniciar novamente.")],
-  ["O sistema negou permissão para abrir a porta HTTPS ou gravar a configuração.", tr("O sistema negou permissão para abrir a porta HTTPS ou gravar a configuração.")],
-  ["O servidor está encerrando.", tr("O servidor está encerrando.")],
-  ["Não foi possível gerar o hash da senha. Tente novamente.", tr("Não foi possível gerar o hash da senha. Tente novamente.")],
-  ["Não foi possível preparar os certificados HTTPS. Confira o OpenSSL e as permissões da pasta de dados.", tr("Não foi possível preparar os certificados HTTPS. Confira o OpenSSL e as permissões da pasta de dados.")],
-  ["Não foi possível salvar a configuração do acesso remoto. Confira as permissões do arquivo .env.", tr("Não foi possível salvar a configuração do acesso remoto. Confira as permissões do arquivo .env.")],
-  ["Não foi possível validar a configuração HTTPS gerada.", tr("Não foi possível validar a configuração HTTPS gerada.")],
-  ["Configure o usuário e a senha antes de iniciar o acesso remoto.", tr("Configure o usuário e a senha antes de iniciar o acesso remoto.")],
-  ["Não foi possível salvar ou iniciar o acesso HTTPS. Confira a porta e as permissões do arquivo .env.", tr("Não foi possível salvar ou iniciar o acesso HTTPS. Confira a porta e as permissões do arquivo .env.")],
-  ["A porta HTTPS foi fechada, mas não foi possível salvar a desativação no arquivo .env.", tr("A porta HTTPS foi fechada, mas não foi possível salvar a desativação no arquivo .env.")],
-  ["O acesso pelo celular exige o servidor Node no computador; o controle HTTPS não está disponível no Docker.", tr("O acesso pelo celular exige o servidor Node no computador; o controle HTTPS não está disponível no Docker.")],
-  ["Não foi possível renovar o certificado para a rede atual. Confira o OpenSSL e as permissões; se a CA não cobrir o endereço, use npm run remote:setup -- --new-ca e reinstale a CA no celular.", tr("Não foi possível renovar o certificado para a rede atual. Confira o OpenSSL e as permissões; se a CA não cobrir o endereço, use npm run remote:setup -- --new-ca e reinstale a CA no celular.")],
-  ["A porta HTTPS encontrou um erro. Tente iniciar novamente.", tr("A porta HTTPS encontrou um erro. Tente iniciar novamente.")],
-  ["Não foi possível iniciar a porta HTTPS. Confira o certificado e o endereço de escuta.", tr("Não foi possível iniciar a porta HTTPS. Confira o certificado e o endereço de escuta.")],
-  ["Gerencie o acesso remoto pelo próprio computador (http://localhost).", tr("Gerencie o acesso remoto pelo próprio computador (http://localhost).")],
-  ["Gerenciamento de acesso remoto indisponível.", tr("Gerenciamento de acesso remoto indisponível.")],
-  ["A CA pública ainda não está disponível. Configure o acesso primeiro.", tr("A CA pública ainda não está disponível. Configure o acesso primeiro.")],
-  ["Origem não permitida. Abra o AIOffice pelo navegador neste computador.", tr("Origem não permitida. Abra o AIOffice pelo navegador neste computador.")],
-  ["Envie um objeto JSON.", tr("Envie um objeto JSON.")],
-  ["O servidor está encerrando para aplicar uma atualização.", tr("O servidor está encerrando para aplicar uma atualização.")],
-]);
-
-function remoteAccessError(value: unknown): string {
-  return typeof value === 'string' ? REMOTE_ACCESS_ERRORS.get(value) ?? tr('Não foi possível mudar o acesso. Atualize o estado e tente novamente.') : tr('Não foi possível mudar o acesso. Atualize o estado e tente novamente.');
+interface MobileSession {
+  id: string;
+  device: string;
+  loggedInAt: number;
+  lastSeenAt: number;
+  expiresAt: number;
 }
 
-/** Valida a resposta antes de apresentar um listener como ativo. Nunca aceita credenciais da resposta. */
-function readRemoteAccess(value: unknown): RemoteAccessStatus | undefined {
+interface MobileSessionRow {
+  el: HTMLElement;
+  device: HTMLElement;
+  login: HTMLElement;
+  activity: HTMLElement;
+  expiry: HTMLElement;
+  revoke: HTMLButtonElement;
+  feedback: HTMLElement;
+}
+
+/** Lista local de acessos autenticados, sem cookies ou credenciais no DOM. */
+class MobileSessionsGroup {
+  readonly el: HTMLElement;
+  private list = h('ul', { class: 'ui-mobile-access__session-list' });
+  private status = h('p', { class: 'ui-set__hint', role: 'status', attrs: { 'aria-live': 'polite' } });
+  private rows = new Map<string, MobileSessionRow>();
+  private sessions: MobileSession[] = [];
+  private revoking = new Set<string>();
+  private errors = new Map<string, string>();
+  private active = false;
+  private visible = false;
+  private controlsAllowed = false;
+  private tunnel = '';
+  private timer: number | undefined;
+  private generation = 0;
+  private loading = false;
+  private loaded = false;
+  private error = '';
+  private feedback = '';
+
+  constructor(private ctx: UiContext) {
+    this.el = h('section', { class: 'ui-mobile-access__sessions', attrs: { 'aria-labelledby': 'ui-mobile-sessions-heading' } },
+      h('h4', { text: tr('Dispositivos com acesso'), attrs: { id: 'ui-mobile-sessions-heading' } }),
+      h('p', { class: 'ui-set__hint', text: tr('Revogue um dispositivo para exigir um novo código de acesso. Datas e horários são exibidos no horário local deste navegador.') }),
+      this.status,
+      this.list,
+    );
+    document.addEventListener('visibilitychange', () => this.syncPolling());
+  }
+
+  setVisible(visible: boolean): void {
+    this.visible = visible;
+    this.syncPolling();
+  }
+
+  update(active: boolean, tunnel: string, controlsAllowed: boolean): void {
+    if (this.active !== active || this.tunnel !== tunnel) {
+      this.generation += 1;
+      this.sessions = [];
+      this.revoking.clear();
+      this.errors.clear();
+      this.loading = this.loaded = false;
+      this.error = this.feedback = '';
+    }
+    this.active = active;
+    this.tunnel = tunnel;
+    this.controlsAllowed = controlsAllowed;
+    this.render();
+    this.syncPolling();
+  }
+
+  private syncPolling(): void {
+    const shouldPoll = this.active && this.visible && document.visibilityState === 'visible';
+    if (!shouldPoll && this.timer !== undefined) {
+      window.clearInterval(this.timer);
+      this.timer = undefined;
+    } else if (shouldPoll && this.timer === undefined) {
+      this.timer = window.setInterval(() => void this.refresh(), 15_000);
+      void this.refresh();
+    } else if (shouldPoll && !this.loaded && !this.loading && !this.error) {
+      void this.refresh();
+    }
+  }
+
+  async refresh(): Promise<void> {
+    if (!this.active || !this.visible || document.visibilityState !== 'visible' || this.loading || this.revoking.size) return;
+    const generation = this.generation;
+    this.loading = true;
+    this.error = '';
+    this.render();
+    try {
+      const response = await fetch('/api/remote-access/sessions', { cache: 'no-store', credentials: 'omit', signal: AbortSignal.timeout(8_000) });
+      const body: unknown = await response.json();
+      if (!response.ok || !body || typeof body !== 'object' || !('sessions' in body) || !Array.isArray(body.sessions)) throw new Error('invalid sessions');
+      const sessions: MobileSession[] = [];
+      const ids = new Set<string>();
+      for (const value of body.sessions as unknown[]) {
+        if (!value || typeof value !== 'object') throw new Error('invalid session');
+        const data = value as Record<string, unknown>;
+        if (typeof data.id !== 'string' || !data.id || ids.has(data.id) || typeof data.device !== 'string' ||
+          typeof data.loggedInAt !== 'number' || !Number.isFinite(data.loggedInAt) ||
+          typeof data.lastSeenAt !== 'number' || !Number.isFinite(data.lastSeenAt) ||
+          typeof data.expiresAt !== 'number' || !Number.isFinite(data.expiresAt)) throw new Error('invalid session');
+        ids.add(data.id);
+        sessions.push({ id: data.id, device: data.device, loggedInAt: data.loggedInAt, lastSeenAt: data.lastSeenAt, expiresAt: data.expiresAt });
+      }
+      if (generation !== this.generation) return;
+      this.sessions = sessions;
+      this.loaded = true;
+    } catch {
+      if (generation !== this.generation) return;
+      this.error = tr('Não foi possível consultar os dispositivos. Atualize o estado para tentar novamente.');
+    } finally {
+      if (generation === this.generation) {
+        this.loading = false;
+        this.render();
+      }
+    }
+  }
+
+  private render(): void {
+    setAttr(this.list, 'aria-busy', String(this.loading));
+    setText(this.status, !this.active ? tr('Inicie o túnel para consultar os dispositivos com acesso.')
+      : this.error || this.feedback || (!this.loaded && this.loading ? tr('Consultando dispositivos…')
+        : this.loaded && !this.sessions.length ? tr('Nenhum dispositivo com acesso. Entre pelo celular usando um código gerado neste painel.') : ''));
+    this.status.classList.toggle('ui-mobile-access__error', !!this.error);
+    const ids = new Set(this.sessions.map((session) => session.id));
+    for (const [id, row] of this.rows) {
+      if (!ids.has(id)) { row.el.remove(); this.rows.delete(id); this.errors.delete(id); }
+    }
+    const formatDate = (value: number) => new Date(value).toLocaleString(intlLocale(), { dateStyle: 'short', timeStyle: 'short' });
+    this.sessions.forEach((session, index) => {
+      let row = this.rows.get(session.id);
+      if (!row) {
+        const device = h('strong', { class: 'ui-mobile-access__session-device' });
+        const login = h('span', { class: 'ui-set__hint' });
+        const activity = h('span', { class: 'ui-set__hint' });
+        const expiry = h('span', { class: 'ui-set__hint' });
+        const feedback = h('p', { class: 'ui-mobile-access__error', role: 'alert', hidden: true });
+        const revoke = h('button', { class: 'ui-btn ui-btn--sm ui-btn--danger', type: 'button', on: { click: () => void this.revoke(session) } });
+        const el = h('li', { class: 'ui-mobile-access__session' }, h('div', { class: 'ui-mobile-access__session-details' }, device, login, activity, expiry), revoke, feedback);
+        row = { el, device, login, activity, expiry, revoke, feedback };
+        this.rows.set(session.id, row);
+      }
+      const label = session.device.trim() || tr('Dispositivo desconhecido');
+      setText(row.device, label);
+      setText(row.login, tr('Entrada: {0}', [formatDate(session.loggedInAt)]));
+      setText(row.activity, tr('Última atividade: {0}', [formatDate(session.lastSeenAt)]));
+      setText(row.expiry, tr('Acesso válido até: {0}', [formatDate(session.expiresAt)]));
+      setText(row.revoke, this.revoking.has(session.id) ? tr('Revogando…') : tr('Revogar'));
+      setAttr(row.revoke, 'aria-label', tr('Revogar acesso de {0}', [label]));
+      row.revoke.disabled = !this.active || !this.controlsAllowed || this.loading || this.revoking.has(session.id);
+      const error = this.errors.get(session.id) ?? '';
+      setText(row.feedback, error);
+      setHidden(row.feedback, !error);
+      if (this.list.children[index] !== row.el) this.list.insertBefore(row.el, this.list.children[index] ?? null);
+    });
+  }
+
+  private async revoke(session: MobileSession): Promise<void> {
+    if (!this.active || !this.controlsAllowed || this.loading || this.revoking.has(session.id)) return;
+    const generation = this.generation;
+    this.revoking.add(session.id);
+    this.errors.delete(session.id);
+    this.feedback = '';
+    this.render();
+    try {
+      const response = await fetch(`/api/remote-access/sessions/${encodeURIComponent(session.id)}/revoke`, {
+        method: 'POST', credentials: 'omit', headers: { 'Content-Type': 'application/json' }, body: '{}', signal: AbortSignal.timeout(8_000),
+      });
+      if (response.status !== 404) {
+        const body: unknown = await response.json();
+        if (!response.ok || !body || typeof body !== 'object' || !('ok' in body) || body.ok !== true) throw new Error('revoke failed');
+      }
+      if (generation !== this.generation) return;
+      const row = this.rows.get(session.id);
+      const focusRemoved = row?.el.contains(document.activeElement);
+      this.sessions = this.sessions.filter((item) => item.id !== session.id);
+      this.feedback = response.status === 404 ? tr('Este dispositivo já não tem acesso.') : tr('Acesso de {0} revogado.', [session.device.trim() || tr('Dispositivo desconhecido')]);
+      this.ctx.announce(this.feedback);
+      this.render();
+      if (focusRemoved) {
+        const next = [...this.rows.values()].find((item) => !item.revoke.disabled)?.revoke;
+        if (next) next.focus();
+        else { this.status.tabIndex = -1; this.status.focus(); }
+      }
+    } catch {
+      if (generation === this.generation) this.errors.set(session.id, tr('Não foi possível revogar este acesso. Tente novamente.'));
+    } finally {
+      if (generation === this.generation) {
+        this.revoking.delete(session.id);
+        this.render();
+        void this.refresh();
+      }
+    }
+  }
+}
+
+type MobileAccessAction = 'configure' | 'start' | 'stop';
+type CloudflareAccessStatus = {
+  available?: boolean;
+  unavailableReason?: 'docker' | 'cloudflared_missing' | 'development_mode';
+  configured: boolean;
+  state: 'disabled' | 'starting' | 'active' | 'error';
+  url?: string;
+  error?: string;
+};
+
+function readRemoteAccess(value: unknown): CloudflareAccessStatus | undefined {
   if (!value || typeof value !== 'object') return undefined;
   const data = value as Record<string, unknown>;
   if (typeof data.configured !== 'boolean' || !['disabled', 'starting', 'active', 'error'].includes(String(data.state))) return undefined;
   return {
     available: typeof data.available === 'boolean' ? data.available : undefined,
+    unavailableReason: data.unavailableReason === 'docker' || data.unavailableReason === 'cloudflared_missing' || data.unavailableReason === 'development_mode' ? data.unavailableReason : undefined,
     configured: data.configured,
-    state: data.state as RemoteAccessStatus['state'],
-    port: typeof data.port === 'number' ? data.port : undefined,
-    user: typeof data.user === 'string' ? data.user : undefined,
-    urls: Array.isArray(data.urls) ? data.urls.filter((url): url is string => typeof url === 'string') : undefined,
-    caFingerprint: typeof data.caFingerprint === 'string' ? data.caFingerprint : undefined,
+    state: data.state as CloudflareAccessStatus['state'],
+    url: typeof data.url === 'string' ? data.url : undefined,
     error: typeof data.error === 'string' ? data.error : undefined,
   };
 }
 
-/** Configuração e controle HTTPS somente no computador servidor; snapshots continuam sendo a fonte ao vivo. */
+function remoteAccessError(value: unknown): string {
+  if (value === 'cloudflared_missing') return tr('O Cloudflare Tunnel não está instalado. Instale o cloudflared e atualize o estado.');
+  if (value === 'development_mode') return tr('Para acessar pelo celular, feche o servidor de desenvolvimento e inicie o AIOffice pelo arquivo start-aioffice.bat.');
+  if (value === 'tunnel_start_failed') return tr('Não foi possível iniciar o túnel. Corrija o problema indicado e tente novamente.');
+  if (value === 'tunnel_stopped') return tr('Não foi possível parar o túnel. Atualize o estado e tente novamente.');
+  if (value === 'not_configured') return tr('Configure o acesso antes de iniciar o túnel.');
+  if (value === 'tunnel_not_active') return tr('Inicie o túnel antes de gerar um código de acesso.');
+  return tr('Não foi possível alterar o túnel. Atualize o estado e tente novamente.');
+}
+
+function publicTunnelUrl(value: unknown): URL | undefined {
+  if (typeof value !== 'string') return undefined;
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'https:' || url.username || url.password || !url.hostname.endsWith('.trycloudflare.com')) return undefined;
+    return url;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Configuração e controle do Cloudflare Quick Tunnel apenas pelo navegador local do servidor. */
 class MobileAccessGroup implements UiComponent {
   readonly el: HTMLElement;
+  private sessions: MobileSessionsGroup;
   private status: HTMLElement;
   private detail: HTMLElement;
-  private addresses: HTMLElement;
+  private address: HTMLAnchorElement;
+  private addressPanel: HTMLElement;
+  private qrPanel: HTMLElement;
+  private qrImage: HTMLImageElement;
+  private qrStatus: HTMLElement;
+  private codePanel: HTMLElement;
+  private codeOutput: HTMLElement;
+  private codeStatus: HTMLElement;
+  private codeButton: HTMLButtonElement;
+  private copyCodeButton: HTMLButtonElement;
   private setup: HTMLFormElement;
-  private user: HTMLInputElement;
-  private password: HTMLInputElement;
-  private passwordConfirm: HTMLInputElement;
   private configureBtn: HTMLButtonElement;
   private actionBtn: HTMLButtonElement;
   private refreshBtn: HTMLButtonElement;
+  private copyBtn: HTMLButtonElement;
+  private copyStatus: HTMLElement;
   private confirmation: HTMLElement;
   private confirmationText: HTMLElement;
   private confirmBtn: HTMLButtonElement;
   private cancelBtn: HTMLButtonElement;
   private failure: HTMLElement;
-  private identity: HTMLElement;
-  private certificate: HTMLElement;
-  private fingerprint: HTMLElement;
-  private caLink: HTMLAnchorElement;
+  private install: HTMLElement;
   private localHint: HTMLElement;
   private pending: MobileAccessAction | null = null;
-  private busy: MobileAccessAction | 'status' | null = null;
+  private busy: MobileAccessAction | 'status' | 'code' | null = null;
   private requestError = '';
   private stateUnconfirmed = false;
-  private responseRemote: RemoteAccessStatus | undefined;
-  private snapshotRemote: RemoteAccessStatus | undefined;
+  private responseRemote: CloudflareAccessStatus | undefined;
+  private snapshotRemote: unknown;
   private linksKey = '';
+  private qrKey = '';
+  private qrGeneration = 0;
+  private loginCode = '';
+  private codeExpiryTimer: number | undefined;
 
   constructor(private ctx: UiContext) {
+    this.sessions = new MobileSessionsGroup(ctx);
     this.status = h('p', { class: 'ui-about__status', role: 'status', attrs: { 'aria-live': 'polite' } });
-    this.detail = h('p', { class: 'ui-set__hint', text: tr('No celular, conecte-se à mesma rede Wi-Fi do computador ou à mesma VPN privada.') });
-    this.addresses = h('div', { class: 'ui-mobile-access__links' });
-    const field = (id: string, label: string, type: string, autocomplete: string) => {
-      const input = h('input', {
-        class: 'ui-mobile-access__input', type,
-        attrs: { id, name: id, required: true, autocomplete, maxlength: type === 'password' ? 1024 : 64, autocapitalize: 'none', spellcheck: 'false', 'aria-describedby': 'ui-mobile-access-password-hint' },
-      });
-      return { input, el: h('label', { class: 'ui-mobile-access__field', attrs: { for: id } }, h('span', { class: 'ui-set__label', text: label }), input) };
-    };
-    const user = field('ui-mobile-access-user', tr('Usuário'), 'text', 'username');
-    const password = field('ui-mobile-access-password', tr('Senha'), 'password', 'new-password');
-    const passwordConfirm = field('ui-mobile-access-password-confirm', tr('Confirmar senha'), 'password', 'new-password');
-    this.user = user.input;
-    this.password = password.input;
-    this.passwordConfirm = passwordConfirm.input;
-    this.configureBtn = h('button', { class: 'ui-btn ui-btn--sm ui-btn--primary', type: 'submit', text: tr('Ativar acesso') });
+    this.detail = h('p', { class: 'ui-set__hint', text: tr('Configure o acesso pelo painel. O AIOffice abrirá um túnel público temporário do Cloudflare.') });
+    this.address = h('a', { class: 'ui-link-btn ui-mobile-access__url', attrs: { target: '_blank', rel: 'noopener noreferrer' } });
+    this.copyStatus = h('span', { class: 'ui-set__hint', role: 'status', attrs: { 'aria-live': 'polite' } });
+    this.copyBtn = h('button', { class: 'ui-btn ui-btn--sm', type: 'button', text: tr('Copiar link'), on: { click: () => void this.copyUrl() } });
+    this.qrImage = h('img', {
+      class: 'ui-mobile-access__qr-image',
+      attrs: { alt: tr('QR code do acesso móvel do AIOffice'), width: '192', height: '192', decoding: 'async' },
+    });
+    this.qrStatus = h('span', { class: 'ui-set__hint', role: 'status', attrs: { 'aria-live': 'polite' } });
+    this.qrPanel = h('div', { class: 'ui-mobile-access__qr', hidden: true },
+      h('p', { class: 'ui-set__hint', text: tr('Escaneie este QR code com a câmera do celular para abrir o link.') }),
+      this.qrImage,
+      this.qrStatus,
+    );
+    this.codeOutput = h('code', { class: 'ui-mobile-access__code-value' });
+    this.codeStatus = h('p', { class: 'ui-set__hint', role: 'status', attrs: { 'aria-live': 'polite' } });
+    this.codeButton = h('button', { class: 'ui-btn ui-btn--sm ui-btn--primary', type: 'button', text: tr('Gerar código de acesso'), on: { click: () => void this.refreshAccessCode() } });
+    this.copyCodeButton = h('button', { class: 'ui-btn ui-btn--sm', type: 'button', text: tr('Copiar código'), on: { click: () => void this.copyAccessCode() } });
+    this.codePanel = h('div', { class: 'ui-mobile-access__code', hidden: true },
+      h('p', { class: 'ui-set__hint', text: tr('Gere o código de seis caracteres aqui e digite-o na página aberta no celular. Ele expira em cinco minutos, funciona uma vez e não fica no link nem no QR code.') }),
+      this.codeOutput,
+      h('div', { class: 'ui-mobile-access__actions' }, this.codeButton, this.copyCodeButton),
+      this.codeStatus,
+    );
+    this.addressPanel = h('div', { class: 'ui-mobile-access__links' },
+      this.address,
+      this.copyBtn,
+      this.copyStatus,
+      this.qrPanel,
+      this.codePanel,
+      h('p', { class: 'ui-set__hint ui-mobile-access__security', text: tr('Este link usa um endereço temporário do Cloudflare. Se o Chrome marcar o site como perigoso, não prossiga nem informe o código. Trocar a senha por um código não remove um alerta do Safe Browsing.') }),
+    );
+    this.configureBtn = h('button', { class: 'ui-btn ui-btn--sm ui-btn--primary', type: 'submit', text: tr('Criar acesso e gerar link') });
     this.setup = h(
       'form',
       { class: 'ui-mobile-access__setup', on: { submit: (event) => { event.preventDefault(); this.ask('configure'); } } },
-      user.el, password.el, passwordConfirm.el,
-      h('p', { class: 'ui-set__hint', text: tr('Usuário: até 64 letras, números ou _.@-. Senha: pelo menos 12 caracteres, diferente do usuário e sem espaços no início ou no fim.'), attrs: { id: 'ui-mobile-access-password-hint' } }),
+      h('p', { class: 'ui-set__hint', text: tr('O painel gera códigos temporários para entrar pelo celular. Nenhuma senha mestra é solicitada ou armazenada.') }),
       this.configureBtn,
     );
-    for (const input of [this.user, this.password, this.passwordConfirm]) {
-      input.addEventListener('input', () => {
-        this.pending = null;
-        this.requestError = '';
-        for (const field of [this.user, this.password, this.passwordConfirm]) field.setCustomValidity('');
-        this.render();
-      });
-    }
     this.actionBtn = h('button', { class: 'ui-btn ui-btn--sm', type: 'button', on: { click: () => this.ask(this.remote?.state === 'active' ? 'stop' : 'start') } });
     this.refreshBtn = h('button', { class: 'ui-btn ui-btn--sm', type: 'button', text: tr('Atualizar estado'), on: { click: () => void this.refresh() } });
     this.confirmationText = h('p', { class: 'ui-set__hint', attrs: { id: 'ui-mobile-access-confirmation' } });
@@ -524,40 +737,37 @@ class MobileAccessGroup implements UiComponent {
     this.cancelBtn = h('button', { class: 'ui-btn ui-btn--sm', type: 'button', text: tr('Cancelar'), on: { click: () => { this.pending = null; this.render(); (this.remote?.configured ? this.actionBtn : this.configureBtn).focus(); } } });
     this.confirmation = h('div', { class: 'ui-mobile-access__confirmation', hidden: true }, this.confirmationText, h('div', { class: 'ui-mobile-access__actions' }, this.confirmBtn, this.cancelBtn));
     this.failure = h('p', { class: 'ui-mobile-access__error', role: 'alert', hidden: true });
-    this.identity = h('p', { class: 'ui-mobile-access__identity' });
-    this.fingerprint = h('code', { class: 'ui-mobile-access__fingerprint' });
-    this.caLink = h('a', { class: 'ui-link-btn', text: tr('Baixar CA pública'), attrs: { href: '/api/remote-access/ca', download: 'aioffice-ca.crt' } });
-    this.certificate = h('div', { class: 'ui-mobile-access__certificate' },
-      h('p', { class: 'ui-set__hint', text: tr('Primeira conexão: baixe a CA pública, transfira-a para o celular e confira a impressão digital SHA-256 abaixo antes de instalá-la e habilitar a confiança no certificado. Depois, abra um endereço HTTPS e entre com seu usuário e senha.') }),
-      h('span', { class: 'ui-set__label', text: tr('Impressão digital SHA-256 da CA') }), this.fingerprint, this.caLink,
+    const installLink = h('a', { class: 'ui-link-btn', text: tr('Instruções para instalar o cloudflared'), attrs: { href: 'https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/', target: '_blank', rel: 'noopener noreferrer' } });
+    this.install = h('div', { class: 'ui-mobile-access__install', hidden: true },
+      h('p', { class: 'ui-set__hint', text: tr('O serviço cloudflared não foi encontrado neste computador. Instale-o pelas instruções oficiais, reinicie o AIOffice e atualize o estado.') }), installLink,
     );
-    this.localHint = h('p', { class: 'ui-set__hint', text: tr('Configure, inicie ou pare o acesso no navegador do computador que executa o AIOffice, pelo endereço localhost ou 127.0.0.1.') });
+    this.localHint = h('p', { class: 'ui-set__hint', text: tr('Configure, inicie ou pare o túnel no navegador do computador que executa o AIOffice, por localhost ou 127.0.0.1.') });
     this.el = h(
       'div',
       { class: 'ui-set-group ui-mobile-access' },
       h('h3', { text: tr('Acesso pelo celular') }),
       this.status,
       this.detail,
-      this.addresses,
-      this.identity,
-      this.certificate,
+      this.install,
+      this.addressPanel,
       this.setup,
       h('div', { class: 'ui-mobile-access__actions' }, this.actionBtn, this.refreshBtn),
       this.confirmation,
       this.failure,
       this.localHint,
-      h('p', { class: 'ui-set__hint', text: tr('O acesso é somente para leitura por padrão. Esta opção não configura VPN nem libera o firewall. Nenhuma senha será exibida depois da configuração.') }),
+      this.sessions.el,
+      h('p', { class: 'ui-set__hint ui-mobile-access__privacy', text: tr('O link é público e temporário. Qualquer pessoa com o endereço pode abrir a tela de acesso; só o código temporário permite entrar. O tráfego passa pela infraestrutura do Cloudflare, que pode processá-lo. Compartilhe link e código com cuidado.') }),
     );
   }
 
-  private get remote(): RemoteAccessStatus | undefined {
+  private get remote(): CloudflareAccessStatus | undefined {
     const snapshot = this.ctx.store.liveSnapshot?.meta.remoteAccess;
     if (snapshot !== this.snapshotRemote) {
       this.snapshotRemote = snapshot;
       this.responseRemote = undefined;
       if (snapshot) this.stateUnconfirmed = false;
     }
-    return this.responseRemote ?? snapshot;
+    return this.responseRemote ?? readRemoteAccess(snapshot);
   }
 
   private get localControl(): boolean {
@@ -568,124 +778,149 @@ class MobileAccessGroup implements UiComponent {
     return loopback && !this.ctx.store.mock && !this.ctx.store.replaying;
   }
 
+  setVisible(visible: boolean): void {
+    this.sessions.setVisible(visible);
+  }
+
   render(): void {
     const remote = this.remote;
     const configured = !!remote?.configured;
     const active = remote?.state === 'active';
     const starting = remote?.state === 'starting';
+    if (!active && this.qrKey) this.clearQr();
     const unavailable = remote?.available === false;
+    setHidden(this.sessions.el, !this.localControl || unavailable);
+    this.sessions.update(active && this.localControl && !unavailable, active ? remote?.url ?? '' : '', !this.busy && !this.stateUnconfirmed);
     const blocked = !this.localControl || !!this.busy || !remote || unavailable || starting || this.stateUnconfirmed;
-    if (configured) { this.password.value = ''; this.passwordConfirm.value = ''; }
+    if (!active && this.loginCode) this.clearAccessCode();
     if (this.pending && (blocked || this.pending !== (active ? 'stop' : configured ? 'start' : 'configure'))) this.pending = null;
     setAttr(this.el, 'aria-busy', String(!!this.busy || starting));
     setHidden(this.setup, !remote || unavailable || configured || active || starting);
     setHidden(this.actionBtn, unavailable || !configured || starting);
-    setHidden(this.refreshBtn, !remote || unavailable || !this.localControl);
+    setHidden(this.refreshBtn, !remote || !this.localControl);
     setHidden(this.localHint, unavailable || this.localControl);
-    setHidden(this.addresses, unavailable || !active);
-    setHidden(this.identity, !configured || !remote?.user);
-    setHidden(this.certificate, unavailable || !configured);
-    setText(this.detail, unavailable ? tr('Execute npm run start:office no computador, fora do Docker, para configurar o acesso pelo celular. Depois, conecte o celular à mesma rede Wi-Fi ou VPN privada.') : tr('No celular, conecte-se à mesma rede Wi-Fi do computador ou à mesma VPN privada.'));
+    setHidden(this.addressPanel, unavailable || !active);
+    setHidden(this.install, !unavailable || remote?.unavailableReason !== 'cloudflared_missing');
     this.actionBtn.disabled = blocked;
     this.refreshBtn.disabled = !!this.busy;
     this.configureBtn.disabled = blocked;
-    for (const input of [this.user, this.password, this.passwordConfirm]) input.disabled = blocked;
-    setText(this.actionBtn, this.busy === 'stop' ? tr('Parando acesso…') : this.busy === 'start' ? tr('Iniciando acesso…') : active ? tr('Parar acesso') : tr('Iniciar acesso'));
+    setText(this.actionBtn, this.busy === 'stop' ? tr('Parando túnel…') : this.busy === 'start' ? tr('Iniciando túnel…') : active ? tr('Parar túnel') : tr('Iniciar túnel'));
     this.actionBtn.classList.toggle('ui-btn--danger', active);
-    setText(this.configureBtn, this.busy === 'configure' ? tr('Ativando acesso…') : tr('Ativar acesso'));
+    setText(this.configureBtn, this.busy === 'configure' ? tr('Criando túnel…') : tr('Criar acesso e gerar link'));
     setText(this.refreshBtn, this.busy === 'status' ? tr('Consultando estado…') : tr('Atualizar estado'));
+    setHidden(this.codePanel, !active || !this.localControl);
+    this.codeButton.disabled = !active || !this.localControl || !!this.busy;
+    this.copyCodeButton.disabled = !this.loginCode || !this.localControl;
+    setText(this.codeButton, this.busy === 'code' ? tr('Gerando código…') : this.loginCode ? tr('Gerar novo código') : tr('Gerar código de acesso'));
+    setHidden(this.codeOutput, !this.loginCode);
+    setText(this.codeOutput, this.loginCode);
+    this.copyBtn.disabled = !this.localControl || !active || !publicTunnelUrl(remote?.url);
     setHidden(this.confirmation, !this.pending);
     this.confirmBtn.disabled = blocked;
     this.cancelBtn.disabled = !!this.busy;
     if (this.pending) {
       setText(this.confirmationText, this.pending === 'stop'
-        ? tr('Parar o acesso HTTPS? O celular perderá a conexão. A conta e o certificado ficarão salvos para iniciar novamente.')
-        : tr('Abrir o acesso HTTPS na rede privada? Dispositivos na mesma Wi-Fi ou VPN privada poderão acessar o login do AIOffice.'));
-      setText(this.confirmBtn, this.pending === 'stop' ? tr('Confirmar parada') : tr('Confirmar ativação'));
+        ? tr('Parar o túnel? O link deixará de funcionar até você iniciá-lo novamente.')
+        : tr('Criar ou iniciar um link público temporário do Cloudflare? Qualquer pessoa com o endereço pode abrir a tela de login. O tráfego passa pela infraestrutura do Cloudflare, que pode processá-lo.'));
+      setText(this.confirmBtn, this.pending === 'stop' ? tr('Confirmar parada') : tr('Confirmar e continuar'));
     }
     const error = this.requestError || (remote?.error ? remoteAccessError(remote.error) : '');
     setText(this.failure, error);
     setHidden(this.failure, !error);
-    setText(this.identity, tr('Usuário de acesso: {0}', [remote?.user ?? '']));
-    setText(this.fingerprint, remote?.caFingerprint ?? tr('Impressão digital indisponível. Atualize o estado antes de confiar na CA.'));
-    setHidden(this.caLink, !remote?.caFingerprint || !this.localControl);
     if (!remote) {
-      setText(this.status, tr('Este backend é antigo e não oferece o controle de acesso pelo celular. Inicie o servidor gerenciado do AIOffice com npm run start:office.'));
+      setText(this.status, tr('O servidor não informa o estado do túnel. Reinicie com npm run start:office para carregar a integração.'));
       setVariant(this.status, 'is-', 'warn');
       return;
     }
     if (unavailable) {
-      setText(this.status, tr('O acesso pelo celular exige o servidor Node no computador; o controle HTTPS não está disponível no Docker.'));
+      setText(this.status, remote.unavailableReason === 'docker'
+        ? tr('O acesso pelo celular não está disponível quando o AIOffice roda em Docker.')
+        : remote.unavailableReason === 'development_mode'
+          ? tr('Para acessar pelo celular, feche o servidor de desenvolvimento e inicie o AIOffice pelo arquivo start-aioffice.bat.')
+          : tr('cloudflared indisponível neste computador.'));
       setVariant(this.status, 'is-', 'warn');
       return;
     }
     if (remote.state === 'disabled') {
-      setText(this.status, configured ? tr('Acesso parado. A conta está configurada; inicie quando precisar.') : tr('Acesso desativado. Crie um usuário e uma senha para ativar.'));
+      setText(this.status, configured ? tr('Túnel parado. O acesso está configurado.') : tr('Acesso desativado. Crie o acesso para gerar o link.'));
       setVariant(this.status, 'is-', 'off');
       return;
     }
     if (remote.state === 'starting') {
-      setText(this.status, tr('Configurando a porta HTTPS {0}…', [remote.port ?? 4748]));
+      setText(this.status, tr('Iniciando o túnel do Cloudflare…'));
       setVariant(this.status, 'is-', 'pending');
       return;
     }
     if (remote.state === 'error') {
-      setText(this.status, tr('Não foi possível abrir o acesso HTTPS. Corrija o problema indicado e tente novamente.'));
+      setText(this.status, tr('Não foi possível iniciar o túnel. Corrija o problema indicado e tente novamente.'));
       setVariant(this.status, 'is-', 'warn');
       return;
     }
 
-    setText(this.status, tr('HTTPS ativo na porta {0}.', [remote.port ?? 4748]));
-    setVariant(this.status, 'is-', 'ok');
-    const urls = (remote.urls ?? []).flatMap((raw) => {
-      try {
-        const url = new URL(raw);
-        return url.protocol === 'https:' && !url.username && !url.password ? [url] : [];
-      } catch {
-        return [];
-      }
-    });
-    if (!urls.length) {
-      setText(this.status, tr('HTTPS aberto na porta {0}, mas sem endereço privado disponível para o celular.', [remote.port ?? 4748]));
+    const url = publicTunnelUrl(remote.url);
+    if (!url) {
+      this.linksKey = '';
+      this.clearQr();
+      setText(this.status, tr('Túnel ativo, mas o link público ainda não está disponível. Atualize o estado.'));
       setVariant(this.status, 'is-', 'warn');
+      this.address.removeAttribute('href');
+      this.address.textContent = '';
+      return;
     }
-    // Mantém os links estáveis durante os snapshots, para não perder o foco do teclado.
-    const linksKey = urls.map((url) => url.href).join('\n');
-    if (linksKey === this.linksKey && this.addresses.childNodes.length) return;
-    this.linksKey = linksKey;
-    this.addresses.replaceChildren();
-    for (const url of urls) {
-      this.addresses.append(h('a', {
-        class: 'ui-link-btn',
-        text: url.href,
-        attrs: { href: url.href, target: '_blank', rel: 'noopener noreferrer' },
-      }));
+    setText(this.status, tr('Túnel Cloudflare ativo.'));
+    setVariant(this.status, 'is-', 'ok');
+    if (this.linksKey !== url.href) {
+      this.linksKey = url.href;
+      this.address.href = url.href;
+      this.address.textContent = url.href;
     }
-    if (!urls.length) setText(this.addresses, tr('Conecte o computador ao Wi-Fi ou à VPN privada e atualize o estado. Se ainda não houver endereço, confira a rede e o terminal do AIOffice.'));
+    if (this.qrKey !== url.href) {
+      this.qrKey = url.href;
+      void this.renderQr(url.href);
+    }
   }
 
-  private validCredentials(): boolean {
-    this.user.setCustomValidity(/^[\p{L}\p{N}_.@-]{1,64}$/u.test(this.user.value.trim()) ? '' : tr('Use até 64 letras, números ou _.@- no usuário.'));
-    const password = this.password.value;
-    const differentFromUser = password.normalize('NFC').toLowerCase() !== this.user.value.trim().normalize('NFC').toLowerCase();
-    this.password.setCustomValidity([...password].length >= 12 && !/\p{Cs}/u.test(password) && new TextEncoder().encode(password).length <= 1024 && password === password.trim() && differentFromUser
-      ? '' : tr('A senha precisa ter pelo menos 12 caracteres, até 1024 bytes, ser diferente do usuário e não ter espaços nas extremidades.'));
-    this.passwordConfirm.setCustomValidity(password === this.passwordConfirm.value ? '' : tr('As senhas não coincidem.'));
-    return this.setup.reportValidity();
+  private async renderQr(url: string): Promise<void> {
+    const generation = ++this.qrGeneration;
+    setHidden(this.qrPanel, false);
+    setText(this.qrStatus, tr('Gerando QR code…'));
+    try {
+      const QRCode = await import('qrcode');
+      const dataUrl = await QRCode.toDataURL(url, {
+        errorCorrectionLevel: 'M',
+        margin: 2,
+        width: 192,
+        color: { dark: '#101820ff', light: '#ffffffff' },
+      });
+      if (generation !== this.qrGeneration || this.qrKey !== url) return;
+      this.qrImage.src = dataUrl;
+      setText(this.qrStatus, tr('QR code pronto. Aponte a câmera do celular.'));
+    } catch {
+      if (generation !== this.qrGeneration || this.qrKey !== url) return;
+      this.qrImage.removeAttribute('src');
+      setText(this.qrStatus, tr('Não foi possível gerar o QR code. Use o link copiado.'));
+    }
+  }
+
+  private clearQr(): void {
+    this.qrGeneration += 1;
+    this.qrKey = '';
+    this.qrImage.removeAttribute('src');
+    setText(this.qrStatus, '');
+    setHidden(this.qrPanel, true);
   }
 
   private ask(action: MobileAccessAction): void {
     const remote = this.remote;
     if (!this.localControl || this.busy || !remote || remote.available === false || remote.state === 'starting' || this.stateUnconfirmed) return;
     if (action !== (remote.state === 'active' ? 'stop' : remote.configured ? 'start' : 'configure')) return;
-    if (action === 'configure' && !this.validCredentials()) return;
     this.requestError = '';
     this.pending = action;
     this.render();
     this.confirmBtn.focus();
   }
 
-  private accept(remote: RemoteAccessStatus): void {
+  private accept(remote: CloudflareAccessStatus): void {
     this.snapshotRemote = this.ctx.store.liveSnapshot?.meta.remoteAccess;
     this.responseRemote = remote;
     this.stateUnconfirmed = false;
@@ -694,20 +929,22 @@ class MobileAccessGroup implements UiComponent {
   private async loadStatus(): Promise<void> {
     const response = await fetch('/api/remote-access/status', { cache: 'no-store', signal: AbortSignal.timeout(8_000) });
     if (!response.ok) throw new Error('status unavailable');
-    const body = await response.json() as { remoteAccess?: unknown };
-    const remote = readRemoteAccess(body.remoteAccess);
+    const body = await response.json() as Record<string, unknown>;
+    const remote = readRemoteAccess(body.remoteAccess ?? body);
     if (!remote) throw new Error('invalid status');
     this.accept(remote);
   }
 
   private async refresh(): Promise<void> {
-    if (!this.localControl || this.busy || !this.remote || this.remote.available === false) return;
+    if (!this.localControl || this.busy || !this.remote) return;
     this.busy = 'status';
     this.pending = null;
     this.requestError = '';
     this.render();
     try {
       await this.loadStatus();
+      this.render();
+      await this.sessions.refresh();
     } catch {
       this.requestError = tr('Não foi possível consultar o estado. Confira o servidor e tente atualizar novamente.');
     } finally {
@@ -717,28 +954,95 @@ class MobileAccessGroup implements UiComponent {
     }
   }
 
+  private async copyUrl(): Promise<void> {
+    const url = publicTunnelUrl(this.remote?.url);
+    if (!url || !this.localControl) return;
+    try {
+      await navigator.clipboard.writeText(url.href);
+      setText(this.copyStatus, tr('Link copiado.'));
+      this.ctx.announce(tr('Link copiado.'));
+    } catch {
+      setText(this.copyStatus, tr('Não foi possível copiar o link. Selecione o endereço e copie.'));
+    }
+  }
+
+  private async refreshAccessCode(fromTunnelAction = false): Promise<void> {
+    if (!this.localControl || (this.busy && !fromTunnelAction) || this.remote?.state !== 'active') return;
+    const previousBusy = this.busy;
+    this.busy = 'code';
+    this.requestError = '';
+    this.codeStatus.textContent = '';
+    this.render();
+    try {
+      const response = await fetch('/api/remote-access/code', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}', signal: AbortSignal.timeout(8_000),
+      });
+      const body = await response.json() as Record<string, unknown>;
+      const issued = body.loginCode && typeof body.loginCode === 'object' ? body.loginCode as Record<string, unknown> : undefined;
+      if (!response.ok || typeof issued?.code !== 'string' || !/^[A-HJ-NP-Z2-9]{6}$/.test(issued.code) ||
+          typeof issued.expiresAt !== 'number' || issued.expiresAt <= Date.now()) {
+        throw new Error(typeof body.error === 'string' ? body.error : 'tunnel_not_active');
+      }
+      this.clearAccessCode();
+      this.loginCode = issued.code;
+      this.codeExpiryTimer = window.setTimeout(() => {
+        if (this.loginCode !== issued.code) return;
+        this.clearAccessCode();
+        setText(this.codeStatus, tr('O código expirou. Gere um novo código.'));
+        this.render();
+      }, issued.expiresAt - Date.now());
+      setText(this.codeStatus, tr('Código de seis caracteres gerado. Digite-o no celular em até cinco minutos; ele só pode ser usado uma vez.'));
+      if (!fromTunnelAction) this.ctx.announce(tr('Código de acesso gerado.'));
+    } catch (error) {
+      this.requestError = remoteAccessError(error instanceof Error ? error.message : undefined);
+    } finally {
+      this.busy = previousBusy;
+      this.render();
+      this.ctx.invalidate();
+    }
+  }
+
+  private async copyAccessCode(): Promise<void> {
+    if (!this.loginCode || !this.localControl) return;
+    try {
+      await navigator.clipboard.writeText(this.loginCode);
+      setText(this.codeStatus, tr('Código copiado.'));
+      this.ctx.announce(tr('Código copiado.'));
+    } catch {
+      setText(this.codeStatus, tr('Não foi possível copiar o código. Selecione e copie manualmente.'));
+    }
+  }
+
+  private clearAccessCode(): void {
+    if (this.codeExpiryTimer !== undefined) window.clearTimeout(this.codeExpiryTimer);
+    this.codeExpiryTimer = undefined;
+    this.loginCode = '';
+    setText(this.codeStatus, '');
+  }
+
   private async perform(): Promise<void> {
     const action = this.pending;
     const remote = this.remote;
     if (!action || !remote || !this.localControl || this.busy || remote.available === false || remote.state === 'starting' || this.stateUnconfirmed) return;
     if (action !== (remote.state === 'active' ? 'stop' : remote.configured ? 'start' : 'configure')) { this.pending = null; this.render(); return; }
-    if (action === 'configure' && !this.validCredentials()) return;
-    const payload = action === 'configure' ? { user: this.user.value.trim(), password: this.password.value } : {};
     this.busy = action;
     this.pending = null;
     this.requestError = '';
     this.render();
     try {
       const response = await fetch(`/api/remote-access/${action}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: AbortSignal.timeout(60_000),
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}', signal: AbortSignal.timeout(60_000),
       });
-      const body = await response.json() as { remoteAccess?: unknown; error?: unknown };
-      const result = readRemoteAccess(body.remoteAccess);
+      const body = await response.json() as Record<string, unknown>;
+      const result = readRemoteAccess(body.remoteAccess ?? body);
       if (result) this.accept(result);
-      if (!response.ok || !result) this.requestError = remoteAccessError(body.error);
-      else this.ctx.announce(action === 'stop' ? tr('Acesso pelo celular parado.') : result.state === 'active' ? tr('HTTPS ativo na porta {0}.', [result.port ?? 4748]) : tr('A solicitação foi recebida. Aguarde a confirmação do estado.'));
+      if (!response.ok || !result) this.requestError = remoteAccessError(body.error ?? result?.error);
+      else {
+        if (action === 'stop') this.clearAccessCode();
+        if (result.state === 'active' && action !== 'stop') await this.refreshAccessCode(true);
+        this.ctx.announce(action === 'stop' ? tr('Túnel parado.') : result.state === 'active' ? tr('Túnel Cloudflare ativo.') : tr('A solicitação foi recebida. Aguarde a confirmação do estado.'));
+      }
     } catch {
-      // A operação pode ter terminado mesmo sem resposta; consulta antes de permitir uma repetição.
       try {
         await this.loadStatus();
         const state = this.remote;
@@ -748,8 +1052,6 @@ class MobileAccessGroup implements UiComponent {
         this.requestError = tr('A resposta da operação se perdeu e o estado não pôde ser confirmado. Atualize o estado antes de tentar novamente.');
       }
     } finally {
-      this.password.value = '';
-      this.passwordConfirm.value = '';
       this.busy = null;
       this.render();
       this.ctx.invalidate();

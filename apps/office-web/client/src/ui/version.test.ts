@@ -46,7 +46,7 @@ describe('updateStatusLine', () => {
     expect(updateStatusLine('0.2.0', ok(), NOW).text).toBe('Nenhuma versão publicada no GitHub ainda · verificado há 2 h.');
     expect(updateStatusLine('0.3.0-dev', ok({ latest: '0.2.0' }), NOW).text).toMatch(/à frente da última versão publicada \(v0\.2\.0\)/);
     expect(updateStatusLine('0.2.0', { state: 'pending', available: false }, NOW)).toEqual({ tone: 'pending', text: 'Verificando se há versão nova…' });
-    expect(updateStatusLine('0.2.0', { state: 'off', repo: 'a/b', available: false }, NOW).text).toMatch(/HABBLAUD_UPDATE_CHECK=0/);
+    expect(updateStatusLine('0.2.0', { state: 'off', repo: 'a/b', available: false }, NOW).text).toBe('Verificação de novas versões desativada.');
     expect(updateStatusLine('0.2.0', { state: 'off', available: false }, NOW).text).toMatch(/package\.json/);
     expect(updateStatusLine('0.2.0', ok({ state: 'error', error: 'sem conexão com o GitHub' }), NOW)).toEqual({
       tone: 'warn',

@@ -1,261 +1,499 @@
-// Controle da segunda porta HTTPS no próprio processo; alterações de conta nunca guardam a senha em texto puro.
+// Gerencia o Quick Tunnel temporário do Cloudflare. O túnel chega a uma segunda porta HTTPS autenticada,
+// ligada somente ao loopback; a porta principal local nunca é publicada.
+import { spawn, type ChildProcess } from 'node:child_process';
 import { randomBytes, X509Certificate } from 'node:crypto';
-import { chmodSync, existsSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { basename, dirname, join } from 'node:path';
+import { basename, delimiter, dirname, join } from 'node:path';
 import type { Duplex } from 'node:stream';
 import type { RemoteAccessStatus } from '../../shared/types';
 import type { ServerConfig } from '../config';
-import { createRemoteGate, loadSecret, parseRemoteConfig, RemoteSessions, startRemoteListener, type RemoteListener } from '../http/remote';
-import { addToList, readEnvValue, updateEnv } from './envfile';
-import { hashPassword } from './password';
-import { certTargets, ensureServerCert, isPrivateIpv4, lanAddresses, remoteTargets, remoteTlsBase, tlsPaths } from './tls';
+import { createRemoteGate, loadSecret, parseRemoteConfig, RemoteLoginCodes, RemoteSessions, startRemoteListener, type RemoteListener, type RemoteSessionInfo, type RemoteTls } from '../http/remote';
+import { readEnvValue, updateEnv } from './envfile';
+import { certTargets, ensureServerCert, remoteTlsBase, tlsPaths } from './tls';
+
+const ORIGIN_HOSTS = { dns: ['localhost'], ips: ['127.0.0.1'] };
+export const QUICK_TUNNEL_START_TIMEOUT_MS = 2 * 60 * 1000;
 
 export class RemoteAccessError extends Error {
   constructor(readonly status: number, message: string) { super(message); }
 }
 
-export function validateRemoteCredentials(user: unknown, password: unknown): { user: string; password: string } {
-  if (typeof user !== 'string' || !/^[\p{L}\p{N}_.@-]{1,64}$/u.test(user)) {
-    throw new RemoteAccessError(400, 'Use um usuário de 1 a 64 caracteres: letras, números, ponto, hífen, sublinhado ou @.');
+/** Procura apenas executáveis nativos; não usa shell nem baixa binários em segundo plano. */
+export function findCloudflared(env: NodeJS.ProcessEnv = process.env, platform: NodeJS.Platform = process.platform): string | undefined {
+  const pathKey = Object.keys(env).find((key) => key.toLowerCase() === 'path');
+  const dirs = (pathKey ? env[pathKey] : undefined)?.split(delimiter).filter(Boolean) ?? [];
+  const name = platform === 'win32' ? 'cloudflared.exe' : 'cloudflared';
+  for (const dir of dirs) {
+    const candidate = join(dir.replace(/^"|"$/g, ''), name);
+    try { if (statSync(candidate).isFile()) return candidate; } catch { /* próxima entrada do PATH */ }
   }
-  if (typeof password !== 'string' || [...password].length < 12 || /\p{Cs}/u.test(password)) throw new RemoteAccessError(400, 'Use uma senha com pelo menos 12 caracteres Unicode válidos.');
-  if (Buffer.byteLength(password, 'utf8') > 1024) throw new RemoteAccessError(400, 'A senha excede 1024 bytes.');
-  if (password.trim() !== password) throw new RemoteAccessError(400, 'Evite espaços no começo ou no fim da senha.');
-  if (password.normalize('NFC').toLowerCase() === user.normalize('NFC').toLowerCase()) throw new RemoteAccessError(400, 'A senha deve ser diferente do usuário.');
-  return { user, password };
+  if (platform === 'win32') {
+    for (const root of [env['ProgramFiles(x86)'], env.ProgramFiles].filter((value): value is string => !!value?.trim())) {
+      const candidate = join(root, 'cloudflared', name);
+      try { if (statSync(candidate).isFile()) return candidate; } catch { /* próxima pasta de instalação */ }
+    }
+  }
+  return undefined;
 }
 
-function safeRemoteError(error: unknown, fallback: string): string {
+/** Aceita somente a URL HTTPS do subdomínio aleatório emitido por um Quick Tunnel. */
+export function parseQuickTunnelUrl(output: string): { url: string; hostname: string } | undefined {
+  const matches = output.match(/https:\/\/[^\s"'<>]+/gi) ?? [];
+  for (const raw of matches) {
+    const candidate = raw.replace(/[),.;!?]+$/g, '');
+    try {
+      const parsed = new URL(candidate);
+      const labels = parsed.hostname.toLowerCase().split('.');
+      if (parsed.protocol === 'https:' && parsed.port === '' && parsed.username === '' && parsed.password === '' &&
+          parsed.pathname === '/' && parsed.search === '' && parsed.hash === '' && labels.length === 3 &&
+          /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(labels[0]) && labels.slice(1).join('.') === 'trycloudflare.com') {
+        return { url: `https://${parsed.hostname.toLowerCase()}`, hostname: parsed.hostname.toLowerCase() };
+      }
+    } catch { /* ignora qualquer texto que não seja uma URL válida */ }
+  }
+  return undefined;
+}
+
+function appendCloudflaredDiagnostic(current: string, chunk: Buffer | string): string {
+  const safe = chunk.toString()
+    .replace(/\x1B\[[0-?]*[ -/]*[@-~]/g, '')
+    .replace(/https?:\/\/[^\s"'<>]+/gi, '[URL redacted]')
+    .replace(/[\u0000-\u001F\u007F]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return `${current} ${safe}`.trim().slice(-1_200);
+}
+
+function errorCode(error: unknown, fallback = 'tunnel_start_failed'): string {
+  if (error instanceof RemoteAccessError) return error.message;
   const code = typeof error === 'object' && error !== null && 'code' in error ? error.code : undefined;
-  if (code === 'EADDRINUSE') return 'A porta HTTPS já está em uso. Libere a porta e tente iniciar novamente.';
-  if (code === 'EACCES' || code === 'EPERM') return 'O sistema negou permissão para abrir a porta HTTPS ou gravar a configuração.';
-  return error instanceof RemoteAccessError ? error.message : fallback;
+  if (code === 'ENOENT') return 'cloudflared_missing';
+  return fallback;
 }
 
 interface RuntimeOptions {
   config: ServerConfig;
   onRequest: (req: IncomingMessage, res: ServerResponse) => void;
   onChange: () => void;
+  /** Adiciona/remove exclusivamente o Host do túnel ativo no guard da porta privada. */
+  onTunnelHost: (host: string | undefined) => void;
   log: { info(message: string): void; warn(message: string): void; error(message: string): void };
 }
 
 export class RemoteAccessRuntime {
   private listener?: RemoteListener;
   private gate?: ReturnType<typeof createRemoteGate>;
+  private sessions?: RemoteSessions;
+  private readonly loginCodes = new RemoteLoginCodes();
+  private child?: ChildProcess;
   private readonly sockets = new Set<Duplex>();
   private queue: Promise<unknown> = Promise.resolve();
-  private state: RemoteAccessStatus['state'];
+  private state: RemoteAccessStatus['state'] = 'disabled';
   private error?: string;
+  private url?: string;
   private shuttingDown = false;
   private readonly env: NodeJS.ProcessEnv = { ...process.env };
 
-  constructor(private readonly opts: RuntimeOptions) {
-    this.state = opts.config.inDocker || opts.config.remoteEnabled === false ? 'disabled' : opts.config.remote ? 'starting' : opts.config.remoteWarning ? 'error' : 'disabled';
-    if (this.state === 'error') this.error = 'A configuração de acesso remoto está incompleta ou inválida. Configure a conta novamente.';
-    if (opts.config.inDocker) this.error = 'O acesso pelo celular exige o servidor Node no computador; o controle HTTPS não está disponível no Docker.';
-  }
+  constructor(private readonly opts: RuntimeOptions) {}
 
   status(): RemoteAccessStatus {
-    const cfg = this.opts.config.remote;
-    const ca = this.ca();
-    let urls: string[] | undefined;
-    if (cfg && this.state === 'active') {
-      try {
-        const targets = certTargets(readFileSync(cfg.tls.certFile));
-        const wildcard = cfg.host === '0.0.0.0' || cfg.host === '::';
-        const ips = lanAddresses().filter((ip) => targets.ips.includes(ip) && (wildcard || cfg.host === ip));
-        const domain = this.env.HABBLAUD_REMOTE_DOMAIN?.trim().toLowerCase();
-        const dns = domain && targets.dns.includes(domain) && wildcard ? [domain] : [];
-        urls = [...new Set([...ips, ...dns])].map((host) => `https://${host}:${cfg.port}`);
-      } catch { urls = []; }
-    }
+    const inDocker = this.opts.config.inDocker;
+    const inDevelopment = this.opts.config.dev;
+    const cloudflared = findCloudflared(this.env);
     return {
-      available: !this.opts.config.inDocker,
-      configured: !!cfg,
+      available: !inDocker && !inDevelopment && !!cloudflared,
+      ...(!inDocker && inDevelopment ? { unavailableReason: 'development_mode' as const } : {}),
+      ...(!inDocker && !inDevelopment && !cloudflared ? { unavailableReason: 'cloudflared_missing' as const } : {}),
+      ...(inDocker ? { unavailableReason: 'docker' as const } : {}),
+      configured: this.isConfigured(),
       state: this.state,
-      ...(cfg ? { port: cfg.port, user: cfg.user } : {}),
-      ...(urls ? { urls } : {}),
-      ...(ca ? { caFingerprint: new X509Certificate(ca).fingerprint256 } : {}),
+      ...(this.state === 'active' && this.url ? { url: this.url } : {}),
       ...(this.error ? { error: this.error } : {}),
     };
-  }
-
-  /** Reconstrói somente o PEM público, mesmo se houver conteúdo extra no arquivo. */
-  ca(): string | undefined {
-    const file = this.opts.config.remote?.tls.caFile;
-    if (!file) return undefined;
-    try {
-      const cert = new X509Certificate(readFileSync(file));
-      return cert.ca ? cert.toString() : undefined;
-    } catch { return undefined; }
   }
 
   handleRequest(req: IncomingMessage, res: ServerResponse, url: URL): boolean {
     if (url.pathname.startsWith('/api/remote-access/')) {
       res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
-      res.end(JSON.stringify({ error: 'Gerencie o acesso remoto pelo próprio computador.' }));
+      res.end(JSON.stringify({ error: 'Gerencie o acesso pelo celular no próprio computador.' }));
       req.resume();
       return true;
     }
     if (!this.gate) {
       res.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
-      res.end(JSON.stringify({ error: 'Acesso remoto indisponível.' }));
+      res.end(JSON.stringify({ error: 'Acesso pelo celular indisponível.' }));
       req.resume();
       return true;
     }
     return this.gate(req, res, url);
   }
 
+  /** Migra configurações antigas para loopback e mantém qualquer túnel público desligado após reiniciar. */
   initialize(): Promise<RemoteAccessStatus> {
     return this.serialize(async () => {
-      if (!this.opts.config.inDocker && this.opts.config.remote && this.opts.config.remoteEnabled !== false) await this.openListener();
+      const cfg = this.opts.config.remote;
+      if (cfg && !this.opts.config.inDocker) {
+        const legacyDomain = this.env.HABBLAUD_REMOTE_DOMAIN?.trim().toLowerCase();
+        const allowedHosts = (this.env.HABBLAUD_ALLOWED_HOSTS ?? '').split(',').map((host) => host.trim()).filter(Boolean);
+        const retainedHosts = allowedHosts.filter((host) => host.toLowerCase() !== legacyDomain);
+        const changes: Record<string, string | null> = {};
+        if (this.opts.config.remoteEnabled !== false || cfg.host !== '127.0.0.1') {
+          changes.HABBLAUD_REMOTE_ENABLED = '0';
+          changes.HABBLAUD_REMOTE_HOST = '127.0.0.1';
+        }
+        if (legacyDomain) {
+          changes.HABBLAUD_REMOTE_DOMAIN = null;
+          changes.HABBLAUD_REMOTE_NAME = null;
+          changes.HABBLAUD_REMOTE_HTTP_PORT = null;
+          changes.HABBLAUD_ALLOWED_HOSTS = retainedHosts.length ? retainedHosts.join(',') : null;
+          this.opts.config.allowedHosts.delete(legacyDomain);
+        }
+        if (this.env.AIOFFICE_REMOTE_CONFIGURED === '1') {
+          for (const key of ['HABBLAUD_REMOTE_USER', 'HABBLAUD_REMOTE_PASSWORD_HASH', 'HABBLAUD_REMOTE_PASSWORD']) {
+            if (this.env[key] !== undefined) changes[key] = null;
+          }
+        }
+        if (Object.keys(changes).length) this.persist(changes);
+        this.opts.config.remoteEnabled = false;
+        this.opts.config.remote = { ...cfg, host: '127.0.0.1' };
+      }
+      this.state = 'disabled';
+      this.url = undefined;
+      this.error = undefined;
+      this.loginCodes.clear();
+      this.invalidateSessions();
+      this.opts.onTunnelHost(undefined);
+      this.opts.onChange();
       return this.status();
     });
   }
 
-  configure(user: unknown, password: unknown): Promise<RemoteAccessStatus> {
-    this.requireNode();
-    // Validação ocorre antes de entrar na fila e antes de qualquer escrita ou interrupção da porta atual.
-    const credentials = validateRemoteCredentials(user, password);
+  /** Ativa a configuração local e inicia o túnel, sem armazenar senha ou token. */
+  configure(): Promise<RemoteAccessStatus> {
+    if (this.opts.config.dev) throw new RemoteAccessError(409, 'development_mode');
+    if (this.opts.config.inDocker) throw new RemoteAccessError(409, 'cloudflared_missing');
     return this.serialize(async () => {
-      let fallback = 'Não foi possível gerar o hash da senha. Tente novamente.';
+      this.state = 'starting';
+      this.error = undefined;
+      this.opts.onChange();
       try {
-        const hash = await hashPassword(credentials.password);
-        if (this.shuttingDown) throw new RemoteAccessError(409, 'O servidor está encerrando.');
-        this.state = 'starting';
-        this.error = undefined;
-        this.opts.onChange();
-        await this.closeListener();
-        fallback = 'Não foi possível preparar os certificados HTTPS. Confira o OpenSSL e as permissões da pasta de dados.';
+        await this.stopCurrent();
         const previous = this.opts.config.remote;
-        const managedBase = previous && basename(previous.tls.dir) === 'server' ? dirname(previous.tls.dir) : remoteTlsBase(this.opts.config.home);
-        const paths = tlsPaths(managedBase);
-        const domain = this.env.HABBLAUD_REMOTE_DOMAIN?.trim().toLowerCase() || undefined;
-        const targets = remoteTargets({ domain });
-        // Mantém nomes já assinados para que uma configuração pela interface preserve VPNs existentes.
-        if (previous && existsSync(previous.tls.certFile)) {
-          const old = certTargets(readFileSync(previous.tls.certFile));
-          targets.dns = [...new Set([...targets.dns, ...old.dns])];
-          targets.ips = [...new Set([...targets.ips, ...old.ips.filter(isPrivateIpv4)])];
+        const tlsDir = previous?.tls.dir ?? tlsPaths(remoteTlsBase(this.opts.config.home)).serverDir;
+        if (basename(tlsDir).toLowerCase() === 'server') {
+          ensureServerCert(tlsPaths(dirname(tlsDir)), ORIGIN_HOSTS);
+        } else {
+          this.validateExistingOriginCertificate(previous?.tls);
         }
-        ensureServerCert(paths, targets);
-        const rawPort = Number(this.env.HABBLAUD_REMOTE_PORT);
-        const port = previous?.port ?? (Number.isInteger(rawPort) && rawPort > 0 && rawPort < 65536 ? rawPort : 4748);
-        fallback = 'Não foi possível salvar a configuração do acesso remoto. Confira as permissões do arquivo .env.';
-        const file = join(this.opts.config.rootDir, '.env');
-        const current = existsSync(file) ? readFileSync(file, 'utf8') : '';
+
+        const port = previous?.port ?? this.validPort(this.env.HABBLAUD_REMOTE_PORT) ?? 4748;
         const changes = {
-          HABBLAUD_REMOTE_ENABLED: '1',
-          HABBLAUD_REMOTE_USER: credentials.user,
-          HABBLAUD_REMOTE_PASSWORD_HASH: hash,
+          HABBLAUD_REMOTE_ENABLED: '0',
+          AIOFFICE_REMOTE_CONFIGURED: '1',
+          HABBLAUD_REMOTE_USER: null,
+          HABBLAUD_REMOTE_PASSWORD_HASH: null,
           HABBLAUD_REMOTE_PASSWORD: null,
           HABBLAUD_REMOTE_PORT: String(port),
-          HABBLAUD_REMOTE_HOST: previous?.host ?? (this.env.HABBLAUD_REMOTE_HOST?.trim() || '0.0.0.0'),
+          HABBLAUD_REMOTE_HOST: '127.0.0.1',
           HABBLAUD_REMOTE_ALLOW: 'none',
-          HABBLAUD_REMOTE_TLS_DIR: JSON.stringify(paths.serverDir.replace(/\\/g, '/')),
+          HABBLAUD_REMOTE_TLS_DIR: JSON.stringify(tlsDir.replace(/\\/g, '/')),
+          HABBLAUD_REMOTE_DOMAIN: null,
+          HABBLAUD_REMOTE_NAME: null,
+          HABBLAUD_REMOTE_HTTP_PORT: null,
           HABBLAUD_REMOTE_INSECURE_HTTP: null,
-          ...(domain ? {
-            HABBLAUD_ALLOWED_HOSTS: addToList(readEnvValue(current, 'HABBLAUD_ALLOWED_HOSTS'),
-              ...(this.env.HABBLAUD_ALLOWED_HOSTS ?? '').split(',').map((host) => host.trim()),
-              ...this.opts.config.allowedHosts, domain),
-          } : {}),
         };
         const env = { ...this.env, ...Object.fromEntries(Object.entries(changes).map(([key, value]) => [key, value ?? undefined])) };
-        // O valor para o parser é o caminho real; as aspas são só a representação no .env.
-        env.HABBLAUD_REMOTE_TLS_DIR = paths.serverDir;
-        const parsed = parseRemoteConfig(env, this.opts.config.inDocker);
-        if (!parsed.config) throw new RemoteAccessError(500, 'Não foi possível validar a configuração HTTPS gerada.');
+        env.HABBLAUD_REMOTE_TLS_DIR = tlsDir;
+        const parsed = parseRemoteConfig(env, false);
+        if (!parsed.config) throw new RemoteAccessError(500, 'tunnel_start_failed');
         this.persist(changes);
         Object.assign(this.env, env);
-        this.opts.config.remote = parsed.config;
-        if (domain) this.opts.config.allowedHosts.add(domain);
+        this.opts.config.remote = { ...parsed.config, host: '127.0.0.1' };
+        this.opts.config.remoteEnabled = false;
         this.opts.config.remoteWarning = undefined;
-        this.opts.config.remoteEnabled = true;
-        fallback = 'Não foi possível iniciar a porta HTTPS. Confira o certificado e o endereço de escuta.';
-        await this.openListener();
-        return this.status();
-      } catch (error) {
-        await this.closeListener();
-        this.setError(safeRemoteError(error, fallback));
-        throw new RemoteAccessError(error instanceof RemoteAccessError ? error.status : 500, this.error!);
+        this.state = 'disabled';
+        this.opts.onChange();
+        return await this.startNow();
+      } catch (cause) {
+        await this.stopCurrent();
+        this.setError(errorCode(cause));
+        throw new RemoteAccessError(cause instanceof RemoteAccessError ? cause.status : 500, this.error!);
       }
     });
   }
 
   start(): Promise<RemoteAccessStatus> {
+    return this.serialize(() => this.startNow());
+  }
+
+  listSessions(): RemoteSessionInfo[] {
+    return this.sessions?.list() ?? [];
+  }
+
+  revokeSession(id: string): boolean {
+    return this.sessions?.revokeById(id) ?? false;
+  }
+
+  generateCode(): Promise<{ code: string; expiresAt: number }> {
     return this.serialize(async () => {
-      this.requireNode();
-      if (!this.opts.config.remote) throw new RemoteAccessError(409, 'Configure o usuário e a senha antes de iniciar o acesso remoto.');
-      try {
-        this.persist({ HABBLAUD_REMOTE_ENABLED: '1' });
-        this.opts.config.remoteEnabled = true;
-        if (this.state !== 'active') await this.openListener();
-        return this.status();
-      } catch (error) {
-        await this.closeListener();
-        this.setError(safeRemoteError(error, 'Não foi possível salvar ou iniciar o acesso HTTPS. Confira a porta e as permissões do arquivo .env.'));
-        throw new RemoteAccessError(500, this.error!);
+      if (this.state !== 'active' || !this.listener || !this.child || this.child.exitCode !== null || this.child.signalCode !== null || !this.url) {
+        throw new RemoteAccessError(409, 'tunnel_not_active');
       }
+      return this.loginCodes.issue();
     });
   }
 
   stop(): Promise<RemoteAccessStatus> {
     return this.serialize(async () => {
-      // Fechar vem primeiro: mesmo que o disco falhe, nenhuma conexão remota permanece aberta.
-      await this.closeListener();
+      await this.stopCurrent();
       try {
-        this.persist({ HABBLAUD_REMOTE_ENABLED: '0' });
+        if (this.opts.config.remote) this.persist({ HABBLAUD_REMOTE_ENABLED: '0', HABBLAUD_REMOTE_HOST: '127.0.0.1' });
         this.opts.config.remoteEnabled = false;
+        if (this.opts.config.remote) this.opts.config.remote = { ...this.opts.config.remote, host: '127.0.0.1' };
         this.state = 'disabled';
         this.error = undefined;
         this.opts.onChange();
         return this.status();
-      } catch (error) {
-        this.setError(safeRemoteError(error, 'A porta HTTPS foi fechada, mas não foi possível salvar a desativação no arquivo .env.'));
+      } catch (cause) {
+        this.setError('tunnel_stopped');
         throw new RemoteAccessError(500, this.error!);
       }
     });
   }
 
-  shutdown(): Promise<void> {
+  async shutdown(): Promise<void> {
     this.shuttingDown = true;
-    return this.closeListener();
+    await this.stopCurrent();
+  }
+
+  private async startNow(): Promise<RemoteAccessStatus> {
+    if (this.shuttingDown) throw new RemoteAccessError(409, 'tunnel_start_failed');
+    if (this.opts.config.dev) throw new RemoteAccessError(409, 'development_mode');
+    if (this.opts.config.inDocker) throw new RemoteAccessError(409, 'cloudflared_missing');
+    if (!this.opts.config.remote || !this.isConfigured()) throw new RemoteAccessError(409, 'not_configured');
+    if (this.state === 'active' && this.child && this.listener && this.url) return this.status();
+
+    const executable = findCloudflared(this.env);
+    if (!executable) {
+      this.setError('cloudflared_missing');
+      throw new RemoteAccessError(409, 'cloudflared_missing');
+    }
+
+    this.state = 'starting';
+    this.error = undefined;
+    this.opts.onChange();
+    try {
+      const cfg = this.opts.config.remote;
+      this.opts.config.remote = { ...cfg, host: '127.0.0.1' };
+      this.persist({ HABBLAUD_REMOTE_ENABLED: '1', HABBLAUD_REMOTE_HOST: '127.0.0.1' });
+      this.opts.config.remoteEnabled = true;
+      await this.openListener();
+      const origin = `https://127.0.0.1:${cfg.port}`;
+      const child = spawn(executable, [
+        'tunnel', '--no-autoupdate', '--url', origin, '--origin-ca-pool', cfg.tls.caFile,
+      ], { shell: false, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+      this.child = child;
+      const tunnel = await this.waitForTunnel(child);
+      if (this.shuttingDown || child.exitCode !== null || child.signalCode !== null) throw new RemoteAccessError(409, 'tunnel_start_failed');
+      this.url = tunnel.url;
+      this.opts.onTunnelHost(tunnel.hostname);
+      this.state = 'active';
+      this.error = undefined;
+      this.opts.onChange();
+      return this.status();
+    } catch (cause) {
+      await this.stopCurrent();
+      this.setError(errorCode(cause));
+      throw new RemoteAccessError(cause instanceof RemoteAccessError ? cause.status : 500, this.error!);
+    }
+  }
+
+  private waitForTunnel(child: ChildProcess): Promise<{ url: string; hostname: string }> {
+    return new Promise((resolve, reject) => {
+      let output = '';
+      let diagnostics = '';
+      let settled = false;
+      const finish = (error?: Error, tunnel?: { url: string; hostname: string }) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        child.off('error', onError);
+        child.off('exit', onExit);
+        if (error) reject(error);
+        else resolve(tunnel!);
+      };
+      const consume = (chunk: Buffer | string) => {
+        output = `${output}${chunk.toString()}`.slice(-64_000);
+        const tunnel = parseQuickTunnelUrl(output);
+        if (tunnel) finish(undefined, tunnel);
+      };
+      const consumeStderr = (chunk: Buffer | string) => {
+        diagnostics = appendCloudflaredDiagnostic(diagnostics, chunk);
+        consume(chunk);
+      };
+      const onError = (cause: Error) => finish(new RemoteAccessError(500, errorCode(cause)));
+      const onExit = () => finish(new RemoteAccessError(500, 'tunnel_start_failed'));
+      const timer = setTimeout(() => {
+        this.opts.log.warn(`cloudflared did not provide a Quick Tunnel URL within 120 seconds; stopping the startup attempt.${diagnostics ? ` stderr=${diagnostics}` : ''}`);
+        finish(new RemoteAccessError(504, 'tunnel_start_failed'));
+      }, QUICK_TUNNEL_START_TIMEOUT_MS);
+      timer.unref();
+      child.stdout?.on('data', consume);
+      child.stderr?.on('data', consumeStderr);
+      child.once('error', onError);
+      child.once('exit', onExit);
+      child.once('exit', (code, signal) => { void this.onTunnelExit(child, code, signal, diagnostics); });
+    });
+  }
+
+  private async onTunnelExit(child: ChildProcess, code: number | null, signal: NodeJS.Signals | null, diagnostics: string): Promise<void> {
+    if (this.child !== child || this.shuttingDown) return;
+    this.opts.log.warn(`cloudflared exited unexpectedly (code=${code ?? 'unknown'}, signal=${signal ?? 'none'}).${diagnostics ? ` stderr=${diagnostics}` : ''}`);
+    this.child = undefined;
+    this.url = undefined;
+    this.loginCodes.clear();
+    this.opts.onTunnelHost(undefined);
+    await this.closeListener();
+    this.invalidateSessions();
+    this.setError('tunnel_start_failed');
+  }
+
+  private async openListener(): Promise<void> {
+    await this.closeListener();
+    const cfg = this.opts.config.remote;
+    if (!cfg) throw new RemoteAccessError(409, 'not_configured');
+    if (!existsSync(cfg.tls.caFile)) throw new RemoteAccessError(409, 'tunnel_start_failed');
+    const certificate = new X509Certificate(readFileSync(cfg.tls.certFile));
+    const authority = new X509Certificate(readFileSync(cfg.tls.caFile));
+    const targets = certTargets(certificate.toString());
+    const validFrom = new Date(certificate.validFrom).getTime();
+    const validTo = new Date(certificate.validTo).getTime();
+    if (!authority.ca || !certificate.verify(authority.publicKey) || validFrom > Date.now() || validTo <= Date.now() ||
+        (!targets.dns.includes('localhost') && !targets.ips.includes('127.0.0.1'))) {
+      throw new RemoteAccessError(409, 'tunnel_start_failed');
+    }
+    const sessions = new RemoteSessions(
+      // Cada listener usa um nonce efêmero. Assim, cookies de uma execução anterior
+      // não voltam a valer mesmo se a rotação do segredo persistente falhar.
+      Buffer.concat([loadSecret(join(this.opts.config.dataDir, 'remote-secret')), randomBytes(32)]),
+      cfg,
+      Date.now,
+    );
+    this.sessions = sessions;
+    this.gate = createRemoteGate({ config: cfg, sessions, loginCodes: this.loginCodes, secure: true });
+    const listener = startRemoteListener({ ...cfg, host: '127.0.0.1' }, this.opts.onRequest, this.opts.log);
+    this.listener = listener;
+    listener.server.on('connection', (socket) => {
+      this.sockets.add(socket);
+      socket.once('close', () => this.sockets.delete(socket));
+    });
+    await new Promise<void>((resolve, reject) => {
+      const cleanup = () => {
+        listener.server.off('error', onError);
+        listener.server.off('listening', onListening);
+        listener.server.off('close', onClose);
+      };
+      const onListening = () => { cleanup(); resolve(); };
+      const onError = (cause: Error) => { cleanup(); reject(cause); };
+      const onClose = () => { cleanup(); reject(new RemoteAccessError(409, 'tunnel_start_failed')); };
+      listener.server.once('listening', onListening);
+      listener.server.once('error', onError);
+      listener.server.once('close', onClose);
+    });
+    listener.server.on('error', () => {
+      this.setError('tunnel_start_failed');
+      void this.stopCurrent();
+    });
+  }
+
+  private async stopCurrent(): Promise<void> {
+    this.loginCodes.clear();
+    const child = this.child;
+    this.child = undefined;
+    if (child && child.exitCode === null && child.signalCode === null) {
+      const closed = new Promise<void>((resolve) => child.once('close', () => resolve()));
+      child.kill();
+      await Promise.race([closed, new Promise<void>((resolve) => setTimeout(resolve, 2_000))]);
+      if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
+    }
+    this.url = undefined;
+    this.opts.onTunnelHost(undefined);
+    await this.closeListener();
+    this.invalidateSessions();
+  }
+
+  private async closeListener(): Promise<void> {
+    const listener = this.listener;
+    this.listener = undefined;
+    this.gate = undefined;
+    this.sessions?.clear();
+    this.sessions = undefined;
+    if (!listener) return;
+    for (const socket of this.sockets) socket.destroy();
+    this.sockets.clear();
+    if (!listener.server.listening) {
+      try { listener.close(); } catch { /* listen falhou antes de abrir um socket */ }
+      return;
+    }
+    await new Promise<void>((resolve) => {
+      listener.server.close(() => resolve());
+      listener.server.closeAllConnections();
+    });
+  }
+
+  private invalidateSessions(): void {
+    const file = join(this.opts.config.dataDir, 'remote-secret');
+    const temporary = `${file}.rotate-${randomBytes(8).toString('hex')}.tmp`;
+    try {
+      const secret = randomBytes(32).toString('hex');
+      writeFileSync(temporary, secret, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
+      chmodSync(temporary, 0o600);
+      renameSync(temporary, file);
+    } catch {
+      // As sessões da execução atual já foram removidas; sem disco gravável, a nova execução gera outra chave.
+    } finally {
+      if (existsSync(temporary)) unlinkSync(temporary);
+    }
+  }
+
+  private validateExistingOriginCertificate(tls?: RemoteTls): void {
+    if (!tls || !existsSync(tls.certFile) || !existsSync(tls.caFile)) throw new RemoteAccessError(409, 'tunnel_start_failed');
+    try {
+      const certificate = new X509Certificate(readFileSync(tls.certFile));
+      const ca = new X509Certificate(readFileSync(tls.caFile));
+      const names = certTargets(certificate.toString());
+      const validFrom = new Date(certificate.validFrom).getTime();
+      const validTo = new Date(certificate.validTo).getTime();
+      if (!ca.ca || !certificate.verify(ca.publicKey) || validFrom > Date.now() || validTo <= Date.now() ||
+          (!names.dns.includes('localhost') && !names.ips.includes('127.0.0.1'))) {
+        throw new Error('invalid origin certificate');
+      }
+    } catch {
+      throw new RemoteAccessError(409, 'tunnel_start_failed');
+    }
+  }
+
+  private validPort(raw: string | undefined): number | undefined {
+    const port = Number(raw);
+    return Number.isInteger(port) && port > 0 && port < 65_536 ? port : undefined;
+  }
+
+  private isConfigured(): boolean {
+    return !!this.opts.config.remote && this.env.AIOFFICE_REMOTE_CONFIGURED === '1';
   }
 
   private serialize<T>(operation: () => Promise<T>): Promise<T> {
     const next = this.queue.then(() => {
-      if (this.shuttingDown) throw new RemoteAccessError(409, 'O servidor está encerrando.');
+      if (this.shuttingDown) throw new RemoteAccessError(409, 'tunnel_start_failed');
       return operation();
     });
     this.queue = next.catch(() => undefined);
     return next;
   }
 
-  private requireNode(): void {
-    if (this.opts.config.inDocker) throw new RemoteAccessError(409, 'O acesso pelo celular exige o servidor Node no computador; o controle HTTPS não está disponível no Docker.');
-  }
-
-  /** Renova IPs privados em certificados gerenciados sem trocar a CA confiada pelo celular. */
-  private refreshManagedCertificate(): void {
-    const cfg = this.opts.config.remote!;
-    if (basename(cfg.tls.dir) !== 'server') return;
-    const paths = tlsPaths(dirname(cfg.tls.dir));
-    // Certificados fornecidos externamente continuam sob responsabilidade de quem os instalou.
-    if (!existsSync(paths.caKey) || !existsSync(paths.caCert)) return;
-    try {
-      const targets = remoteTargets({ domain: this.env.HABBLAUD_REMOTE_DOMAIN?.trim().toLowerCase() || undefined });
-      const old = certTargets(readFileSync(cfg.tls.certFile));
-      targets.dns = [...new Set([...targets.dns, ...old.dns])];
-      targets.ips = [...new Set([...targets.ips, ...old.ips.filter(isPrivateIpv4)])];
-      ensureServerCert(paths, targets);
-    } catch {
-      throw new RemoteAccessError(500, 'Não foi possível renovar o certificado para a rede atual. Confira o OpenSSL e as permissões; se a CA não cobrir o endereço, use npm run remote:setup -- --new-ca e reinstale a CA no celular.');
-    }
-  }
-
   private persist(changes: Record<string, string | null>): void {
-    const file = join(this.opts.config.rootDir, '.env');
+    const file = this.opts.config.envFile;
     const current = existsSync(file) ? readFileSync(file, 'utf8') : '';
     const temporary = `${file}.remote-${randomBytes(8).toString('hex')}.tmp`;
     try {
@@ -273,65 +511,9 @@ export class RemoteAccessRuntime {
     }
   }
 
-  private async openListener(): Promise<void> {
-    await this.closeListener();
-    const cfg = this.opts.config.remote!;
-    this.state = 'starting';
-    this.error = undefined;
-    this.opts.onChange();
-    try {
-      this.requireNode();
-      this.refreshManagedCertificate();
-      const sessions = new RemoteSessions(loadSecret(join(this.opts.config.dataDir, 'remote-secret')), cfg, Date.now, join(this.opts.config.dataDir, 'remote-revoked.json'));
-      this.gate = createRemoteGate({ config: cfg, sessions, secure: true, caFile: cfg.tls.caFile });
-      const listener = startRemoteListener(cfg, this.opts.onRequest, this.opts.log, this.opts.config.allowedHosts);
-      this.listener = listener;
-      listener.server.on('connection', (socket) => {
-        this.sockets.add(socket);
-        socket.once('close', () => this.sockets.delete(socket));
-      });
-      await new Promise<void>((resolve, reject) => {
-        const cleanup = () => {
-          listener.server.off('error', onError);
-          listener.server.off('listening', onListening);
-          listener.server.off('close', onClose);
-        };
-        const onListening = () => { cleanup(); resolve(); };
-        const onError = (error: Error) => { cleanup(); reject(error); };
-        const onClose = () => { cleanup(); reject(new RemoteAccessError(409, 'A porta HTTPS foi fechada antes de iniciar.')); };
-        listener.server.once('listening', onListening);
-        listener.server.once('error', onError);
-        listener.server.once('close', onClose);
-      });
-      if (this.shuttingDown) { await this.closeListener(); throw new RemoteAccessError(409, 'O servidor está encerrando.'); }
-      listener.server.on('error', (error) => {
-        this.setError(safeRemoteError(error, 'A porta HTTPS encontrou um erro. Tente iniciar novamente.'));
-        void this.closeListener();
-      });
-      this.state = 'active';
-      this.opts.onChange();
-    } catch (error) {
-      await this.closeListener();
-      this.setError(safeRemoteError(error, 'Não foi possível iniciar a porta HTTPS. Confira o certificado e o endereço de escuta.'));
-      throw new RemoteAccessError(500, this.error!);
-    }
-  }
-
-  private async closeListener(): Promise<void> {
-    const listener = this.listener;
-    this.listener = undefined;
-    this.gate = undefined;
-    if (!listener) return;
-    const closed = new Promise<void>((resolve) => listener.server.once('close', () => resolve()));
-    listener.close();
-    for (const socket of this.sockets) socket.destroy();
-    this.sockets.clear();
-    await closed;
-  }
-
-  private setError(message: string): void {
+  private setError(code: string): void {
     this.state = 'error';
-    this.error = message;
+    this.error = code;
     this.opts.onChange();
   }
 }

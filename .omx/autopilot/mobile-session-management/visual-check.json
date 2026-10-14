@@ -1,0 +1,23 @@
+{
+  "mode": "isolated-browser-smoke",
+  "preview": "127.0.0.1:4760",
+  "data": "synthetic active tunnel with two fake device sessions; no public tunnel or live user data",
+  "browser": "headless Chrome 155",
+  "viewports": [
+    { "width": 390, "height": 844, "documentWidth": 390, "dialog": { "left": 8, "right": 382, "width": 374 }, "sessions": 2 },
+    { "width": 768, "height": 1024, "documentWidth": 768, "dialog": { "left": 386, "right": 716, "width": 330 }, "sessions": 2 },
+    { "width": 1280, "height": 800, "documentWidth": 1280, "dialog": { "left": 898, "right": 1228, "width": 330 }, "sessions": 2 },
+    { "width": 1440, "height": 900, "documentWidth": 1440, "dialog": { "left": 1058, "right": 1388, "width": 330 }, "sessions": 2 }
+  ],
+  "checks": {
+    "dialogWithinViewport": true,
+    "noDocumentHorizontalOverflow": true,
+    "revokeButtonsHaveAccessibleNames": true,
+    "revokeRemovesOnlySelectedEntryInPreview": true,
+    "consoleErrors": [],
+    "pageErrors": []
+  },
+  "visualReview": "390x844 settings screenshot inspected; session cards, dates, and revoke controls fit within the panel.",
+  "screenshots": "%TEMP%/aioffice-mobile-session-{390,768,1280,1440}.png",
+  "limitations": "Preview used synthetic API data; no live tunnel or actual phone session was tested."
+}

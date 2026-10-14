@@ -33,15 +33,21 @@ ENV NODE_ENV=production \
     HABBLAUD_PORT=4747 \
     HABBLAUD_IN_DOCKER=1 \
     HABBLAUD_DATA_DIR=/data \
-    HABBLAUD_USAGE_DIR=/usage
+    HABBLAUD_USAGE_DIR=/usage \
+    AIOFFICE_MAESTRO_HOME=/maestro/home \
+    NPM_CONFIG_PREFIX=/maestro \
+    NPM_CONFIG_CACHE=/maestro/cache \
+    PATH=/maestro/bin:$PATH
 
 WORKDIR /app
 
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/scripts/maestro.mjs ./scripts/maestro.mjs
 
-# Estado do Habblaud (nomes persistidos). O volume nomeado herda este dono na primeira montagem.
-RUN mkdir -p /data && chown node:node /data
+# Estado do Habblaud e camada NPM do Maestro. Os volumes nomeados são inicializados com estes arquivos na primeira subida;
+# assim o container começa com a versão atual e pode atualizar o prefixo NPM montado quando o operador clicar no botão.
+RUN mkdir -p /data /maestro && node ./scripts/maestro.mjs ensure && chown -R node:node /data /maestro
 
 # Usuário sem privilégios (já existe na imagem oficial do Node). O código fica com dono root,
 # então o processo não consegue alterá-lo; só /data é gravável.

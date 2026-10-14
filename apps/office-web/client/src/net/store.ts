@@ -45,8 +45,12 @@ export interface StoreOptions {
   mock?: boolean;
   /** Parâmetros do modo mock (padrão: a query string da página). */
   search?: string;
+  /** Origem usada para escolher o transporte. Hosts Quick Tunnel do Cloudflare usam polling. */
+  origin?: string;
   /** Fábrica do stream (padrão: `new EventSource(url)`). */
   eventSource?: (url: string) => EventSourceLike;
+  /** GET do polling (padrão: `fetch`). Útil para testar o transporte sem rede. */
+  pollFetch?: (url: string, init: RequestInit) => Promise<Response>;
 }
 
 const FEED_LIMIT = 200;
@@ -55,9 +59,24 @@ const ES_CLOSED = 2;
 /** Espera entre tentativas de reconexão: 2 s, 4 s, 8 s… até 30 s. */
 export const RECONNECT_BASE_MS = 2_000;
 export const RECONNECT_MAX_MS = 30_000;
+/** Intervalo normal entre as consultas do Quick Tunnel. */
+export const POLL_INTERVAL_MS = 2_000;
 
 export function reconnectDelay(attempt: number): number {
   return Math.min(RECONNECT_MAX_MS, RECONNECT_BASE_MS * 2 ** Math.max(0, attempt));
+}
+
+/** Cloudflare Quick Tunnels não transportam o SSE confiavelmente; nesses hosts usamos GET serial. */
+export function isQuickTunnelHost(hostname: string): boolean {
+  return hostname.toLowerCase().endsWith('.trycloudflare.com');
+}
+
+function originUsesQuickTunnel(origin: string): boolean {
+  try {
+    return isQuickTunnelHost(new URL(origin).hostname);
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -95,9 +114,14 @@ export class OfficeStore {
   private agentIndex = new Map<string, AgentInfo>();
   private roomIndex = new Map<string, RoomInfo>();
   private source: EventSourceLike | null = null;
+  private pollTimer: ReturnType<typeof setTimeout> | null = null;
+  private pollController: AbortController | null = null;
+  private pollSequence = 0;
   private mockTimer: ReturnType<typeof setInterval> | null = null;
   private readonly search: string;
   private readonly openStream: (url: string) => EventSourceLike;
+  private readonly usePolling: boolean;
+  private readonly pollFetch: (url: string, init: RequestInit) => Promise<Response>;
   /** Reconexão: tentativas seguidas sem sucesso e o timer da próxima. */
   private attempts = 0;
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
@@ -115,6 +139,9 @@ export class OfficeStore {
     this.mock = !!opts.mock;
     this.search = opts.search ?? (typeof location !== 'undefined' ? location.search : '');
     this.openStream = opts.eventSource ?? ((url) => new EventSource(url));
+    const origin = opts.origin ?? (typeof location !== 'undefined' ? location.origin : '');
+    this.usePolling = originUsesQuickTunnel(origin);
+    this.pollFetch = opts.pollFetch ?? ((url, init) => fetch(url, init));
   }
 
   on<K extends keyof StoreEvents>(event: K, cb: Listener<K>): () => void {
@@ -128,7 +155,7 @@ export class OfficeStore {
     if (!this.stopped) return;
     this.stopped = false;
     if (this.mock) return this.startMock();
-    this.startSSE();
+    this.startTransport();
   }
 
   disconnect(): void {
@@ -136,6 +163,7 @@ export class OfficeStore {
     if (typeof removeEventListener === 'function') removeEventListener('online', this.onOnline);
     this.clearRetry();
     this.closeSource();
+    this.cancelPolling();
     if (this.mockTimer) clearInterval(this.mockTimer);
     this.mockTimer = null;
   }
@@ -145,8 +173,9 @@ export class OfficeStore {
     if (this.mock) return;
     this.clearRetry();
     this.closeSource();
+    this.cancelPolling();
     this.stopped = false;
-    this.startSSE();
+    this.startTransport();
   }
 
   /** Quando será a próxima tentativa automática de reconexão (epoch ms), ou null. */
@@ -471,6 +500,63 @@ export class OfficeStore {
     });
   }
 
+  /** Inicia o transporte adequado para o host atual. */
+  private startTransport(): void {
+    if (this.usePolling) this.startPolling();
+    else this.startSSE();
+  }
+
+  /** Consulta snapshots/feed em série para Quick Tunnel, sem abrir EventSource. */
+  private startPolling(): void {
+    if (this.stopped || this.pollController) return;
+    if (typeof addEventListener === 'function') addEventListener('online', this.onOnline);
+    if (this.connection !== 'open') this.setConnection('connecting');
+    const sequence = ++this.pollSequence;
+    const controller = new AbortController();
+    this.pollController = controller;
+    const current = () => !this.stopped && this.pollSequence === sequence;
+
+    void (async () => {
+      try {
+        const response = await this.pollFetch('/api/poll', {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+          signal: controller.signal,
+        });
+        if (!response.ok) throw new Error(`poll HTTP ${response.status}`);
+        const body = (await response.json()) as { snapshot?: unknown; feed?: unknown };
+        if (!body || typeof body !== 'object' || !body.snapshot || !Array.isArray(body.feed)) {
+          throw new Error('poll payload inválido');
+        }
+        if (!current()) return;
+        this.attempts = 0;
+        this.clearRetry();
+        this.setConnection('open');
+        this.applySnapshot(body.snapshot as OfficeSnapshot);
+        this.applyFeed(body.feed as FeedItem[]);
+        this.pollTimer = setTimeout(() => {
+          this.pollTimer = null;
+          if (current()) this.startPolling();
+        }, POLL_INTERVAL_MS);
+      } catch (err) {
+        if (!current() || controller.signal.aborted) return;
+        console.warn('[store] polling falhou', err);
+        this.setConnection('closed');
+        this.scheduleRetry();
+      } finally {
+        if (this.pollController === controller) this.pollController = null;
+      }
+    })();
+  }
+
+  private cancelPolling(): void {
+    if (this.pollTimer) clearTimeout(this.pollTimer);
+    this.pollTimer = null;
+    this.pollSequence++;
+    this.pollController?.abort();
+    this.pollController = null;
+  }
+
   private closeSource(): void {
     this.source?.close();
     this.source = null;
@@ -486,7 +572,8 @@ export class OfficeStore {
       this.retryAt = null;
       if (!this.stopped && this.connection === 'closed') {
         this.closeSource();
-        this.startSSE();
+        this.cancelPolling();
+        this.startTransport();
       }
     }, delay);
   }

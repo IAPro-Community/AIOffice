@@ -1,0 +1,17 @@
+{
+  "intent": {
+    "intent": "CREATE",
+    "posture": "EVOLVE",
+    "creativity": "medium",
+    "reason": "CREATE",
+    "request": "Add a list of logged-in devices, login date/time, and individual revocation while preserving the existing tunnel and interface."
+  },
+  "designSystem": {
+    "status": "resolved",
+    "provider": "habblaud-local-pixel-art",
+    "confidence": 0.95,
+    "evidence": [{ "type": "design-profile", "path": "apps/office-web/design-profile.json", "confidence": 0.95 }],
+    "profileValidation": "passed",
+    "postureApplied": "EVOLVE existing settings styles and local components; no redesign"
+  }
+}

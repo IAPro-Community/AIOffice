@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { OfficeSnapshot } from '../../../shared/types';
-import { mockOptionsFrom, OfficeStore, pageBuild, reconnectDelay, type EventSourceLike } from './store';
+import { isQuickTunnelHost, mockOptionsFrom, OfficeStore, pageBuild, POLL_INTERVAL_MS, reconnectDelay, type EventSourceLike } from './store';
 
 /** EventSource falso: o teste dispara open/error e muda o readyState. */
 class FakeSource implements EventSourceLike {
@@ -59,6 +59,121 @@ describe('mockOptionsFrom', () => {
 describe('reconnectDelay', () => {
   it('dobra a cada tentativa até 30 s', () => {
     expect([0, 1, 2, 3, 4, 5, 9].map(reconnectDelay)).toEqual([2_000, 4_000, 8_000, 16_000, 30_000, 30_000, 30_000]);
+  });
+});
+
+describe('transporte Cloudflare Quick Tunnel', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('detecta apenas hosts abaixo do domínio trycloudflare.com', () => {
+    expect(isQuickTunnelHost('example.trycloudflare.com')).toBe(true);
+    expect(isQuickTunnelHost('EXAMPLE.TRYCLOUDFLARE.COM')).toBe(true);
+    expect(isQuickTunnelHost('trycloudflare.com')).toBe(false);
+    expect(isQuickTunnelHost('trycloudflare.com.example.org')).toBe(false);
+    expect(isQuickTunnelHost('office.example.org')).toBe(false);
+  });
+
+  it('mantém SSE em hosts comuns e mantém o simulador acima da escolha de transporte', () => {
+    const source = new FakeSource();
+    const eventSource = vi.fn(() => source);
+    const pollFetch = vi.fn(async () => new Response('{}', { status: 200 }));
+    const regular = new OfficeStore({ origin: 'https://office.example.org', eventSource, pollFetch });
+    regular.connect();
+    expect(eventSource).toHaveBeenCalledWith('/api/stream');
+    expect(pollFetch).not.toHaveBeenCalled();
+    regular.disconnect();
+
+    const mock = new OfficeStore({ mock: true, origin: 'https://office.trycloudflare.com', eventSource, pollFetch });
+    mock.connect();
+    expect(mock.connection).toBe('mock');
+    expect(pollFetch).not.toHaveBeenCalled();
+    expect(eventSource).toHaveBeenCalledTimes(1);
+    mock.disconnect();
+  });
+
+  it('usa GET /api/poll em série e aplica snapshot, feed e build', async () => {
+    const payload = {
+      snapshot: snap(1, 'main-cloud'),
+      feed: [{ id: 'feed-1', agentId: 'a', roomId: 'r', agentName: 'Ana', roomName: 'Sala', activity: { id: 'act-1', at: 1, kind: 'tool', icon: '·', text: 'Pronto' } }],
+    };
+    let resolveFirst!: (response: Response) => void;
+    const first = new Promise<Response>((resolve) => { resolveFirst = resolve; });
+    const pollFetch = vi.fn<(url: string, init: RequestInit) => Promise<Response>>()
+      .mockReturnValueOnce(first)
+      .mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+    const eventSource = vi.fn(() => new FakeSource());
+    const store = new OfficeStore({ origin: 'https://my-office.trycloudflare.com', pollFetch, eventSource });
+    store.pageBuildId = 'main-local';
+    const updates: string[] = [];
+    const states: string[] = [];
+    const feeds: string[][] = [];
+    store.on('update', (update) => updates.push(`${update.current}->${update.build}`));
+    store.on('connection', (state) => states.push(state));
+    store.on('feed', (items) => feeds.push(items.map((item) => item.id)));
+
+    store.connect();
+    expect(pollFetch).toHaveBeenCalledTimes(1);
+    expect(pollFetch).toHaveBeenCalledWith('/api/poll', expect.objectContaining({ method: 'GET', signal: expect.any(AbortSignal) }));
+    expect(eventSource).not.toHaveBeenCalled();
+    // Uma consulta pendente bloqueia o próximo intervalo: nunca há GET simultâneos.
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 3);
+    expect(pollFetch).toHaveBeenCalledTimes(1);
+
+    resolveFirst(new Response(JSON.stringify(payload), { status: 200 }));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(store.connection).toBe('open');
+    expect(store.snapshot?.rev).toBe(1);
+    expect(store.feed.map((item) => item.id)).toEqual(['feed-1']);
+    expect(feeds).toEqual([['feed-1']]);
+    expect(updates).toEqual(['main-local->main-cloud']);
+    expect(states).toEqual(['open']);
+
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS - 1);
+    expect(pollFetch).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(pollFetch).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(store.connection).toBe('open');
+    store.disconnect();
+  });
+
+  it('aplica backoff após falha e retorna a polling normal ao reconectar', async () => {
+    const pollFetch = vi.fn<(url: string, init: RequestInit) => Promise<Response>>()
+      .mockResolvedValueOnce(new Response('{}', { status: 502 }))
+      .mockResolvedValue(new Response(JSON.stringify({ snapshot: snap(2), feed: [] }), { status: 200 }));
+    const store = new OfficeStore({ origin: 'https://office.trycloudflare.com', pollFetch });
+    store.connect();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(store.connection).toBe('closed');
+    expect(store.nextRetryAt).toBe(Date.now() + 2_000);
+    await vi.advanceTimersByTimeAsync(1_999);
+    expect(pollFetch).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(pollFetch).toHaveBeenCalledTimes(2);
+    expect(store.connection).toBe('open');
+    expect(store.snapshot?.rev).toBe(2);
+    expect(store.nextRetryAt).toBeNull();
+    store.disconnect();
+  });
+
+  it('disconnect() aborta o GET em andamento e impede novas consultas', async () => {
+    let requestSignal: AbortSignal | undefined;
+    const pollFetch = vi.fn((_url: string, init: RequestInit) => {
+      requestSignal = init.signal as AbortSignal;
+      return new Promise<Response>(() => {});
+    });
+    const store = new OfficeStore({ origin: 'https://office.trycloudflare.com', pollFetch });
+    store.connect();
+    expect(requestSignal?.aborted).toBe(false);
+    store.disconnect();
+    expect(requestSignal?.aborted).toBe(true);
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 5);
+    expect(pollFetch).toHaveBeenCalledTimes(1);
   });
 });
 

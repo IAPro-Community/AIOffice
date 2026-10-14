@@ -21,10 +21,8 @@
 //    codetown_codetown-data são copiados para ele (o antigo fica, para apagar à mão). Avisa de CODETOWN_*
 //    no ambiente e no .env, que não valem mais.
 // 4. Roda `docker compose up -d --build`, espera o /api/health e mostra a URL.
-// 5. Atualiza o mod do Habblaud nas contas onde ele JÁ está instalado com outra versão (depois de
-//    atualizar o Habblaud): relê o marketplace desta pasta e roda `claude plugin update` com o
-//    CLAUDE_CONFIG_DIR de cada conta. Nunca instala sozinho; se o `claude` faltar ou falhar, é só um aviso. Numa
-//    conta com o mod e sem o plugin de mensagens (que veio depois), só dá a dica de rodar o npm run mod:install.
+// 5. Garante automaticamente o plugin de mensagens nas contas Claude Code observadas no host e atualiza os plugins
+//    Habblaud já instalados. Se o `claude` faltar ou falhar, o escritório sobe normalmente e registra um aviso.
 //
 // Uso de 5h/semanal ao vivo: o mod do Habblaud (npm run mod:install; Claude Code 2.1.287+) ou, em
 // versões anteriores, o tap de statusline (npm run usage:install). Os dois gravam os números na pasta
@@ -38,7 +36,8 @@ import type { AccountInfo, SourceInfo } from '../shared/types';
 import { codexDirsRefused, detectAccounts, discoverClaudeDirs, type DetectedAccount } from '../server/accounts/detect';
 import { detectCodexAccounts, discoverCodexDirs } from '../server/sources/codex/accounts';
 import { describeStateMigration, LEGACY_NAME, legacyEnvWarning, migrateLegacyStateDir } from '../server/legacy';
-import { makeClaudeRunner, MIN_CLAUDE_VERSION, readPackageVersion, updateInstalledMods, type ModUpdateResult } from './mod-install';
+import { claudeBinFrom } from '../server/pty/manager';
+import { ensureMessagesPluginInstalled, makeAsyncClaudeRunner, makeClaudeRunner, MIN_CLAUDE_VERSION, readPackageVersion, updateInstalledMods, type ModUpdateResult } from './mod-install';
 import { tr } from '../shared/i18n';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -426,6 +425,24 @@ export function envFileKeys(text: string): string[] {
   return keys;
 }
 
+/** Lê só uma flag do .env sem expor os outros valores, que podem conter credenciais. */
+function messagesEnabledOnHost(): boolean {
+  let value = process.env.HABBLAUD_MENSAGENS;
+  if (value === undefined) {
+    try {
+      for (const line of readFileSync(ENV_FILE, 'utf8').split(/\r?\n/)) {
+        const match = /^\s*(?:export\s+)?HABBLAUD_MENSAGENS\s*=\s*(.*?)\s*$/.exec(line);
+        if (!match) continue;
+        value = match[1].replace(/\s+#.*$/, '').trim().replace(/^(?:"(.*)"|'(.*)')$/, '$1$2');
+        break;
+      }
+    } catch {
+      // Sem .env: o padrão do Habblaud é manter as mensagens ligadas.
+    }
+  }
+  return !value?.trim() || /^(1|true|yes|sim|on)$/i.test(value.trim());
+}
+
 // ---------------------------------------------------------------------------------------------
 // Estado no host (~/.habblaud)
 // ---------------------------------------------------------------------------------------------
@@ -690,17 +707,39 @@ async function up(opts: Options, port: number): Promise<void> {
     const state = src.ok ? plural(src.sessions, tr('sessão aberta'), tr('sessões abertas')) : tr('erro ao ler ({0})', [src.error ?? tr('desconhecido')]);
     say(`  Codex ${m.account.short} (${m.account.id}): ${state}${usage ? ` · ${USAGE_STATUS[usage]}` : ''}`);
   }
-  for (const line of modHint(updateMods(dirs, accounts))) say(line);
+  for (const line of modHint(await updateMods(dirs, accounts))) say(line);
   // Com a cópia falha, os dados só existem no volume antigo: nada de sugerir apagá-lo.
   if (plan.cleanup.length && !copyFailed) say(tr('  Sobrou do CodeTown; depois de conferir o escritório, apague com: {0}', [plan.cleanup.join(' · ')]));
   say(tr('  Logs: npm run docker:logs · Parar: npm run docker:down'));
 }
 
-/** Atualiza o mod de quem já instalou (ver mod-install.ts). Nada aqui derruba o docker:up. */
-function updateMods(dirs: string[], accounts: DetectedAccount[]): Pick<ModUpdateResult, 'installed' | 'unavailable'> {
+/** Garante o plugin de mensagens e atualiza os mods existentes. Nenhuma falha derruba o docker:up. */
+async function updateMods(dirs: string[], accounts: DetectedAccount[]): Promise<Pick<ModUpdateResult, 'installed' | 'unavailable'>> {
   try {
     const labels = dirs.map((dir, i) => ({ dir, label: tr('Conta {0}', [accounts[i]?.short ?? tildify(dir)]) }));
-    const mod = updateInstalledMods(labels, { env: process.env, home: HOME, root: ROOT, version: readPackageVersion(ROOT), claude: makeClaudeRunner() });
+    const root = ROOT;
+    const version = readPackageVersion(ROOT);
+    const claudeBin = claudeBinFrom();
+    if (claudeBin && messagesEnabledOnHost()) {
+      const messages = await ensureMessagesPluginInstalled(labels, {
+        env: process.env,
+        home: HOME,
+        root,
+        version,
+        claude: makeAsyncClaudeRunner(claudeBin),
+      });
+      for (const line of messages.lines) {
+        if (line.level === 'warn') warn(line.text);
+        else say(`  ${line.text}`);
+      }
+    }
+    const mod = updateInstalledMods(labels, {
+      env: process.env,
+      home: HOME,
+      root,
+      version,
+      claude: makeClaudeRunner(claudeBin ?? 'claude'),
+    });
     for (const l of mod.lines) {
       if (l.level === 'warn') warn(l.text);
       else say(`  ${l.text}`);

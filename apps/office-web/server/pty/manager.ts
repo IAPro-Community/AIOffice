@@ -12,6 +12,7 @@
 import { accessSync, chmodSync, constants, readFileSync, statSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { createRequire } from 'node:module';
+import { homedir } from 'node:os';
 import { dirname, extname, isAbsolute, join, resolve } from 'node:path';
 import type { PtyInfo, PtyStatus } from '../../shared/types';
 import { frame } from '../http/sse';
@@ -627,11 +628,16 @@ export function findExecutable(name: string, env: NodeJS.ProcessEnv = process.en
 }
 
 /**
- * O executável do Claude Code que o terminal interativo abre: HABBLAUD_CLAUDE_BIN (um caminho, ou um nome procurado
- * no PATH) ou o `claude` do PATH. undefined se não achar.
+ * O executável do Claude Code: HABBLAUD_CLAUDE_BIN (um caminho, ou um nome procurado no PATH), a instalação nativa
+ * em ~/.local/bin, ou o `claude` do PATH. A instalação nativa tem prioridade sobre um shim global antigo.
  */
 export function claudeBinFrom(env: NodeJS.ProcessEnv = process.env, platform: NodeJS.Platform = process.platform): string | undefined {
   const set = env.HABBLAUD_CLAUDE_BIN?.trim();
-  if (!set) return findExecutable('claude', env, platform);
+  if (!set) {
+    const home = env.HOME || env.USERPROFILE || homedir();
+    const native = join(home, '.local', 'bin', platform === 'win32' ? 'claude.exe' : 'claude');
+    if (isExecutableFile(native, platform)) return native;
+    return findExecutable('claude', env, platform);
+  }
   return /[\\/]/.test(set) ? resolve(set) : findExecutable(set, env, platform);
 }

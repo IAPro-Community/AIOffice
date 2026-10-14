@@ -99,7 +99,23 @@ ou um nome de `HABBLAUD_ALLOWED_HOSTS` (contra DNS rebinding) → senão 403; `P
 `Content-Type: application/json` (415) e `Origin` da mesma origem ou local (403), contra CSRF. Respostas JSON
 saem com `nosniff` e `Cross-Origin-Resource-Policy: same-origin`, sem CORS.
 
-## Versão nova
+## Acesso pelo celular no AIOffice
+
+O painel local **Configurações → Acesso pelo celular** inicia um Quick Tunnel Cloudflare ao concluir a configuração. `cloudflared` precisa estar instalado e disponível no `PATH` do processo AIOffice. O painel oferece **Iniciar**, **Parar**, **Copiar link** e QR; depois de abrir o link no celular, gere e informe um código de uso único no painel. O código expira em cinco minutos, não é incluído no link/QR e o tráfego desse link passa pelo serviço Cloudflare.
+
+O túnel nunca inicia automaticamente ao ligar o servidor. Após reiniciar, a ativação exige **Iniciar** no painel. Ao parar, o link e os códigos emitidos deixam de funcionar; ao iniciar novamente, gere outro código. O código existe em memória somente como hash; nenhuma senha mestra ou token de login é gravado em disco.
+
+Enquanto o túnel estiver ativo, a seção **Dispositivos com acesso** lista sessões móveis em memória, com navegador/plataforma aproximados, início, última atividade e vencimento. Cada sessão pode ser revogada separadamente; todas expiram em até 12 horas e são encerradas ao parar o túnel ou reiniciar o servidor. A lista e a revogação só funcionam pelo painel local e não são encaminhadas pelo listener público.
+
+`npm run remote:setup` e `npm run remote:off` são comandos legados informativos. Não escrevem configuração ou credenciais, não geram CA e não provisionam acesso LAN/VPN; o encerramento do túnel é feito pelo botão **Parar**. A validação operacional da inicialização, parada e autenticação real no celular permanece pendente.
+
+## Atualizações do AIOffice
+
+No monorepo, a interface **Sobre** acompanha as releases de `IAPro-Community/AIOffice`. A integração upstream é mantida pela equipe do produto, fora dos controles de versão do usuário.
+
+### Histórico do verificador upstream
+
+> A descrição abaixo registra o funcionamento original do Habblaud standalone. Não descreve os controles de versão da experiência AIOffice.
 
 `updates/checker.ts` consulta `GET https://api.github.com/repos/<dono>/<nome>/releases/latest`, sem token, 5 s depois
 de subir e depois a cada 6 h (1 h depois de uma falha). O repositório vem do campo `repository` do `package.json`
@@ -262,6 +278,13 @@ A página manda texto a um agente principal (`POST /api/messages`, pela gaveta d
 o plugin `habblaud-mensagens` da sessão o busca (`POST /api/mod/inbox`, a cada 2 s) e o entrega com
 `$.prompt.submit({ text, asUser: true })`: o modelo lê como se você tivesse digitado. Depois confirma
 (`POST /api/mod/inbox/ack`). Detalhes do plugin em [`mod/README.md`](../mod/README.md).
+
+Com mensagens habilitadas, o servidor local instala/verifica esse plugin nas contas Claude Code detectadas sem
+bloquear o boot; `npm run docker:up` faz o mesmo no host. Requer Claude Code 2.1.287 ou mais novo. O servidor procura
+`HABBLAUD_CLAUDE_BIN`, depois `~/.local/bin/claude` (ou `claude.exe` no Windows) e por fim o `claude` do `PATH`.
+Falha ou versão antiga gera aviso, sem impedir o Habblaud de iniciar. Sessões já abertas precisam de
+`/reload-plugins` para carregar a primeira instalação. `HABBLAUD_MENSAGENS=0` evita a instalação automática e
+desliga a entrega.
 
 `messages/registry.ts` (`MessageRegistry`):
 

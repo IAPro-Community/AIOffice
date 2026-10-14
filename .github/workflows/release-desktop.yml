@@ -1,0 +1,90 @@
+name: AIOffice Desktop Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aioffice-desktop-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build and publish the Windows installer
+    runs-on: windows-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Validate release tag
+        shell: pwsh
+        run: |
+          $version = node -p "require('./package.json').version"
+          if ($env:GITHUB_REF_NAME -ne "v$version" -or $env:GITHUB_REF_NAME -notmatch '^v\d+\.\d+\.\d+$') {
+            throw "Release tag $env:GITHUB_REF_NAME must be a stable v$version tag matching package.json."
+          }
+      - run: npm ci
+      - name: Verify the application and desktop shell
+        run: npm run desktop:verify
+      - name: Configure optional Windows code signing
+        shell: pwsh
+        env:
+          WIN_CERTIFICATE_BASE64: ${{ secrets.AIOFFICE_WINDOWS_CERTIFICATE_BASE64 }}
+          WIN_CERTIFICATE_PASSWORD: ${{ secrets.AIOFFICE_WINDOWS_CERTIFICATE_PASSWORD }}
+          WIN_CERTIFICATE_PUBLISHER: ${{ vars.AIOFFICE_WINDOWS_PUBLISHER_NAME }}
+        run: |
+          $provided = @($env:WIN_CERTIFICATE_BASE64, $env:WIN_CERTIFICATE_PASSWORD, $env:WIN_CERTIFICATE_PUBLISHER) | Where-Object { $_ }
+          if ($provided.Count -eq 0) {
+            Write-Host 'Authenticode signing is not configured. The updater will verify the official GitHub release SHA-256 before opening this installer.'
+            exit 0
+          }
+          if ($provided.Count -ne 3) {
+            throw 'Configure all three values: AIOFFICE_WINDOWS_CERTIFICATE_BASE64, AIOFFICE_WINDOWS_CERTIFICATE_PASSWORD, and AIOFFICE_WINDOWS_PUBLISHER_NAME.'
+          }
+          $certificatePath = Join-Path $env:RUNNER_TEMP 'aioffice-windows-signing.p12'
+          [IO.File]::WriteAllBytes($certificatePath, [Convert]::FromBase64String($env:WIN_CERTIFICATE_BASE64))
+          "CSC_LINK=$certificatePath" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "CSC_KEY_PASSWORD=$env:WIN_CERTIFICATE_PASSWORD" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "AIOFFICE_WINDOWS_PUBLISHER_NAME=$env:WIN_CERTIFICATE_PUBLISHER" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          'AIOFFICE_REQUIRE_SIGNING=1' | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+      - name: Build Windows x64 installer
+        run: npm run desktop:package:win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Prepare the single stable download
+        shell: pwsh
+        run: |
+          $installer = Join-Path $env:GITHUB_WORKSPACE "dist/installers/AIOffice-$($env:GITHUB_REF_NAME.TrimStart('v'))-win-x64.exe"
+          if (-not (Test-Path -LiteralPath $installer -PathType Leaf)) { throw "Versioned Windows installer is missing: $installer" }
+          $releaseDirectory = Join-Path $env:RUNNER_TEMP 'aioffice-release'
+          New-Item -ItemType Directory -Path $releaseDirectory -Force | Out-Null
+          $stableInstaller = Join-Path $releaseDirectory 'AIOffice-Setup.exe'
+          Copy-Item -LiteralPath $installer -Destination $stableInstaller
+          if ((Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash -ne (Get-FileHash -LiteralPath $stableInstaller -Algorithm SHA256).Hash) {
+            throw 'The stable setup does not match the versioned installer.'
+          }
+          Get-FileHash -LiteralPath $stableInstaller -Algorithm SHA256 | Format-List
+          "AIOFFICE_RELEASE_ASSET=$stableInstaller" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+      - name: Create the GitHub release with one installer asset
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $version = $env:GITHUB_REF_NAME.TrimStart('v')
+          $env:RELEASE_VERSION = $version
+          $env:RELEASE_NOTES_PATH = Join-Path $env:RUNNER_TEMP 'release-notes.md'
+          node --input-type=module -e 'import { readFileSync, writeFileSync } from "node:fs"; import { changelogSection } from "./scripts/release-aioffice.mjs"; writeFileSync(process.env.RELEASE_NOTES_PATH, changelogSection(readFileSync("CHANGELOG.md", "utf8"), process.env.RELEASE_VERSION) + "\n", "utf8")'
+          if ($LASTEXITCODE -ne 0) { throw 'Could not generate release notes from CHANGELOG.md.' }
+          gh release create $env:GITHUB_REF_NAME $env:AIOFFICE_RELEASE_ASSET --verify-tag --title "AIOffice $env:GITHUB_REF_NAME" --notes-file $env:RELEASE_NOTES_PATH

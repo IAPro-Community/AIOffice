@@ -310,7 +310,8 @@ async function main(): Promise<void> {
   process.exitCode = await run(parsed, { env: process.env, home, now: new Date(), hookPath: HOOK_SCRIPT, out: (l) => console.log(l) });
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+const invokedScript = process.argv[1]?.replaceAll('\\', '/').split('/').at(-1);
+if (invokedScript === 'hooks-install.ts' && process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   main().catch((err: unknown) => {
     console.error(err instanceof FatalError ? tr('[hooks] Erro: {0}', [err.message]) : tr('[hooks] Erro inesperado: {0}', [String(err)]));
     process.exitCode = 1;

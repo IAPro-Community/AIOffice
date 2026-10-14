@@ -1,5 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { createServer } from 'node:http';
 import { AIOfficeMcpServer, type McpRequest } from '../dist/index.js';
 
 describe('AIOfficeMcpServer', () => {
@@ -32,7 +33,16 @@ describe('AIOfficeMcpServer', () => {
   });
 
   it('should handle aioffice_heartbeat call and register agent', async () => {
-    const server = new AIOfficeMcpServer('http://127.0.0.1:4747');
+    const office = createServer((req, res) => {
+      assert.equal(req.method, 'POST');
+      assert.equal(req.url, '/api/aioffice/agent/status');
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end('{}');
+    });
+    await new Promise<void>((resolve) => office.listen(0, '127.0.0.1', resolve));
+    const address = office.address();
+    assert.ok(address && typeof address !== 'string');
+    const server = new AIOfficeMcpServer(`http://127.0.0.1:${address.port}`);
     const req: McpRequest = {
       jsonrpc: '2.0',
       id: 3,
@@ -50,8 +60,12 @@ describe('AIOfficeMcpServer', () => {
       },
     };
 
-    const res = await server.handleRequest(req);
-    assert.equal(res.id, 3);
-    assert.ok(res.result?.['content']);
+    try {
+      const res = await server.handleRequest(req);
+      assert.equal(res.id, 3);
+      assert.ok(res.result?.['content']);
+    } finally {
+      await new Promise<void>((resolve, reject) => office.close((error) => error ? reject(error) : resolve()));
+    }
   });
 });

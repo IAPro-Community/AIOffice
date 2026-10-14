@@ -11,6 +11,8 @@
 
 <p align="center"><a href="README.md">English</a> · <b>Português</b> · <a href="README.es.md">Español</a> · <a href="README.fr.md">Français</a></p>
 
+> **Distribuição AIOffice:** este diretório contém o componente web Habblaud. Para baixar o produto completo, consultar os instaladores nativos e ver o changelog vigente, acesse o [README principal](../../README.md).
+
 <p align="center">
   <img alt="Node.js 22.12+" src="https://img.shields.io/badge/node-%E2%89%A522.12-5fa04e?logo=node.js&logoColor=white" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-7-3178c6?logo=typescript&logoColor=white" />
@@ -34,8 +36,10 @@ E quando dois ou mais agentes estão à toa, o escritório ganha **vida social**
 eles veem futebol juntos no lounge, jogam videogame e ping-pong, fofocam na copa, se arrumam no espelho e apostam
 moedinhas no jokenpô. Veja em [Vida social](#vida-social).
 
-Tudo roda na sua máquina, lendo os arquivos que o próprio Claude Code já grava (e só as linhas `alias` do seu shell,
-para dar a letra de cada conta). Nada sai do computador: o Habblaud não lê credenciais nem faz chamadas externas.
+A descoberta de sessões acontece na sua máquina, lendo os arquivos que o próprio Claude Code já grava (e só as linhas
+`alias` do shell, para identificar cada conta). A checagem de releases consulta a API pública do GitHub sem token e sem
+enviar conteúdo das sessões. O acesso móvel opcional encaminha tráfego pela infraestrutura Cloudflare. O Habblaud não
+lê tokens ou senhas das ferramentas.
 
 ## Sumário
 
@@ -112,8 +116,8 @@ ela, e o endereço antigo apaga e é desmontado. Assim o prédio não fica com b
     <td width="34%"><img src="docs/screenshots/mobile.png" alt="Habblaud no celular, com o uso das contas no topo" /></td>
     <td>
       <b>Também no celular.</b> A interface se adapta a telas pequenas: o uso das contas fica no topo, a lista de
-      salas vira uma gaveta e os detalhes abrem de baixo para cima. Veja como liberar o acesso pela rede local em
-      <a href="#abrir-no-celular-opcional">Abrir no celular</a>.
+      salas vira uma gaveta e os detalhes abrem de baixo para cima. Veja como liberar o acesso pelo celular em
+      <a href="#acesso-remoto-pelo-celular-opcional">Abrir no celular</a>.
     </td>
   </tr>
 </table>
@@ -181,6 +185,9 @@ Claude Code) e o instala em cada conta, pelo próprio `claude plugin`, a partir 
 - dá para **mandar mensagens** ao agente pelo escritório, como se você digitasse no terminal dele, com o plugin
   `habblaud-mensagens` (veja [Mandar mensagens](#mandar-mensagens)).
 
+Com as mensagens habilitadas, o servidor instala/verifica automaticamente esse plugin nas contas Claude Code
+detectadas; `npm run mod:install` continua sendo o instalador manual da integração completa.
+
 Precisa do **Claude Code 2.1.287 ou mais novo** (`claude --version`). O mod roda dentro de cada sessão, com as suas
 permissões, e acessa só o que está listado em [`mod/README.md`](mod/README.md); para conferir sem rodar nada,
 `claude plugin validate mod/habblaud` mostra os eventos que ele trata e as chamadas que faz. Sessões já abertas
@@ -241,18 +248,11 @@ acesso local e a opção `HABBLAUD_MENSAGENS` do servidor.
 
 ### Acesso remoto pelo celular (opcional)
 
-O painel local continua em `http://127.0.0.1:4747`. Para abrir com login e HTTPS pela rede local, use o modo Node na raiz do AIOffice:
+O painel local continua em `http://127.0.0.1:4747`. Instale [`cloudflared`](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) e deixe o executável disponível no `PATH` do AIOffice. No painel, abra **Configurações → Acesso pelo celular**, crie o acesso e use **Iniciar túnel**.
 
-```bash
-npm run remote:setup
-npm run start:office
-```
+Abra no telefone o link HTTPS ou o QR atual. Gere no painel local um código de seis caracteres e informe-o no telefone em até cinco minutos. O código vale para um único login e não faz parte do link nem do QR. Depois de reiniciar o AIOffice, inicie o túnel novamente e compartilhe o novo link. O túnel nunca inicia automaticamente.
 
-O assistente cria o certificado, pede um usuário e uma senha e mostra a impressão digital da CA. Transfira o arquivo público `ca.crt` ao celular por um canal confiável; confira a impressão digital mostrada no computador antes de confiar no certificado. Depois abra no celular o endereço HTTPS exibido pelo assistente e entre. O acesso remoto começa em modo somente leitura.
-
-Para liberar uma capacidade, passe-a explicitamente ao assistente, por exemplo `npm run remote:setup -- --allow permissions`. Também há `messages` (permite enviar texto às sessões) e `terminal` (permite ler conversas completas; não cria nem encerra processos). A configuração é gravada em `apps/office-web/.env`; reinicie o servidor após configurar ou desativar.
-
-Fora de casa, mantenha computador e celular conectados à mesma VPN privada, como Tailscale. Configure o acesso enquanto a VPN está conectada; para usar um nome MagicDNS, informe `--domain <nome-do-computador>` já na primeira configuração. Se uma CA existente precisar cobrir um novo nome, repita com `--domain <nome-do-computador> --new-ca`; remova a CA antiga de cada dispositivo e instale a nova. Não encaminhe portas do roteador nem use Funnel. Para desativar, rode `npm run remote:off` na raiz do AIOffice e reinicie o servidor. Este assistente é para execução Node; o acesso remoto em Docker não está publicado/configurado.
+As sessões móveis expiram em até 12 horas e podem ser revogadas individualmente em **Dispositivos com acesso**. Parar o túnel ou reiniciar o servidor encerra todas as sessões. O tráfego passa pela infraestrutura Cloudflare. Se o Chrome mostrar um aviso de site perigoso, não prossiga nem informe o código. Os comandos legados `npm run remote:setup` e `npm run remote:off` apenas orientam a usar as Configurações; eles não criam certificados nem configuram LAN/VPN.
 
 ### Atualizar uma cópia standalone do Habblaud
 
@@ -502,11 +502,16 @@ terminal** deixa a pergunta lá. A resposta chega ao agente como se você tivess
 
 ### Mandar mensagens
 
-Com o plugin de mensagens instalado (`npm run mod:install`, que o instala junto com o mod; precisa do Claude Code
-2.1.287 ou mais novo), os detalhes de cada agente principal ganham a seção **Mandar mensagem**, e o rodapé do
-[terminal](#terminal) vira uma caixa de digitação. Escreva e aperte `Enter` (`Shift+Enter` quebra a linha): o texto
+Com as mensagens habilitadas, o Habblaud instala ou confere automaticamente `habblaud-mensagens` nas contas Claude
+Code detectadas ao iniciar (Claude Code 2.1.287 ou mais novo). Sessões que já estavam abertas precisam de
+`/reload-plugins` uma vez após a primeira instalação. Os detalhes de cada agente principal ganham a seção
+**Mandar mensagem**, e o rodapé do [terminal](#terminal) vira uma caixa de digitação. Escreva e aperte `Enter`
+(`Shift+Enter` quebra a linha): o texto
 entra na sessão **como se você tivesse digitado no terminal dela**. Dá para responder quando o agente termina o turno
 e espera o próximo pedido, dar uma instrução nova ou corrigir o rumo, sem procurar a janela certa.
+
+`npm run mod:install` continua disponível para instalar toda a integração Habblaud, incluindo captura de uso e
+respostas a pedidos de permissão.
 
 - A caixa mostra a situação: **na fila** (a sessão busca as mensagens a cada 2 segundos), **entregue** ou **não
   entregue**, com o motivo. Com o agente ocupado, a mensagem espera e entra quando ele terminar o turno, como um
@@ -788,8 +793,8 @@ das contas (letra, e-mail, organização) são lidos no host pelo `docker:up` e 
   `127.0.0.1`. Não lê a conversa, não chama o modelo e não envia nada para fora do computador. Ele é lido desta
   pasta: o que estiver nela (inclusive depois de um `git pull`) é o que roda. O plugin de mensagens
   (`habblaud-mensagens`) é separado justamente porque age: digita na sessão o que você mandou pelo escritório.
-- **Só local, por padrão:** a porta principal aceita conexões do próprio computador. O acesso remoto é uma segunda porta HTTPS com usuário e senha, desligada até `npm run remote:setup`; a tela começa em modo somente leitura. O acesso pela rede Wi‑Fi ou VPN privada é documentado em [Abrir no celular](#acesso-remoto-pelo-celular-opcional). Não exponha a porta HTTP principal.
-  Não há telemetria. A única chamada externa é a verificação de releases: a cada 6 horas, uma consulta anônima,
+- **Só local, por padrão:** a porta principal aceita conexões do próprio computador. O acesso remoto opcional usa um Cloudflare Quick Tunnel e código de uso único; o tráfego passa pela Cloudflare. Não exponha a porta HTTP principal.
+  Não há telemetria. A verificação de releases faz, a cada 6 horas, uma consulta anônima,
   sem token, à API pública do GitHub (releases AIOffice no monorepo; releases Habblaud numa cópia standalone). Ela não envia nada
   sobre as suas sessões; o GitHub vê só o seu IP e a versão em uso, que vai no `User-Agent`.
   `HABBLAUD_UPDATE_CHECK=0` desliga a consulta.
@@ -815,8 +820,8 @@ das contas (letra, e-mail, organização) são lidos no host pelo `docker:up` e 
   vale o que o agente pode fazer com um pedido seu. Segue a mesma trava (bind local, `Host` local, JSON e origem local,
   então um site aberto no navegador não consegue mandar), mas **qualquer programa desta máquina** que fale com
   `http://localhost:4747` — inclusive um agente rodando um comando — consegue deixar uma mensagem para outra sessão
-  que tenha o plugin. Se isso não serve para você (computador compartilhado, agentes rodando sem supervisão), não
-  instale o plugin (`npm run mod:install -- --sem-mensagens`) ou desligue com `HABBLAUD_MENSAGENS=0`. O texto das
+  que tenha o plugin. Se isso não serve para você (computador compartilhado, agentes rodando sem supervisão), desligue
+  a automação e a entrega com `HABBLAUD_MENSAGENS=0`. O texto das
   mensagens não é gravado: some do servidor assim que é entregue.
 - **Terminal interativo, opt-in — e com um aviso:** com `HABBLAUD_PTY=1`, o escritório abre o Claude Code em
   qualquer pasta, digita nele (inclusive `!comando`, que roda no shell) e encerra ou assume sessões abertas noutros
@@ -937,10 +942,9 @@ Outro Habblaud (Node ou Docker) já está rodando. Pare-o (`npm run docker:down`
 <details>
 <summary><b>Não abre no celular</b></summary>
 
-Use o servidor Node gerenciado (`npm run start:office`) e configure o acesso com `npm run remote:setup`. Confirme que o
-celular está no mesmo Wi-Fi, abra o endereço HTTPS mostrado pelo assistente e instale a CA pública somente depois de
-conferir a impressão digital. Fora de casa, conecte os dois dispositivos à mesma VPN privada. Não exponha a porta HTTP
-local nem encaminhe portas do roteador.
+Use o servidor Node gerenciado (`npm run start:office`). Em **Configurações → Acesso pelo celular**, confira se
+`cloudflared` está disponível no `PATH`, inicie o túnel, abra o link atual e digite um código novo de seis caracteres
+gerado no painel. Após reiniciar o AIOffice, inicie o túnel novamente e use o novo link. Não exponha a porta HTTP local.
 
 </details>
 
@@ -984,10 +988,11 @@ diz em que pasta ela está (só cria a trava da sessão), e sem a pasta não há
 <details>
 <summary><b>A caixa de mensagem não aparece (ou fica na fila)</b></summary>
 
-A caixa só aparece para agentes principais cuja sessão tem o plugin `habblaud-mensagens` conectado: rode
-`npm run mod:status` (diz, por conta, se o plugin está instalado e se o Habblaud está com as mensagens ligadas) e, nas
-sessões abertas antes da instalação, `/reload-plugins`. Sem o plugin, os detalhes do agente mostram a dica de
-instalação. As mensagens seguem a trava do terminal e `HABBLAUD_MENSAGENS=0` as desliga; o log de inicialização
+A caixa só aparece para agentes principais cuja sessão tem o plugin `habblaud-mensagens` conectado. O Habblaud instala
+ou confere o plugin ao iniciar, desde que o Claude Code seja 2.1.287 ou mais novo. Rode `npm run mod:status` para
+conferir cada conta e use `/reload-plugins` nas sessões abertas antes da instalação. Se o CLI estiver ausente ou
+desatualizado, o log de inicialização mostra o aviso; `HABBLAUD_CLAUDE_BIN` pode apontar para o executável. As
+mensagens seguem a trava do terminal e `HABBLAUD_MENSAGENS=0` as desliga; o log de inicialização
 (`npm run docker:logs`) diz se estão ligadas e, se não estiverem, por quê. Uma mensagem que fica **na fila** e falha
 com "a sessão não buscou a mensagem" quer dizer que a sessão parou de perguntar ao Habblaud (fechou, ou o plugin foi
 desligado).

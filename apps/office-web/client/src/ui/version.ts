@@ -13,6 +13,56 @@ import { tr } from '../../../shared/i18n';
 export const UPDATE_SEEN_KEY = 'aioffice:update-seen';
 const AIOFFICE_RELEASE_REPOSITORY = 'IAPro-Community/AIOffice';
 
+type DesktopUpdateState = {
+  state: 'idle' | 'checking' | 'current' | 'ahead' | 'available' | 'downloading' | 'downloaded' | 'installing' | 'error' | 'disabled' | 'manual';
+  latestVersion?: string;
+  progress?: number;
+  message?: string;
+  releaseUrl?: string;
+};
+
+type DesktopUpdaterApi = {
+  checkForUpdates: () => Promise<{ ok: boolean; available?: boolean; version?: string }>;
+  getUpdateState: () => Promise<unknown>;
+  onUpdateState: (listener: (state: unknown) => void) => () => void;
+};
+
+function desktopUpdaterApi(): DesktopUpdaterApi | undefined {
+  if (typeof window === 'undefined') return undefined;
+  const api = (window as Window & { aiofficeDesktop?: DesktopUpdaterApi }).aiofficeDesktop;
+  return api && typeof api.checkForUpdates === 'function' && typeof api.getUpdateState === 'function' && typeof api.onUpdateState === 'function' ? api : undefined;
+}
+
+function readDesktopUpdateState(value: unknown): DesktopUpdateState | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const state = value as Record<string, unknown>;
+  const allowed = ['idle', 'checking', 'current', 'ahead', 'available', 'downloading', 'downloaded', 'installing', 'error', 'disabled', 'manual'];
+  if (!allowed.includes(String(state.state))) return undefined;
+  return {
+    state: state.state as DesktopUpdateState['state'],
+    latestVersion: typeof state.latestVersion === 'string' ? state.latestVersion : undefined,
+    progress: typeof state.progress === 'number' && Number.isFinite(state.progress) ? state.progress : undefined,
+    message: typeof state.message === 'string' ? state.message : undefined,
+    releaseUrl: typeof state.releaseUrl === 'string' ? safeGithubUrl(state.releaseUrl) : undefined,
+  };
+}
+
+function desktopUpdateText(state: DesktopUpdateState): { tone: UpdateTone; text: string } {
+  switch (state.state) {
+    case 'idle': return { tone: 'pending', text: tr('A verificação automática consulta o GitHub em segundo plano.') };
+    case 'checking': return { tone: 'pending', text: tr('Verificando se há versão nova…') };
+    case 'current': return { tone: 'ok', text: state.latestVersion ? tr('Você está na versão mais recente (v{0}).', [state.latestVersion]) : tr('Você está na versão mais recente{0}.', ['']) };
+    case 'ahead': return { tone: 'ok', text: tr('Você está à frente da última versão publicada (v{0}){1}.', [state.latestVersion ?? '', '']) };
+    case 'available': return { tone: 'new', text: tr('Nova versão disponível: v{0}.', [state.latestVersion ?? '']) };
+    case 'downloading': return { tone: 'pending', text: state.progress === undefined ? tr('Baixando a atualização do AIOffice…') : tr('Baixando a atualização do AIOffice… {0}%', [Math.round(state.progress)]) };
+    case 'downloaded': return { tone: 'ok', text: tr('Instalador baixado e validado. Confirme na janela do AIOffice para instalar.') };
+    case 'installing': return { tone: 'pending', text: tr('O AIOffice está fechando para abrir o instalador.') };
+    case 'disabled': return { tone: 'off', text: tr('Verificação automática desativada.') };
+    case 'manual': return { tone: 'off', text: tr('Instalações DEB são atualizadas pelo gerenciador de pacotes do sistema.') };
+    case 'error': return { tone: 'warn', text: tr('Não deu para verificar agora: erro desconhecido.') };
+  }
+}
+
 export const VERSION_ICONS = {
   up: pixelIcon(['...##...', '..####..', '.######.', '########', '..####..', '..####..', '..####..', '..####..']),
 };
@@ -69,7 +119,7 @@ export function updateStatusLine(version: string, s: UpdateStatus | undefined, n
       return {
         tone: 'off',
         text: s.repo
-          ? tr('Verificação de versão nova desligada (HABBLAUD_UPDATE_CHECK=0).')
+          ? tr('Verificação de novas versões desativada.')
           : tr('Verificação de versão nova desligada: o package.json não aponta um repositório no GitHub.'),
       };
     case 'pending':
@@ -167,8 +217,29 @@ export class AboutGroup {
   private activeTarget: string | undefined;
   private pollTimer: ReturnType<typeof setTimeout> | undefined;
   private pollStartedAt = 0;
+  private desktopApi: DesktopUpdaterApi | undefined;
+  private desktopState: DesktopUpdateState | undefined;
 
   constructor(private ctx: UiContext) {
+    this.desktopApi = desktopUpdaterApi();
+    if (this.desktopApi) {
+      this.desktopState = { state: 'idle' };
+      this.desktopApi.onUpdateState((value) => {
+        const state = readDesktopUpdateState(value);
+        if (!state) return;
+        this.desktopState = state;
+        this.render();
+        this.ctx.invalidate();
+      });
+      void this.desktopApi.getUpdateState().then((value) => {
+        const state = readDesktopUpdateState(value);
+        if (state) {
+          this.desktopState = state;
+          this.render();
+          this.ctx.invalidate();
+        }
+      }).catch(() => {});
+    }
     this.name = h('strong', { class: 'ui-about__version' });
     this.checkBtn = h('button', { class: 'ui-btn ui-btn--sm', type: 'button', text: tr('Verificar agora'), on: { click: () => void this.check() } });
     this.status = h('p', { class: 'ui-about__status', role: 'status' });
@@ -204,8 +275,6 @@ export class AboutGroup {
       this.installation = undefined;
       if (this.pollTimer) clearTimeout(this.pollTimer);
       this.pollTimer = undefined;
-      window.location.reload();
-      return;
     }
     const installation = this.installation ?? s?.installation;
     const busy = this.requesting || installationBusy(installation);
@@ -215,6 +284,31 @@ export class AboutGroup {
       this.schedulePoll();
     }
     setText(this.name, info.releaseChannel === 'aioffice' ? `v${info.version}` : tr('Versão do AIOffice não identificada'));
+    if (this.desktopApi && this.desktopState && info.releaseChannel === 'aioffice') {
+      const desktopLine = this.failure
+        ? { tone: 'warn' as const, text: this.failure }
+        : desktopUpdateText(this.desktopState);
+      setText(this.status, this.checking ? tr('Verificando se há versão nova…') : desktopLine.text);
+      setVariant(this.status, 'is-', this.checking ? 'pending' : desktopLine.tone);
+      const disabled = this.desktopState.state === 'disabled' || this.desktopState.state === 'manual';
+      setHidden(this.checkBtn, disabled);
+      this.checkBtn.disabled = this.checking || this.ctx.store.connection !== 'open' || ['checking', 'downloading', 'installing'].includes(this.desktopState.state);
+      const releaseAvailable = !!this.desktopState.latestVersion && ['available', 'downloading', 'downloaded', 'installing'].includes(this.desktopState.state);
+      setHidden(this.fresh, !releaseAvailable);
+      setHidden(this.installBtn, true);
+      if (releaseAvailable) {
+        setText(this.notes, tr('Ver o que mudou na v{0}', [this.desktopState.latestVersion!]));
+        setHidden(this.notes, !this.desktopState.releaseUrl);
+        if (this.desktopState.releaseUrl) setAttr(this.notes, 'href', this.desktopState.releaseUrl);
+        setText(this.installHint, this.desktopState.state === 'available'
+          ? tr('O AIOffice oferecerá o download e a instalação em uma janela própria.')
+          : desktopLine.text);
+      }
+      const desktopRepo = safeGithubUrl(`https://github.com/${AIOFFICE_RELEASE_REPOSITORY}`);
+      setHidden(this.repo, !desktopRepo);
+      if (desktopRepo) setAttr(this.repo, 'href', desktopRepo);
+      return;
+    }
     const line = this.failure
       ? { tone: 'warn' as const, text: this.failure }
       : info.releaseChannel === 'other'
@@ -260,7 +354,10 @@ export class AboutGroup {
     this.installation = undefined;
     this.render();
     try {
-      if (!(await this.ctx.store.checkUpdates())) this.failure = tr('Não deu para falar com o servidor do AIOffice.');
+      if (this.desktopApi) {
+        const result = await this.desktopApi.checkForUpdates();
+        if (!result.ok) this.failure = tr('Não deu para verificar agora: erro desconhecido.');
+      } else if (!(await this.ctx.store.checkUpdates())) this.failure = tr('Não deu para falar com o servidor do AIOffice.');
     } catch {
       this.failure = tr('Não deu para falar com o servidor do AIOffice.');
     } finally {
@@ -321,8 +418,11 @@ export class AboutGroup {
       if (!res.ok) throw new Error('updates unavailable');
       const body = await res.json() as { version?: unknown; installation?: unknown };
       if (body.version === this.activeTarget) {
-        // Só o servidor executando a versão solicitada confirma que a instalação terminou.
-        window.location.reload();
+        // A confirmação vem do servidor em background. O banner oferece recarga manual para trocar o bundle.
+        this.activeTarget = undefined;
+        this.installation = undefined;
+        this.render();
+        this.ctx.invalidate();
         return;
       }
       const installation = readInstallation(body.installation);

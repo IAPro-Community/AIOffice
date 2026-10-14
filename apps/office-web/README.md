@@ -11,6 +11,8 @@
 
 <p align="center"><b>English</b> · <a href="README.pt-BR.md">Português</a> · <a href="README.es.md">Español</a> · <a href="README.fr.md">Français</a></p>
 
+> **AIOffice distribution:** This folder contains the Habblaud web component. For the complete product, native installers, current release availability, and the AIOffice changelog, see the [repository README](../../README.md).
+
 <p align="center">
   <img alt="Node.js 22.12+" src="https://img.shields.io/badge/node-%E2%89%A522.12-5fa04e?logo=node.js&logoColor=white" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-7-3178c6?logo=typescript&logoColor=white" />
@@ -34,9 +36,9 @@ And when two or more agents have nothing to do, the office gets a **social life*
 and they watch soccer together in the lounge, play video games and ping-pong, gossip in the kitchen, freshen up at the
 mirror and bet coins on rock-paper-scissors. See [Social life](#social-life).
 
-Everything runs on your machine, reading the files Claude Code itself already writes (plus only the `alias` lines in
-your shell, to give each account its letter). Nothing leaves the computer: Habblaud doesn't read credentials or make
-external calls.
+Session discovery runs on your machine, reading the files Claude Code itself already writes (plus only the `alias` lines in
+your shell, to give each account its letter). Optional phone access uses a Cloudflare Quick Tunnel and a short-lived,
+single-use code generated in the local dashboard; release checks use the public GitHub API.
 
 ## Contents
 
@@ -229,22 +231,19 @@ also keep `npm run codex:bridge` running on the Mac (see [Codex](#codex)).
 
 ### Remote phone access (optional)
 
-The local dashboard remains at `http://127.0.0.1:4747`. For authenticated HTTPS access on the same Wi-Fi, configure the Node server from the AIOffice root:
+Install [`cloudflared`](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) on the computer and make it available in the AIOffice process's `PATH`. In the local dashboard, open **Settings → Phone access** (**Configurações → Acesso pelo celular** in Portuguese), create access, and start the tunnel. The panel shows the current HTTPS link and QR code.
 
-```bash
-npm run remote:setup
-npm run start:office
-```
+Open the link on the phone, then generate a six-character code in the local panel and enter it on the phone within five minutes. The code works for one login and is not included in the link or QR code. The link routes traffic through Cloudflare and works while the computer, AIOffice, and tunnel are running. The local Node dashboard remains at `http://127.0.0.1:4747`.
 
-The setup prompts for a username and password, creates a certificate, and prints the CA fingerprint and public `ca.crt` path. Transfer that public certificate to the phone through a trusted channel and verify its fingerprint before trusting it. Then open the HTTPS address printed by setup and sign in. Remote access starts read-only.
+Use **Start** and **Stop** in the same panel to control the tunnel. Copy the current link after starting again, because it can change. The tunnel never starts automatically when the server starts. Active device sessions can be revoked individually; they expire within 12 hours and all end when the tunnel stops or the server restarts. Traffic passes through Cloudflare. If Chrome displays a dangerous-site warning, do not continue or enter the code.
 
-Grant capabilities explicitly with `npm run remote:setup -- --allow permissions`, `messages`, or `terminal`. Messages can send text to sessions; `terminal` can read full conversations, but remote access cannot create or stop processes. The configuration is stored in `apps/office-web/.env`; restart the server after changing it. This setup currently supports Node, not Docker.
-
-Away from home, connect the computer and phone to the same private VPN (such as Tailscale) and run setup while it is connected. For a MagicDNS name, pass `--domain <computer-name>` during the first setup. If an existing CA needs to cover a new name, rerun setup with `--domain <computer-name> --new-ca`; remove the old CA from each device and install the new one. Do not forward router ports or use Funnel. Disable remote credentials with `npm run remote:off`, then restart the server.
+The legacy `npm run remote:setup` and `npm run remote:off` commands only print instructions for using Settings. They do not provision LAN/VPN access, certificates, or credentials. Stop the tunnel with the panel's **Stop** button.
 
 ### Updating a standalone Habblaud checkout
 
-This section's `git pull` steps apply only to a standalone clone of Habblaud. In the AIOffice monorepo, **Settings › About** tracks AIOffice releases only; Habblaud upstream versions never trigger the badge. Use **Download and update** on a supported clean, managed local Node install. Docker, development mode, edited checkouts, and active interactive sessions are blocked. Follow the [AIOffice README](https://github.com/IAPro-Community/AIOffice) for manual updates when automatic installation is blocked; do not pull Habblaud upstream into the embedded app.
+In AIOffice, **Settings → About** tracks AIOffice releases. Use **Download and update** on a supported clean, managed local Node install. Docker, development mode, edited checkouts, and active interactive sessions are blocked. Follow the [AIOffice README](https://github.com/IAPro-Community/AIOffice) for manual updates when automatic installation is blocked.
+
+> Historical upstream instructions: the standalone Habblaud controls and `git pull` steps below describe the original upstream project. They are not part of the AIOffice update experience.
 
 In a standalone clone, the version in use shows up in the top bar, next to "Connected", and in **Settings › About**.
 Every 6 hours Habblaud checks GitHub for a new version (the [releases](https://github.com/marmottajr/habblaud/releases)
@@ -487,11 +486,14 @@ terminal** leaves the question there. The answer reaches the agent as if you had
 
 ### Sending messages
 
-With the messages plugin installed (`npm run mod:install`, which installs it along with the mod; it requires Claude Code
-2.1.287 or newer), each main agent's details get the **Send message** section, and the bottom of the
+When messages are enabled, Habblaud installs or verifies `habblaud-mensagens` automatically for the detected Claude
+Code accounts on startup (Claude Code 2.1.287 or newer). Existing sessions need `/reload-plugins` once after the
+first installation. Each main agent's details then get the **Send message** section, and the bottom of the
 [terminal](#terminal) becomes a text box. Write and press `Enter` (`Shift+Enter` adds a new line): the text
 goes into the session **as if you had typed it in its terminal**. You can reply when the agent finishes its turn
 and waits for the next request, give a new instruction or correct its course, without hunting for the right window.
+
+`npm run mod:install` remains available for the full Habblaud setup, including usage capture and permission replies.
 
 - The box shows the status: **queued** (the session fetches messages every 2 seconds), **delivered** or **not
   delivered**, with the reason. With the agent busy, the message waits and goes in when it finishes its turn, like a
@@ -773,8 +775,8 @@ metadata (letter, email, organization) is read on the host by `docker:up` and pa
   `127.0.0.1`. It doesn't read the conversation, doesn't call the model and doesn't send anything off the computer. It's loaded from this
   folder: whatever is in it (including after a `git pull`) is what runs. The messages plugin
   (`habblaud-mensagens`) is separate precisely because it acts: it types into the session what you sent from the office.
-- **Local only, by default:** the server only accepts connections from the computer it runs on; opening it to the local network is optional.
-  There's no telemetry. The only external call is the release check: every 6 hours, an anonymous request,
+- **Local only, by default:** the server only accepts connections from the computer it runs on. Optional phone access uses a Cloudflare Quick Tunnel and a short-lived, single-use code; traffic through that link passes through Cloudflare.
+  There's no telemetry. The release check makes an anonymous request every 6 hours,
   with no token, to the public GitHub API (AIOffice releases in the monorepo; Habblaud releases in a standalone clone). It doesn't send anything
   about your sessions; GitHub only sees your IP and the version in use, which goes in the `User-Agent`.
   `HABBLAUD_UPDATE_CHECK=0` turns off the request.
@@ -806,8 +808,8 @@ metadata (letter, email, organization) is read on the host by `docker:up` and pa
   whatever the agent can do with a request of yours applies. It follows the same safeguard (local bind, local `Host`, JSON and local origin,
   so a site open in the browser can't send one), but **any program on this machine** that talks to
   `http://localhost:4747` — including an agent running a command — can leave a message for another session
-  that has the plugin. If that doesn't work for you (shared computer, agents running unsupervised), don't
-  install the plugin (`npm run mod:install -- --sem-mensagens`) or turn it off with `HABBLAUD_MENSAGENS=0`. The text of the
+  that has the plugin. If that doesn't work for you (shared computer, agents running unsupervised), turn off
+  automatic installation and delivery with `HABBLAUD_MENSAGENS=0`. The text of the
   messages isn't saved: it disappears from the server as soon as it's delivered.
 - **Interactive terminal, opt-in — and with a warning:** with `HABBLAUD_PTY=1`, the office opens Claude Code in
   any folder, types into it (including `!comando`, which runs in the shell) and ends or takes over sessions open in other
@@ -928,10 +930,10 @@ Another Habblaud (Node or Docker) is already running. Stop it (`npm run docker:d
 <details>
 <summary><b>It doesn't open on my phone</b></summary>
 
-Use the managed Node server (`npm run start:office`) and configure access with `npm run remote:setup`. Confirm the phone
-is on the same Wi-Fi, open the HTTPS address shown by setup, and install the public CA only after checking its
-fingerprint. Away from home, connect both devices to the same private VPN. Do not expose the local HTTP port or forward
-router ports.
+In the local AIOffice dashboard, open **Settings → Phone access**. Confirm that `cloudflared` is installed and available
+in the AIOffice process's `PATH`, create access, and use **Start**. Open the current HTTPS link on the phone, generate a
+six-character code in the local panel, and enter it on the phone within five minutes. After restarting AIOffice, start the
+tunnel again and use the new link. Use **Stop** to close access; active devices can be revoked from the same panel.
 
 </details>
 
@@ -975,10 +977,11 @@ say which folder it's in (it only creates the session lock), and without the fol
 <details>
 <summary><b>The message box doesn't show up (or stays queued)</b></summary>
 
-The box only shows up for main agents whose session has the `habblaud-mensagens` plugin connected: run
-`npm run mod:status` (it says, per account, whether the plugin is installed and whether Habblaud has messages turned on) and, in
-sessions opened before the install, `/reload-plugins`. Without the plugin, the agent's details show the install
-hint. Messages follow the terminal's safeguard and `HABBLAUD_MENSAGENS=0` turns them off; the startup log
+The box only shows up for main agents whose session has the `habblaud-mensagens` plugin connected. Habblaud installs
+or checks the plugin on startup when messages are enabled; Claude Code 2.1.287 or newer is required. Run
+`npm run mod:status` to check each account and use `/reload-plugins` in sessions that were already open. If the CLI is
+missing or outdated, the startup log shows a warning; `HABBLAUD_CLAUDE_BIN` can point to its executable. Messages
+follow the terminal's safeguard and `HABBLAUD_MENSAGENS=0` turns them off; the startup log
 (`npm run docker:logs`) says whether they're on and, if they aren't, why. A message that stays **queued** and fails
 with "the session didn't fetch the message" means the session stopped asking Habblaud (it closed, or the plugin was
 turned off).

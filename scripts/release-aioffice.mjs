@@ -1,4 +1,4 @@
-/** AIOffice release preview by default; only --publish creates and pushes a tag/release. */
+/** AIOffice release preview by default; --publish pushes a tag and lets release CI publish verified assets. */
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -117,7 +117,7 @@ function validateRemote(tag, head) {
 function main(argv) {
   const options = parseReleaseArgs(argv);
   if (options.help) {
-    console.log('Uso: npm run release [-- --dry-run | --publish]\nSem opções: valida a origem, a versão raiz e o CHANGELOG; mostra as notas.\n--publish: exige main limpa e sincronizada; cria e envia a tag e publica no GitHub.');
+    console.log('Uso: npm run release [-- --dry-run | --publish]\nSem opções: valida a origem, a versão raiz e o CHANGELOG; mostra as notas.\n--publish: exige main limpa e sincronizada e envia a tag; a CI publica os instaladores depois de validar builds e assinaturas.');
     return;
   }
 
@@ -137,7 +137,7 @@ function main(argv) {
   if (!options.publish) {
     console.log('Simulação: nenhuma tag, push ou release foi criada; o estado remoto não foi consultado.');
     if (blockers.length) console.log(`Bloqueios locais para publicar:\n${blockers.map((item) => `- ${item}`).join('\n')}`);
-    console.log('Para publicar após revisar e validar a versão: npm run release -- --publish');
+    console.log('Para iniciar a publicação após revisar e validar a versão: npm run release -- --publish');
     return;
   }
   if (blockers.length) throw new Error(blockers.join('\n'));
@@ -150,12 +150,9 @@ function main(argv) {
   run('git', ['tag', '-a', tag, head, '-m', `AIOffice ${tag}`]);
   try {
     run('git', ['-c', 'remote.origin.mirror=false', '-c', 'push.followTags=false', 'push', 'origin', `refs/tags/${tag}:refs/tags/${tag}`]);
-    const args = ['release', 'create', tag, '--repo', GH_REPOSITORY, '--verify-tag', '--title', `AIOffice ${tag}`, '--notes-file', '-'];
-    if (pkg.version.split('+')[0].includes('-')) args.push('--prerelease');
-    const url = run('gh', args, { input: `${notes}\n` });
-    console.log(`Release publicada: ${url}`);
+    console.log(`Tag ${tag} enviada. A pipeline AIOffice Desktop vai compilar e validar os instaladores antes de criar a release em https://${GH_REPOSITORY}/releases/tag/${tag}.`);
   } catch (error) {
-    throw new Error(`${error.message}\nA tag local ${tag} foi criada. Confira a tag remota e a release antes de tentar novamente; o helper não remove nem sobrescreve tags.`);
+    throw new Error(`${error.message}\nA tag local ${tag} foi criada. Confira a tag remota e o workflow antes de tentar novamente; o helper não remove nem sobrescreve tags.`);
   }
 }
 

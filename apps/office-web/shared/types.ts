@@ -264,21 +264,46 @@ export interface UpdateStatus {
   installation?: UpdateInstallationStatus;
 }
 
-/** Estado seguro do listener HTTPS separado para acesso por celular na LAN/VPN privada. */
+/** Estado da camada compartilhada Orquestrador-Maestro instalada pelo NPM. */
+export interface MaestroUpdateStatus {
+  state: 'checking' | 'ok' | 'missing' | 'updating' | 'blocked' | 'error';
+  /** O pacote e os arquivos centrais do Maestro foram verificados. */
+  installed: boolean;
+  installedVersion?: string;
+  latestVersion?: string;
+  checkedAt?: number;
+  available: boolean;
+  /** Instalação/atualização local do Maestro pode ser iniciada pelo painel. */
+  canUpdate?: boolean;
+  message?: string;
+  error?: string;
+}
+
+/** Estado do gerenciador de atualização do Orquestrador-Maestro no desktop AIOffice. */
+export interface MaestroUpdateStatus {
+  state: 'checking' | 'ok' | 'missing' | 'updating' | 'error' | 'blocked';
+  installed: boolean;
+  installedVersion?: string;
+  latestVersion?: string;
+  checkedAt?: number;
+  available: boolean;
+  canUpdate?: boolean;
+  error?: string;
+  message?: string;
+}
+
+/** Estado seguro do túnel temporário do AIOffice para acesso pelo celular. */
 export interface RemoteAccessStatus {
-  /** O servidor atual suporta o fluxo gerenciado de acesso móvel. */
-  available?: boolean;
-  /** Há credenciais e certificados configurados, mesmo quando o listener está parado. */
+  /** O cloudflared está instalado e o servidor atual pode iniciar um túnel. */
+  available: boolean;
+  /** Motivo operacional quando o Quick Tunnel não pode ser iniciado. */
+  unavailableReason?: 'docker' | 'cloudflared_missing' | 'development_mode';
+  /** Acesso Quick Tunnel e certificado local configurados, mesmo com o túnel parado. */
   configured: boolean;
   state: 'disabled' | 'starting' | 'active' | 'error';
-  port?: number;
-  /** Usuário do acesso HTTPS (nunca inclui senha nem hash). */
-  user?: string;
-  /** Endereços HTTPS privados anunciados pelo servidor, sem credenciais. */
-  urls?: string[];
-  /** Impressão digital SHA-256 da CA pública, para conferir antes de confiar no celular. */
-  caFingerprint?: string;
-  /** Erro sanitizado do último start/configure. */
+  /** Link HTTPS temporário emitido pelo Cloudflare Quick Tunnel. */
+  url?: string;
+  /** Código de erro seguro, sem saída do processo cloudflared. */
   error?: string;
 }
 
@@ -393,6 +418,8 @@ export interface OfficeSnapshot {
     pty?: PtyStatus;
     /** Verificação de versão nova no GitHub (ausente nos testes e no timelapse). */
     updates?: UpdateStatus;
+    /** Estado da instalação NPM do Orquestrador-Maestro. */
+    maestro?: MaestroUpdateStatus;
     /** Estado do acesso HTTPS por celular (ausente em servidores anteriores a esta integração). */
     remoteAccess?: RemoteAccessStatus;
   };

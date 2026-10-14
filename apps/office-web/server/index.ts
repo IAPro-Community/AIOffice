@@ -3,6 +3,8 @@
 //   npm run dev    -> tsx server/index.ts --dev (Vite em middleware mode, HMR no mesmo servidor)
 //   npm start      -> node dist/server/index.js (serve dist/client)
 import http from 'node:http';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { join } from 'node:path';
 import { codexDirsRefused, isDefaultDir } from './accounts/detect';
 import { AccountsService } from './accounts/service';
@@ -41,11 +43,35 @@ import { OmpHistory } from './sources/omp/history';
 import { createBuildReader } from './build';
 import { UpdateChecker } from './updates/checker';
 import { UpdateInstaller } from './updates/installer';
+import { MaestroUpdateManager } from './updates/maestro';
 import { RemoteAccessRuntime } from './remote/runtime';
+import { ensureMessagesPluginInstalled, makeAsyncClaudeRunner, readPackageVersion } from '../scripts/mod-install';
 import { tr } from '../shared/i18n';
 
 const config = loadConfig();
+const execFileAsync = promisify(execFile);
+try {
+  const maestroEnv: NodeJS.ProcessEnv = { ...process.env, HOME: config.home };
+  if (process.versions.electron) maestroEnv.ELECTRON_RUN_AS_NODE = '1';
+  const { stdout } = await execFileAsync(process.execPath, [join(config.rootDir, 'scripts/maestro.mjs'), 'ensure'], {
+    cwd: config.rootDir,
+    env: maestroEnv,
+    timeout: 5 * 60_000,
+    maxBuffer: 2 * 1024 * 1024,
+    windowsHide: true,
+  });
+  const maestro = JSON.parse(stdout.trim()) as { installed?: unknown; installedVersion?: unknown; verified?: unknown };
+  if (maestro.installed !== true || maestro.verified !== true) throw new Error('A verificação da camada do Orquestrador-Maestro não foi confirmada.');
+  log.info(tr('Orquestrador-Maestro {0} instalado e verificado.', [typeof maestro.installedVersion === 'string' ? maestro.installedVersion : '']));
+} catch (error) {
+  const detail = errMsg(error).replaceAll(config.home, '~').slice(0, 1_000);
+  log.error(tr('AIOffice não iniciou: o Orquestrador-Maestro é obrigatório e não pôde ser instalado/verificado. {0}', [detail]));
+  throw error;
+}
 const startedAt = Date.now();
+// Host temporário aceito somente pela porta HTTPS dedicada, nunca pelo servidor local principal.
+const remoteAllowedHosts = new Set<string>();
+let activeTunnelHost: string | undefined;
 
 // Nome antigo (CodeTown, até a 0.3.2): leva ~/.codetown para ~/.habblaud antes de ler qualquer estado e avisa
 // das variáveis CODETOWN_* que não valem mais. No Docker, quem migra é o docker:up.
@@ -71,6 +97,11 @@ const remoteAccess = new RemoteAccessRuntime({
   config,
   onRequest: (req, res) => handleRequest(req, res, true),
   onChange: () => late.office?.markDirty(),
+  onTunnelHost: (host) => {
+    if (activeTunnelHost) remoteAllowedHosts.delete(activeTunnelHost);
+    activeTunnelHost = host;
+    if (host) remoteAllowedHosts.add(host);
+  },
   log,
 });
 // Versão do AIOffice: consulta somente o repositório oficial do produto a cada 6 h.
@@ -82,6 +113,11 @@ const updates = new UpdateChecker({
   onChange: () => late.office?.markDirty(),
 });
 updates.load();
+const maestroUpdates = new MaestroUpdateManager({
+  rootDir: config.rootDir,
+  home: config.home,
+  onChange: () => late.office?.markDirty(),
+});
 const accounts = new AccountsService({
   dirs: config.claudeDirs,
   home: config.home,
@@ -104,6 +140,7 @@ const office = new Office({
   messages: config.messages ? () => late.messages?.reachable() ?? new Set() : undefined,
   ptys: () => (late.ptys ? { status: late.ptys.status(), list: late.ptys.list() } : { status: { enabled: false, reason: late.ptyOff ?? tr('desligado') }, list: [] }),
   updates: () => ({ ...updates.status(), installation: updateInstaller?.status() }),
+  maestro: () => maestroUpdates.status(),
   remoteAccess: () => remoteAccess.status(),
 });
 // Fontes de agentes, uma por ferramenta (sources/source.ts): a do Claude Code e, depois dela, a do Codex (quando há
@@ -235,6 +272,7 @@ permissions?.start();
 messages?.start();
 stats.start();
 updates.start();
+maestroUpdates.start();
 const ticker = setInterval(() => {
   try {
     office.tick();
@@ -271,6 +309,12 @@ const api = createApiHandler({
     check: (opts) => updates.check(opts),
     install: (version) => updateInstaller!.install(version),
   },
+  maestro: {
+    status: () => maestroUpdates.status(),
+    check: (opts) => maestroUpdates.check(opts.manual),
+    install: () => maestroUpdates.install(),
+    update: (version) => maestroUpdates.update(version),
+  },
   updateNonce: () => process.env.AIOFFICE_UPDATE_NONCE,
   updateShutdownStarted: () => updateShutdownRequested,
   hasActivePtys: () => !!ptys?.list().some((pty) => pty.exitedAt === undefined),
@@ -279,10 +323,12 @@ const api = createApiHandler({
   shutdownForUpdate: () => process.emit('SIGTERM'),
   remoteAccess: {
     status: () => remoteAccess.status(),
-    configure: (user, password) => remoteAccess.configure(user, password),
+    configure: () => remoteAccess.configure(),
     start: () => remoteAccess.start(),
     stop: () => remoteAccess.stop(),
-    ca: () => remoteAccess.ca(),
+    generateCode: () => remoteAccess.generateCode(),
+    listSessions: () => remoteAccess.listSessions(),
+    revokeSession: (id) => remoteAccess.revokeSession(id),
   },
 });
 
@@ -316,10 +362,11 @@ if (config.dev) {
 
 // Host/Origin/Content-Type: barra DNS rebinding e CSRF antes de qualquer rota (inclusive o Vite).
 const guard = createRequestGuard({ allowedHosts: config.allowedHosts });
+const remoteGuard = createRequestGuard({ allowedHosts: remoteAllowedHosts });
 function handleRequest(req: http.IncomingMessage, res: http.ServerResponse, isRemote = false): void {
   const url = parseUrl(req);
   try {
-    if (guard(req, res)) return;
+    if ((isRemote ? remoteGuard : guard)(req, res)) return;
     if (isRemote && remoteAccess.handleRequest(req, res, url)) return;
     if (!api(req, res, url)) fallback(req, res, url);
   } catch (err) {
@@ -337,6 +384,11 @@ server.on('error', (err: NodeJS.ErrnoException) => {
 });
 
 server.listen(config.port, config.host, () => {
+  const startupNonce = process.env.AIOFFICE_STARTUP_NONCE;
+  const utilityProcess = process as NodeJS.Process & { parentPort?: { postMessage(message: unknown): void } };
+  if (startupNonce && process.versions.electron) {
+    utilityProcess.parentPort?.postMessage({ type: 'aioffice-server-ready', nonce: startupNonce, version: config.version });
+  }
   const host = config.host === '0.0.0.0' || config.host === '::' ? 'localhost' : config.host;
   log.info(tr('🏢 Habblaud {0}{1}{2} em http://{3}:{4}', [config.version, config.dev ? ' (dev)' : '', config.inDocker ? ' (docker)' : '', host, config.port]));
   const list = accounts.entries();
@@ -367,9 +419,32 @@ server.listen(config.port, config.host, () => {
   log.info(tr('   Responder pelo escritório: {0}.', [config.terminal ? tr('ligado (precisa do mod: npm run mod:install; ou do hook antigo: npm run hooks:install)') : tr('desligado (mesma trava do terminal)')]));
   log.info(
     config.messages
-      ? tr('   Mensagens pelo escritório: ligadas (precisa do plugin habblaud-mensagens: npm run mod:install).')
+      ? tr('   Mensagens pelo escritório: ligadas (instalação automática do plugin nas contas Claude Code detectadas).')
       : tr('   Mensagens pelo escritório: desligadas ({0}).', [messagesOffReason(process.env, config.host, config.inDocker)]),
   );
+  if (config.messages && !config.inDocker) {
+    const messagesClaudeBin = claudeBinFrom();
+    if (!messagesClaudeBin) {
+      log.warn(tr('Instalação automática de habblaud-mensagens ignorada: Claude Code não encontrado no PATH ou em ~/.local/bin.'));
+    } else {
+      void ensureMessagesPluginInstalled(
+        accounts.entries().map((account) => ({ dir: account.dir, label: account.detected.short })),
+        {
+          env: process.env,
+          home: config.home,
+          root: config.rootDir,
+          version: readPackageVersion(config.rootDir),
+          claude: makeAsyncClaudeRunner(messagesClaudeBin),
+        },
+      )
+        .then((result) => {
+          if (result.lines.length) {
+            for (const line of result.lines) (line.level === 'warn' ? log.warn : log.info)(line.text);
+          }
+        })
+        .catch((error: unknown) => log.warn(tr('Instalação automática de habblaud-mensagens falhou: {0}', [errMsg(error)])));
+    }
+  }
   if (config.messages) {
     log.info(
       codexBin
@@ -386,14 +461,12 @@ server.listen(config.port, config.host, () => {
   );
   if (config.remoteWarning) log.warn(config.remoteWarning);
   void remoteAccess.initialize().then((status) => {
-    if (status.state !== 'active') return;
-    for (const endpoint of status.urls ?? []) log.info(`   Acesso remoto HTTPS autenticado: ${endpoint}`);
-    log.info(tr('   Para acessar de fora da rede local, conecte computador e celular à mesma VPN privada.'));
+    if (status.configured) log.info(tr('   Acesso pelo celular parado; inicie ou configure o túnel no painel local.'));
   }).catch((error: unknown) => log.error(`Acesso remoto desligado: ${errMsg(error)}`));
 });
 
 let shuttingDown = false;
-function shutdown(signal: string): void {
+async function shutdown(signal: string): Promise<void> {
   if (shuttingDown) return;
   shuttingDown = true;
   log.info(tr('Encerrando ({0})…', [signal]));
@@ -408,12 +481,20 @@ function shutdown(signal: string): void {
   messages?.stop();
   ptys?.stopAll();
   updates.stop();
+  maestroUpdates.stop();
   updateInstaller?.stop();
-  void remoteAccess.shutdown();
+  const remoteShutdown = remoteAccess.shutdown();
   names.flush();
-  void closeVite?.();
-  server.close(() => process.exit(0));
-  setTimeout(() => process.exit(0), 1_500).unref();
+  const viteShutdown = Promise.resolve().then(() => closeVite?.()).catch(() => undefined);
+  const serverShutdown = new Promise<void>((resolve) => {
+    server.close(() => resolve());
+    server.closeAllConnections();
+  });
+  const shutdownTimeout = setTimeout(() => process.exit(1), 5_000);
+  shutdownTimeout.unref();
+  await Promise.allSettled([remoteShutdown, viteShutdown, serverShutdown]);
+  clearTimeout(shutdownTimeout);
+  process.exit(0);
 }
-process.on('SIGINT', () => shutdown('SIGINT'));
-process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => { void shutdown('SIGINT'); });
+process.on('SIGTERM', () => { void shutdown('SIGTERM'); });

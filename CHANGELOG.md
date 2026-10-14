@@ -3,11 +3,42 @@
 All notable changes to AIOffice will be documented in this file.
 
 ## [Não lançado]
+### Corrigido
+- **Atividades e linha do tempo do OMP (oh-my-pi):** remoção do flood repetitivo de eventos genéricos ("bash", "bash terminou", "read", "read terminou"). As ferramentas do OMP (`bash`, `read`, `write`, `edit`, `glob`, `grep`, `task`, `todo`, `eval`, `web_search`, `ask`) agora são descritas detalhadamente em português com ícones próprios, correspondendo ao comportamento de agentes Claude Code e Codex. Chamadas de ferramentas, tokens de entrada/saída, custos e modelo agora alimentam corretamente as estatísticas e linha do tempo do agente.
+
+
+## [v2.2.0] - 2026-10-14
 
 ### Adicionado
-- O selo de versão acompanha exclusivamente releases do AIOffice; o botão baixa e compila a tag oficial em pasta separada, reinicia a instalação gerenciada e confirma a versão antes de limpar o aviso, com preservação de runtime e recuperação em caso de falha.
-- Acesso remoto opcional por HTTPS com login, sessão assinada e permissões explícitas, disponível pela rede Wi-Fi local ou por VPN privada; desligado por padrão.
-- Comando de mantenedor `npm run release` para validar e simular uma release AIOffice antes da publicação explícita.
+- **Acesso pelo celular com código de uso único:** Quick Tunnel da Cloudflare com ações locais para iniciar/parar, link copiável e QR gerado no navegador. O painel emite um código alfanumérico de seis caracteres, válido por cinco minutos e um login; ele não aparece no link nem no QR. O túnel não inicia automaticamente e `cloudflared` é instalado pelo operador.
+- **Gestão de sessões móveis:** o painel local lista navegador/plataforma aproximados, horário de entrada, última atividade e validade; é possível revogar um dispositivo individualmente. Registros são efêmeros, duram até 12 horas e não guardam IP nem User-Agent bruto.
+- **Aplicativo desktop para Windows, macOS e Linux:** serviços locais supervisionados, dados em `userData`, migração não destrutiva de configurações legadas, instaladores nativos e canal de atualização estável.
+- **Orquestrador-Maestro pelo NPM:** instalação e verificação do pacote oficial na inicialização, consulta de versões e atualização iniciada pela pessoa na interface. O Docker prepara a camada central em volume persistente.
+- **Pipeline de release desktop:** workflow por tag valida código e artefatos nos runners Windows, macOS e Linux; exige assinatura/notarização nas plataformas correspondentes antes de publicar os instaladores e metadados.
+- Instalação/verificação opcional de `habblaud-mensagens` nas contas Claude Code detectadas, controlada por `HABBLAUD_MENSAGENS`.
+- Comando `npm run release` para validar e pré-visualizar as notas antes da publicação explícita.
+
+### Alterado
+- O selo e o atualizador acompanham exclusivamente releases de `IAPro-Community/AIOffice`. A atualização gerenciada prepara a tag oficial fora do checkout, preserva dados e runtime, reinicia de forma cooperativa, confirma versão/nonce/PID e tenta rollback em caso de falha.
+- Os launchers Windows iniciam o modo normal do servidor gerenciado; o desktop só tenta encerrar processos reconhecidos como AIOffice e respeita sessões interativas ativas.
+- README principal reformulado com capturas atuais da interface e uma matriz de downloads que distingue o instalador Windows publicado dos pacotes macOS/Linux ainda indisponíveis. Guias do Habblaud atualizados para o login móvel por código temporário.
+
+### Corrigido
+- O handshake do processo Electron agora libera a janela após o health check; falhas de renderer, versão divergente e conflito de porta recebem diagnóstico acionável.
+- QR do Quick Tunnel é gerado localmente, sem enviar a URL a um serviço externo. Códigos temporários e sessões são invalidados ao parar o túnel ou reiniciar o servidor.
+
+### Segurança
+- O código de acesso existe em memória somente como hash, não é persistido nem aparece em URL, QR ou logs. Listagem e revogação de sessões aceitam somente acesso local; a lista não armazena IP nem User-Agent bruto.
+
+## [v2.1.0] - 2026-10-13
+
+### Adicionado
+- Quatro paletas de interface: Noite, Mata, Âmbar e Alto contraste.
+- Doze cenários pixel-art, incluindo Carnaval, Páscoa, Dia dos Namorados, Festa Junina e Independência.
+- Temas automáticos por datas comemorativas e quatro faixas de horário local configuráveis; o timelapse acompanha a data e hora reproduzidas.
+
+### Alterado
+- A seção **Sobre** acompanha releases oficiais do AIOffice e apresenta instruções sem instalar arquivos automaticamente.
 
 ## [v2.0.0] - 2026-10-13
 
@@ -23,6 +54,7 @@ All notable changes to AIOffice will be documented in this file.
 - A interface inclui traduções atualizadas em inglês, espanhol e francês.
 
 ### Corrigido
+- Atualização do cliente e estados do túnel seguem em background; nenhuma recarga total acontece automaticamente. A pessoa recarrega quando quiser para carregar um bundle recém-atualizado.
 - Terminal OMP não apresenta conteúdo de demonstração quando falta um transcript real; responde com erro explícito.
 - A chamada do Codex no Windows usa o executável `codex.exe` e argumentos sem montagem de comando shell.
 - A bridge MCP só confirma eventos aceitos pelo Habblaud, e o instalador preserva arquivos de configuração inválidos para evitar sobrescrita destrutiva.
@@ -95,7 +127,9 @@ All notable changes to AIOffice will be documented in this file.
 ### Security
 - None
 
-[Não lançado]: https://github.com/IAPro-Community/AIOffice/compare/v2.0.0...HEAD
+[Não lançado]: https://github.com/IAPro-Community/AIOffice/compare/v2.2.0...HEAD
+[v2.2.0]: https://github.com/IAPro-Community/AIOffice/releases/tag/v2.2.0
+[v2.1.0]: https://github.com/IAPro-Community/AIOffice/releases/tag/v2.1.0
 [v2.0.0]: https://github.com/IAPro-Community/AIOffice/releases/tag/v2.0.0
 [v1.1.0]: https://github.com/IAPro-Community/AIOffice/releases/tag/v1.1.0
 [v1.0.0-beta]: https://github.com/IAPro-Community/AIOffice/releases/tag/v1.0.0-beta
