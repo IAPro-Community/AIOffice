@@ -117,6 +117,12 @@ describe('groupRooms', () => {
     const onlyD = groupRooms(snap, { query: '', hiddenAccounts: new Set(['.claude']) });
     expect(onlyD.map((r) => r.room.id)).toEqual(['api']);
   });
+  it('filtra por ferramenta sem depender da identidade de conta', () => {
+    const mixed = { ...snap, agents: [...agents, agent({ id: 'codex', provider: 'codex', account: 'codex-home', roomId: 'loja' })] };
+    const filtered = groupRooms(mixed, { query: '', hiddenAccounts: new Set(), providers: new Set(['codex']) });
+    expect(filtered.map((group) => group.room.id)).toEqual(['loja']);
+    expect(filtered.flatMap((group) => group.nodes.map((node) => node.agent.id))).toEqual(['codex']);
+  });
   it('sem snapshot devolve lista vazia', () => {
     expect(groupRooms(null)).toEqual([]);
   });

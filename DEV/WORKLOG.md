@@ -1,5 +1,20 @@
 # WORKLOG — AIOffice
 
+## 2026-10-13 — Preparação da release AIOffice v2.0.0
+- **Versões**: pacote raiz `2.0.0`; CLI `0.2.0`. O Habblaud permanece em `0.10.0` nesta release.
+- **Compatibilidade**: o CLI deixa de executar o fallback Maestro por padrão; `--maestro-fallback` ativa o executor de demonstração explicitamente. Não há migração de banco de dados.
+- **Validação no commit isolado**: `npm run verify` passou (build e 22 testes); typecheck passou; suíte Habblaud passou com 4 workers (1.217 aprovados, 10 ignorados); i18n passou com 2.185/2.185 textos em en/es/fr. A execução padrão da suíte Habblaud com 100 workers atingiu timeout de teste de 5 s; a repetição limitada a 4 workers passou.
+- **Operação**: bundle principal continua acima de 500 kB. O serviço local não será reiniciado durante a publicação para preservar sessões ativas.
+
+## 2026-10-13 — Diagnóstico de sessão Claude ausente no Habblaud
+- **Sintoma**: atividade feita com Claude não apareceu no escritório.
+- **Evidência**: usuário confirmou Claude Desktop → Chat/Cowork. Config MCP `aioffice` existe e o processo `packages/mcp-bridge/dist/index.js` estava ativo; mesmo assim, snapshot do Habblaud tinha zero agentes Claude. A bridge só registra presença/atividade quando o modelo chama suas ferramentas.
+- **Causa**: a configuração disponibiliza ferramentas MCP, mas não inscreve a sessão do Chat/Cowork para captura automática; a descrição anterior do instalador prometia sincronização automática indevidamente.
+- **Correção**: descrições MCP agora explicam a chamada explícita e o limite de captura; respostas de sucesso só são retornadas quando o Habblaud confirma o evento. O instalador explica que configuração MCP não equivale a monitoramento e preserva configurações JSON inválidas em vez de sobrescrevê-las.
+- **Limite**: esta bridge mostra presença e resumos enviados explicitamente pelo Claude. Não importa transcript completo, não recebe cada mensagem automaticamente e não habilita envio de mensagem de volta para Chat/Cowork. A exportação oficial é manual.
+- **Referências/verificação**: snapshot/health locais; build da bridge, `node --check scripts/install-mcp-bridges.mjs` e `git diff --check` passaram. Nenhum teste de integração foi executado, nenhum prompt foi enviado e nenhuma sessão foi interrompida. Referências: [MCP local no Claude Desktop](https://support.anthropic.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop) e [exportação de dados Claude](https://support.anthropic.com/en/articles/9450526-how-can-i-export-my-claude-data).
+- **Próxima ação**: reiniciar o MCP no Claude Desktop para carregar as descrições corrigidas; então testar solicitando explicitamente registro de presença no Habblaud.
+
 ## 2026-10-13 — Preparação da release AIOffice v1.1.0
 - **Versão/changelog**: versão raiz preparada para `1.1.0`, com notas em pt-BR sobre OMP, envio de mensagens, leitura do terminal/histórico e limites reais das integrações.
 - **Distribuição OMP**: a extensão antes instalada apenas na máquina do usuário foi adicionada ao repositório, junto com `omp:install`, `omp:status` e `omp:uninstall`; documentação de instalação atualizada.
@@ -54,3 +69,12 @@
 - **Auditoria**: Claude Code, Codex e OMP são as únicas fontes iniciadas hoje. Devin, Antigravity, OpenCode e Freebuf têm tipos/adaptadores mas não estão ligados; MCP de Cursor/Windsurf/Claude Desktop/Antigravity não é ingestão de CLI. OMP também falta nos filtros, histórico, ajuda e métricas de uso.
 - **Validação**: `npm run build` e `git diff --check` passaram. Não foram executados testes. Habblaud não foi reiniciado porque há várias sessões trabalhando; a renderização ao vivo permanece pendente.
 - **Próximo passo**: Ativar o build em reinício seguro e definir a lista de CLIs-alvo para fechar a cobertura das outras superfícies.
+
+## 2026-10-13 — Central de trabalho e melhorias transversais
+- **Entrega**: adicionados a Central de trabalho por projeto, fila de atenção para esperas/erros recentes, catálogo de integrações por capacidade e biblioteca com seis modelos de workflow (bug, funcionalidade, revisão, testes, release e pesquisa).
+- **Navegação**: filtro independente por ferramenta, busca mais clara, histórico por ferramenta e ajuda atualizados; o rótulo superior agora identifica a conexão SSE do servidor, sem sugerir que cada extensão está conectada.
+- **Precisão**: estados da bridge MCP do Claude Desktop Chat/Cowork explicam o acionamento explícito; Devin, Antigravity, OpenCode e Freebuf aparecem como incompletos. Não foram ativados porque os módulos existentes presumem um formato comum de transcript e incluem escrita direta nele sem validação por CLI.
+- **Autonomia**: os templates só montam e copiam um rascunho revisável; a fila de atenção apenas leva ao agente. Nenhuma mensagem, aprovação ou execução é disparada por esses controles. No CLI, o executor via Orquestrador-Maestro agora exige `--maestro-fallback`; esse caminho explícito mantém as escritas automáticas dos artefatos de demonstração.
+- **Traduções**: novas chaves em inglês, espanhol e francês; o catálogo usa pluralização natural nas quatro línguas.
+- **Verificação**: build raiz e do cliente/servidor passou; typecheck do Habblaud passou; 100 arquivos de teste do Habblaud (1.217 aprovados, 10 ignorados) e 22 testes do workspace passaram; `i18n:check` não aponta textos sem tradução (2.185 por idioma); `git diff --check` passou, com avisos existentes de normalização LF/CRLF.
+- **Limite operacional**: a nova interface foi conferida após recarregar a aba local e em largura desktop/celular. O serviço backend não foi reiniciado nesta rodada para preservar sessões ativas; alterações do servidor só entram em vigor após reinício seguro. Nenhuma mensagem de teste foi enviada.

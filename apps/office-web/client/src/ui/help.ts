@@ -87,10 +87,11 @@ const SHELL_END_HELP: [string, string][] = [
 const INTRO =
   tr('Cada projeto aberto no Claude Code, no Codex ou no oh-my-pi vira uma sala (sessões no mesmo projeto dividem a sala), e cada sessão aberta é um personagem com nome próprio. ') +
   tr('Subagentes chegam como colegas novos, trabalham na mesma sala e vão embora quando terminam. ') +
-  tr('Quando a última sessão de uma sala é fechada, quem sai apaga a luz e a sala é desmontada.');
+  tr('Quando a última sessão de uma sala é fechada, quem sai apaga a luz e a sala é desmontada. ') +
+  tr('A Central de trabalho resume o projeto, a fila de atenção, as integrações e os modelos de tarefa. “Servidor ativo” só confirma o fluxo do Habblaud; veja integrações para saber quais ferramentas foram observadas.');
 
 const SHORTCUTS: [string[], string][] = [
-  [['/'], tr('Buscar agente, projeto ou conta')],
+  [['/'], tr('Buscar agente, projeto, conta ou ferramenta')],
   [['F'], tr('Seguir o agente selecionado')],
   [['T'], tr('Abrir ou fechar o terminal do agente selecionado')],
   [['Ctrl+F'], tr('Com o terminal em foco: buscar na conversa (⌘F no Mac); Enter e Shift+Enter navegam')],
@@ -160,7 +161,7 @@ export class HelpDialog {
               text: tr('Para mandar mensagens, Claude Code precisa do plugin habblaud-mensagens, Codex do entregador configurado e oh-my-pi da extensão carregada na sessão. A caixa só libera o envio quando a sessão está conectada. Enter manda, Shift+Enter quebra a linha.'),
             }),
             h('li', {
-              text: tr('No terminal: busca (lupa ou Ctrl/⌘+F), filtro “Tudo / Só prompts / Sem ferramentas” e um botão de copiar em cada entrada. O relógio da barra superior abre o histórico das sessões dos últimos 7 dias, inclusive as já encerradas.'),
+              text: tr('No terminal: busca (lupa ou Ctrl/⌘+F), filtro “Tudo / Só prompts / Sem ferramentas” e um botão de copiar em cada entrada. O relógio da barra superior abre o histórico das sessões dos últimos 7 dias das ferramentas com histórico ativo; a busca também encontra pelo nome da ferramenta.'),
             }),
             h('li', {
               text: tr('Com o mod do Habblaud instalado (npm run mod:install, que inclui o plugin de permissões), quem “pede permissão” mostra nos detalhes o comando ou a edição e os botões Aprovar, Recusar e Responder no terminal; quem faz uma pergunta mostra as opções (e um “Outro” para escrever) para responder por aqui. O diálogo continua no terminal: vale o que você responder primeiro.'),

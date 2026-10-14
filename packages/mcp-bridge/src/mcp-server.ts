@@ -7,7 +7,7 @@ import type { McpRequest, McpResponse, McpToolDefinition } from './types.js';
 export const AIOFFICE_MCP_TOOLS: readonly McpToolDefinition[] = [
   {
     name: 'aioffice_heartbeat',
-    description: 'Registra a presença do agente (Cursor, Windsurf, Antigravity, etc.) no escritório virtual do AIOffice.',
+    description: 'Registra a presença do agente no Habblaud quando esta ferramenta é chamada. Também pode ser usada no Claude Desktop Chat/Cowork. O MCP não monitora conversas nem cria sessões automaticamente; chame esta ferramenta no início da tarefa e atualize a atividade quando houver mudanças relevantes.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -23,13 +23,12 @@ export const AIOFFICE_MCP_TOOLS: readonly McpToolDefinition[] = [
   },
   {
     name: 'aioffice_report_activity',
-    description: 'Envia um balão de atividade para o avatar no escritório (ex: Pensando..., Rodando testes, etc.).',
+    description: 'Atualiza a atividade de um agente MCP já registrado no Habblaud. Use o mesmo agentId do aioffice_heartbeat. Registra somente o resumo enviado nesta chamada; não espelha automaticamente as mensagens da conversa.',
     inputSchema: {
       type: 'object',
       properties: {
         agentId: { type: 'string', description: 'ID do agente registrado' },
         activityText: { type: 'string', description: 'Texto da atividade exibido no balão de fala' },
-        kind: { type: 'string', enum: ['think', 'run', 'respond'], description: 'Tipo de atividade' },
       },
       required: ['agentId', 'activityText'],
     },
@@ -96,14 +95,16 @@ export class AIOfficeMcpServer {
 
       try {
         if (toolName === 'aioffice_heartbeat') {
-          const agentId = String(args['agentId'] || 'cursor-agent');
-          const name = String(args['name'] || 'Cursor Composer');
-          const role = String(args['role'] || 'Engenheiro IDE');
-          const project = String(args['workspacePath'] || process.cwd());
+          const agentId = String(args['agentId'] || '').trim();
+          const name = String(args['name'] || 'Agente MCP');
+          const role = String(args['role'] || 'Assistente conectado via MCP');
+          const project = String(args['workspacePath'] || '').trim();
+          if (!agentId) throw new Error('Informe um agentId estável para esta conversa.');
+          if (!project) throw new Error('Informe o caminho do projeto para posicionar o agente na sala correta.');
           const status: OfficeAgentStatus = typeof args['status'] === 'string' && (args['status'] === 'waiting' || args['status'] === 'idle') ? args['status'] : 'working';
           const taskDescription = args['taskDescription'] ? String(args['taskDescription']) : undefined;
 
-          await this.bridge.notifyAgentStatus({
+          const sent = await this.bridge.notifyAgentStatus({
             agentId,
             name,
             role,
@@ -111,6 +112,8 @@ export class AIOfficeMcpServer {
             status,
             taskDescription,
           });
+
+          if (!sent) throw new Error('Habblaud não respondeu. Confirme se o serviço está ativo em http://127.0.0.1:4747.');
 
           return {
             jsonrpc: '2.0',
@@ -120,16 +123,20 @@ export class AIOfficeMcpServer {
         }
 
         if (toolName === 'aioffice_report_activity') {
-          const agentId = String(args['agentId'] || '');
-          const activityText = String(args['activityText'] || '');
-          await this.bridge.notifyAgentStatus({
+          const agentId = String(args['agentId'] || '').trim();
+          const activityText = String(args['activityText'] || '').trim();
+          if (!agentId) throw new Error('Informe o mesmo agentId registrado com aioffice_heartbeat.');
+          if (!activityText) throw new Error('Informe um resumo curto da atividade.');
+          const sent = await this.bridge.notifyAgentStatus({
             agentId,
-            name: 'Agente IDE',
-            role: 'Assistente',
+            name: 'Agente MCP',
+            role: 'Assistente conectado via MCP',
             project: process.cwd(),
             status: 'working',
             taskDescription: activityText,
           });
+
+          if (!sent) throw new Error('Habblaud não respondeu. Confirme se o serviço está ativo em http://127.0.0.1:4747.');
 
           return {
             jsonrpc: '2.0',
@@ -145,7 +152,7 @@ export class AIOfficeMcpServer {
           const rationale = String(args['rationale'] || '');
           const diffPreview = args['diffPreview'] ? String(args['diffPreview']) : undefined;
 
-          await this.bridge.requestOfficeApproval({
+          const sent = await this.bridge.requestOfficeApproval({
             id: approvalId,
             agentId,
             action: 'write',
@@ -153,6 +160,8 @@ export class AIOfficeMcpServer {
             diffPreview,
             rationale,
           });
+
+          if (!sent) throw new Error('Habblaud não respondeu. Confirme se o serviço está ativo em http://127.0.0.1:4747.');
 
           return {
             jsonrpc: '2.0',

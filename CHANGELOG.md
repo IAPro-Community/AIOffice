@@ -4,6 +4,28 @@ All notable changes to AIOffice will be documented in this file.
 
 ## [Não lançado]
 
+## [v2.0.0] - 2026-10-13
+
+### Adicionado
+- **Central de trabalho por projeto:** reúne sessões, agentes, estado das tarefas, sinais observados de build/teste e erros recentes.
+- **Fila de atenção:** destaca agentes aguardando e erros recentes, com navegação direta para o agente.
+- **Catálogo de integrações:** mostra capacidades e limites reais de Claude Code, Codex, OMP, MCP e adaptadores ainda incompletos.
+- **Seis modelos de workflow:** investigação de bug, funcionalidade, revisão de código, testes/correções, release e pesquisa; todos permitem revisar e copiar antes de usar.
+
+### Alterado
+- **Incompatível — execução pelo CLI:** `npm start -- "..."` agora prepara a decisão e não inicia um executor. `--maestro-fallback` ativa explicitamente o executor Maestro de demonstração como último recurso. Esse caminho grava artefatos e aprova essas escritas automaticamente.
+- Busca, filtro e histórico separam melhor a ferramenta da conta. O estado de conexão do servidor não é apresentado como saúde de cada provedor.
+- A interface inclui traduções atualizadas em inglês, espanhol e francês.
+
+### Corrigido
+- Terminal OMP não apresenta conteúdo de demonstração quando falta um transcript real; responde com erro explícito.
+- A chamada do Codex no Windows usa o executável `codex.exe` e argumentos sem montagem de comando shell.
+- A bridge MCP só confirma eventos aceitos pelo Habblaud, e o instalador preserva arquivos de configuração inválidos para evitar sobrescrita destrutiva.
+
+### Limites conhecidos
+- Claude Desktop Chat/Cowork só reporta atividade por chamadas MCP explícitas. OpenCode, Antigravity, Devin, Freebuf e Gemini CLI ainda não têm integração completa de sessões e mensagens.
+- O bundle principal ainda supera 500 kB; dividir os chunks fica para uma versão futura.
+
 ## [v1.1.0] - 2026-10-13
 
 ### Adicionado
@@ -68,6 +90,7 @@ All notable changes to AIOffice will be documented in this file.
 ### Security
 - None
 
-[Não lançado]: https://github.com/IAPro-Community/AIOffice/compare/v1.1.0...HEAD
+[Não lançado]: https://github.com/IAPro-Community/AIOffice/compare/v2.0.0...HEAD
+[v2.0.0]: https://github.com/IAPro-Community/AIOffice/releases/tag/v2.0.0
 [v1.1.0]: https://github.com/IAPro-Community/AIOffice/releases/tag/v1.1.0
 [v1.0.0-beta]: https://github.com/IAPro-Community/AIOffice/releases/tag/v1.0.0-beta

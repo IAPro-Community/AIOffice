@@ -167,7 +167,7 @@ export class TopBar implements UiComponent {
     const conn = store.connection;
     if (conn === 'open') this.hadOpen = true;
     const label =
-      conn === 'open' ? tr('Conectado') : conn === 'mock' ? tr('Simulação') : conn === 'closed' ? tr('Desconectado') : this.hadOpen ? tr('Reconectando…') : tr('Conectando…');
+      conn === 'open' ? tr('Servidor ativo') : conn === 'mock' ? tr('Simulação') : conn === 'closed' ? tr('Servidor desconectado') : this.hadOpen ? tr('Reconectando…') : tr('Conectando…');
     setText(this.pillText, label);
     setVariant(this.pill, 'is-', conn);
     setTitle(
@@ -175,7 +175,7 @@ export class TopBar implements UiComponent {
       conn === 'mock'
         ? tr('Dados simulados no navegador (?mock=1)')
         : conn === 'open'
-          ? tr('Recebendo eventos do servidor em tempo real')
+          ? tr('Conexão com o servidor Habblaud; não indica a conexão de cada ferramenta ou extensão.')
           : tr('Sem conexão com o servidor do Habblaud'),
     );
     setHidden(this.demoBadge, !(conn === 'open' && snap?.meta.demo));

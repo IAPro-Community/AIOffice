@@ -80,14 +80,15 @@ npm run start:office
 ```
 Abra no navegador: **[http://localhost:4747](http://localhost:4747)**
 
-### 3. Disparar Tarefas pelo Terminal
+### 3. Preparar ou executar uma tarefa pelo Terminal
 ```bash
-# Extração de Design Tokens
+# Por padrão, mostra o roteamento sem iniciar um executor
 npm start -- "Extrair design tokens e cores do aplicativo"
 
-# Pesquisa de Mercado e Dores de Usuários
-npm start -- "Analisar reviews e concorrentes do mercado"
+# Ativa explicitamente o executor Maestro como último recurso
+npm start -- --maestro-fallback "Extrair design tokens e cores do aplicativo"
 ```
+O fallback atual é uma demonstração: ele grava artefatos no workspace e aprova essas escritas automaticamente. Use-o somente quando os executores preferenciais estiverem indisponíveis.
 
 ### 4. Rodar a Suíte de Verificação
 ```bash

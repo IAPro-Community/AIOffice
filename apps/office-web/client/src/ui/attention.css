@@ -1,0 +1,115 @@
+/* Somente a fila de atenção; usa os tokens e a tipografia do escritório. */
+.ui-attention {
+  width: min(660px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  max-height: min(84vh, 820px);
+  max-height: min(84dvh, 820px);
+  margin: auto;
+  padding: 0;
+  color: var(--ui-text);
+  background: var(--ui-bg-solid);
+  border: 1px solid var(--ui-line-strong);
+  border-radius: var(--radius);
+  box-shadow: 4px 4px 0 rgba(5, 7, 12, 0.55), 0 24px 70px rgba(5, 7, 12, 0.5);
+  font: 13px/1.45 var(--font-ui);
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.ui-attention[open] { display: flex; flex-direction: column; }
+.ui-attention::backdrop { background: rgba(8, 10, 16, 0.65); }
+.ui-attention :is(h2, p) { margin: 0; }
+.ui-attention [hidden] { display: none !important; }
+
+.ui-attention__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--ui-line);
+}
+
+.ui-attention__head h2 { font: 700 19px/1.2 var(--font-ui); }
+.ui-attention__head h2::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin: 0 10px 2px 0;
+  background: var(--st-waiting);
+  box-shadow: 3px 3px 0 color-mix(in srgb, var(--st-waiting) 25%, transparent);
+}
+
+.ui-attention .ui-attention__close {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  color: var(--ui-muted);
+  font-size: 26px;
+  border: 1px solid var(--ui-line-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.ui-attention__intro { display: grid; gap: 8px; padding: 14px 16px; }
+.ui-attention__description { color: var(--ui-muted); }
+.ui-attention__summary { color: var(--ui-text); font-weight: 600; }
+.ui-attention__replay { color: var(--st-waiting); }
+.ui-attention__body { min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 0 16px 16px; }
+.ui-attention__list { display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; }
+
+.ui-attention__item {
+  --attention-color: var(--st-waiting);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 7px 16px;
+  padding: 14px;
+  border: 1px solid var(--ui-line-strong);
+  border-left: 3px solid var(--attention-color);
+  border-radius: var(--radius-sm);
+  background: var(--ui-bg-soft);
+  overflow-wrap: anywhere;
+}
+
+.ui-attention__item[data-kind='error'] { --attention-color: var(--lv-crit); }
+.ui-attention__row-head { grid-column: 1 / -1; display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; }
+.ui-attention__name { font-size: 15px; }
+.ui-attention__kind { color: var(--attention-color); font-size: 11px; font-weight: 700; }
+.ui-attention__context, .ui-attention__session, .ui-attention__reason, .ui-attention__detail { grid-column: 1 / -1; }
+.ui-attention__context { color: var(--ui-muted); font-size: 12px; }
+.ui-attention__session { color: var(--ui-text); font-size: 12px; }
+.ui-attention__reason { color: var(--ui-text); white-space: pre-line; }
+.ui-attention__detail { color: var(--ui-muted); white-space: pre-wrap; font: 12px/1.45 var(--font-mono); }
+.ui-attention__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 12px; color: var(--ui-muted); font-size: 12px; }
+.ui-attention__deadline { color: var(--st-waiting); }
+
+.ui-attention .ui-attention__action {
+  align-self: end;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--ui-line-strong);
+  border-radius: var(--radius-sm);
+  color: var(--ui-accent);
+  background: var(--ui-accent-soft);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ui-attention :is(.ui-attention__action, .ui-attention__close):hover { background: var(--ui-bg-hover); color: var(--ui-text); }
+.ui-attention :is(.ui-attention__action, .ui-attention__close):focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
+.ui-attention__empty { display: grid; gap: 8px; padding: 26px 16px; text-align: center; border: 1px dashed var(--ui-line-strong); border-radius: var(--radius-sm); }
+.ui-attention__empty p { color: var(--ui-muted); }
+
+@media (max-width: 540px) {
+  .ui-attention { width: calc(100vw - 16px); max-width: calc(100vw - 16px); max-height: calc(100dvh - 24px); }
+  .ui-attention__head { padding: 10px 12px; }
+  .ui-attention__intro { padding: 12px; }
+  .ui-attention__body { padding: 0 12px 12px; }
+  .ui-attention__item { grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 12px; }
+  .ui-attention__action { width: 100%; margin-top: 4px; }
+}

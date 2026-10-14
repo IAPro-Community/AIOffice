@@ -94,3 +94,19 @@ AIOffice/
 - Caminhos de projeto são canonizados no Windows para evitar salas duplicadas por diferença de barras e caixa.
 - Build, typecheck e checagem de traduções passaram; a operação real de envio ainda depende de validação do usuário.
 - Fontes ativas continuam Claude Code, Codex e OMP. Os adaptadores Devin, Antigravity, OpenCode e Freebuf permanecem inativos; não anunciar suporte universal.
+
+## 9. Diagnóstico de sessões Claude (2026-10-13)
+- **Estado local**: o serviço ativo responde saudável em `127.0.0.1:4747`; descobre 8 sessões Codex, 10 OMP e 0 Claude Code. O perfil `.claude` tem somente dois registros de sessão e transcripts modificados em 22/09/2026, sem processo CLI correspondente ativo.
+- **Distinção de produto**: o executável `claude` CLI está instalado na versão 2.1.170; os processos `claude.exe` ativos pertencem ao Claude Desktop 2.37337.1. Uma aba do Claude.ai também estava em fluxo de login. Esses produtos não devem ser tratados como a mesma fonte de sessão.
+- **Superfície confirmada**: a atividade ausente veio do Claude Desktop Chat/Cowork.
+- **MCP local**: `claude_desktop_config.json` contém `aioffice`; o processo local da bridge estava ativo. O snapshot não tinha agentes Claude porque não houve chamada a `aioffice_heartbeat` nem a `aioffice_report_activity`.
+- **Limite**: MCP expõe ferramentas que o modelo pode chamar; não fornece ao Habblaud um feed automático com todas as mensagens, transcript, estado ou caixa de entrada do Chat/Cowork. A bridge MCP permite presença e atividades explicitamente reportadas, mas não paridade com as fontes de CLI.
+- **Correção local**: descrições de ferramenta e mensagens do instalador deixam claro o acionamento explícito; respostas não afirmam sucesso quando a API Habblaud não confirma. Para carregar a versão compilada no Claude Desktop, reiniciar o cliente MCP.
+- **Referências oficiais**: [MCP local no Claude Desktop](https://support.anthropic.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop) descreve extensões/servidores locais; [exportação de dados do Claude](https://support.anthropic.com/en/articles/9450526-how-can-i-export-my-claude-data) descreve exportação manual do histórico.
+
+## 10. Melhorias de produto e decisão sobre executor (2026-10-13)
+- A Central de trabalho resume atividade observada, próximos bloqueios, tarefas e sinais de build/teste sem inventar status quando não há evento.
+- A fila de atenção prioriza pedidos de ação e erros recentes; abrir um item só seleciona o agente.
+- O catálogo mostra capacidades por fonte e separa SSE, estado de sessão e bridge MCP. Ferramentas não integradas continuam identificadas como incompletas.
+- A biblioteca inicial tem seis modelos de tarefa, em português; montar/copiar não executa nem envia o prompt.
+- **Decisão do usuário**: executor mediado pelo Orquestrador-Maestro é somente último recurso. O CLI não executa a tarefa por padrão e exige `--maestro-fallback` para ativá-lo; runtime, broker e proxy RPC não foram alterados. O caminho de demonstração explicitamente ativado mantém aprovação automática de escrita.

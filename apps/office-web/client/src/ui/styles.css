@@ -1587,6 +1587,31 @@
   text-decoration: line-through;
 }
 
+.ui-provider-filters {
+  display: grid;
+  gap: 4px;
+}
+
+.ui-provider-filters__label {
+  color: var(--ui-faint);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ui-provider-filters__items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.ui-provider-filter {
+  height: 24px;
+  padding: 0 8px;
+  font-size: 11px;
+}
+
 .ui-side__scroll {
   flex: 1;
   min-height: 0;

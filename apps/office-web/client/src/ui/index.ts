@@ -36,6 +36,10 @@ import { UpdateToaster } from './version';
 import { TopBar } from './topbar';
 import { UpdateBanner } from './update';
 import { FreeArea } from './viewport';
+import { AttentionQueue } from './attention';
+import { IntegrationsCenter } from './integrations';
+import { WorkflowTemplates } from './workflow-templates';
+import { WorkCenter } from './work-center';
 import { tr } from '../../../shared/i18n';
 
 /** Relógio dos tempos relativos ("há 5 s"). */
@@ -196,6 +200,17 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi)
   help = new HelpDialog();
   const day = new DayLauncher(ctx, (el) => root.append(el));
   topbar.addPanelButton(day.button);
+  const attention = new AttentionQueue(ctx);
+  const integrations = new IntegrationsCenter(ctx);
+  const templates = new WorkflowTemplates(ctx);
+  const workCenter = new WorkCenter(ctx, {
+    attentionCount: () => attention.count,
+    openAttention: (opener) => attention.open(opener),
+    openIntegrations: (opener) => integrations.open(opener),
+    openTemplates: (opener) => templates.open(opener),
+    openHistory: () => history.toggle(),
+  });
+  topbar.addPanelButton(workCenter.button);
   // Botão direito numa sala (lista lateral ou escritório): renomear.
   const renamer = new RoomRenamer(ctx);
   ctx.renameRoom = (id, at) => renamer.open(id, at);
@@ -209,7 +224,7 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi)
   const scrim = h('div', { class: 'ui-scrim', attrs: { 'aria-hidden': 'true' }, on: { click: () => ctx.togglePanel('sidebar', false) } });
 
   root.classList.add('ui-root');
-  root.append(timelapse.vignette, topbar.el, sidebar.el, scrim, feed.el, drawer.el, terminal.el, pty.el, timelapse.el, timelapse.badge, toasts.el, banner.el, update.el, empty.el, tip.el, settings.el, history.el, help.el, renamer.el, live, splash.el);
+  root.append(timelapse.vignette, topbar.el, sidebar.el, scrim, feed.el, drawer.el, terminal.el, pty.el, timelapse.el, timelapse.badge, toasts.el, banner.el, update.el, empty.el, tip.el, settings.el, history.el, help.el, attention.el, integrations.el, templates.el, workCenter.el, renamer.el, live, splash.el);
   area = new FreeArea(world, { root, topbar: topbar.el, sidebar: sidebar.el, drawer: drawer.el, feed: feed.el }, () => ({
     sidebar: panels.sidebar,
     feed: panels.feed,
@@ -218,7 +233,7 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi)
   }));
   drawer.onLayoutChange = () => applyLayout();
 
-  const components: UiComponent[] = [topbar, sidebar, drawer, terminal, pty, history, feed, toasts, settings, empty, banner, tip, notifier, splash, timelapse, sound, day, updateToaster];
+  const components: UiComponent[] = [topbar, sidebar, drawer, terminal, pty, history, feed, toasts, settings, empty, banner, tip, notifier, splash, timelapse, sound, day, attention, integrations, templates, workCenter, updateToaster];
 
   // ---------------------------------------------------------------- renderização agrupada por quadro
   let rafId = 0;
@@ -300,7 +315,7 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi)
   function onKey(e: KeyboardEvent): void {
     if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.key === 'Escape') {
-      if (help.isOpen || settings.isOpen || history.isOpen) return; // diálogo/popover tratam o próprio Esc
+      if (help.isOpen || settings.isOpen || history.isOpen || attention.isOpen || integrations.isOpen || templates.isOpen || workCenter.isOpen) return; // diálogos/popovers tratam o próprio Esc
       // O terminal flutua sobre tudo: fecha primeiro (a busca dele, depois ele; a gaveta continua aberta).
       if (terminal.isOpen) {
         terminal.escape();
@@ -314,7 +329,7 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi)
       }
       return;
     }
-    if (isTypingTarget(e.target) || help.isOpen) return;
+    if (isTypingTarget(e.target) || help.isOpen || history.isOpen || attention.isOpen || integrations.isOpen || templates.isOpen || workCenter.isOpen) return;
     switch (e.key) {
       case '/':
         e.preventDefault();

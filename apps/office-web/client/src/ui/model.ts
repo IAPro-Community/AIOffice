@@ -1,6 +1,6 @@
 // Modelo de apresentação da UI: agrupamento salas -> agentes -> subagentes, filtros, contadores e rótulos.
 // Funções puras (sem DOM), testadas em ui/model.test.ts.
-import type { AccountInfo, Activity, AgentInfo, AgentStatus, OfficeSnapshot, RoomInfo, ShellJob, TaskItem } from '../../../shared/types';
+import type { AccountInfo, Activity, AgentInfo, AgentStatus, OfficeSnapshot, Provider, RoomInfo, ShellJob, TaskItem } from '../../../shared/types';
 import { formatElapsed, normalizeSearch } from './format';
 import { tr } from '../../../shared/i18n';
 
@@ -294,10 +294,12 @@ export function aggregateTasks(agents: readonly Pick<AgentInfo, 'tasks'>[]): Tas
 // ---------------------------------------------------------------- agrupamento e filtros
 
 export interface AgentFilter {
-  /** Texto livre: nome, papel, título, sala, caminho ou conta. */
+  /** Texto livre: nome, papel, título, sala, caminho, conta ou ferramenta. */
   query: string;
   /** Contas ocultas (AccountInfo.id). */
   hiddenAccounts: ReadonlySet<string>;
+  /** Ferramentas incluídas; ausente = todas. */
+  providers?: ReadonlySet<Provider>;
 }
 
 const PROVIDER_SEARCH_NAMES: Record<AgentInfo['provider'] & string, string> = {
@@ -371,7 +373,8 @@ export function groupRooms(snap: Pick<OfficeSnapshot, 'rooms' | 'agents' | 'acco
   const accountOrder = new Map(snap.accounts.map((a, i) => [a.id, i]));
   const query = filter?.query.trim() ?? '';
   const hidden = filter?.hiddenAccounts ?? new Set<string>();
-  const filtering = query.length > 0 || hidden.size > 0;
+  const providers = filter?.providers;
+  const filtering = query.length > 0 || hidden.size > 0 || providers !== undefined;
 
   const byRoom = new Map<string, AgentInfo[]>();
   for (const a of snap.agents) {
@@ -383,7 +386,8 @@ export function groupRooms(snap: Pick<OfficeSnapshot, 'rooms' | 'agents' | 'acco
   const groups: RoomGroup[] = [];
   for (const room of [...snap.rooms].sort((a, b) => a.slot - b.slot)) {
     const agents = (byRoom.get(room.id) ?? []).slice().sort(byArrival);
-    const visible = (a: AgentInfo) => !hidden.has(a.account) && matchesQuery(a, room, accounts.get(a.account), query);
+    const visible = (a: AgentInfo) =>
+      !hidden.has(a.account) && (!providers || providers.has(a.provider ?? 'claude')) && matchesQuery(a, room, accounts.get(a.account), query);
     const ids = new Set(agents.map((a) => a.id));
     const subsOf = new Map<string, AgentInfo[]>();
     const top: AgentInfo[] = [];

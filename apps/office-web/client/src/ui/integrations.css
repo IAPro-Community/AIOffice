@@ -1,0 +1,277 @@
+/* Central de integrações: usa os tokens da UI e mantém os detalhes em pixels. */
+.ui-integrations {
+  width: min(920px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  max-height: min(88vh, 920px);
+  max-height: min(88dvh, 920px);
+  padding: 0;
+  border: 1px solid var(--ui-line-strong);
+  border-radius: 8px;
+  background: var(--ui-bg-solid);
+  color: var(--ui-text);
+  font: 13px/1.5 var(--font-ui);
+  box-shadow: 4px 4px 0 rgba(5, 7, 12, 0.7), 0 28px 80px rgba(5, 7, 12, 0.55);
+  overflow: hidden;
+}
+
+.ui-integrations[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.ui-integrations::backdrop {
+  background: rgba(8, 10, 16, 0.65);
+  backdrop-filter: blur(3px);
+}
+
+.ui-integrations .ui-integrations__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--ui-line-strong);
+}
+
+.ui-integrations .ui-integrations__head h2 {
+  margin: 2px 0 0;
+  font: 700 20px/1.3 var(--font-ui);
+}
+
+.ui-integrations .ui-integrations__head button {
+  flex: none;
+  width: 44px;
+  height: 44px;
+}
+
+.ui-integrations .ui-integrations__eyebrow {
+  font: 500 16px/1.1 var(--font-px);
+  color: var(--ui-accent);
+}
+
+.ui-integrations .ui-integrations__body {
+  min-height: 0;
+  padding: 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.ui-integrations .ui-integrations__body > * + * {
+  margin-top: 22px;
+}
+
+.ui-integrations .ui-integrations__intro {
+  max-width: 82ch;
+  color: #c9d1e2;
+}
+
+.ui-integrations .ui-integrations__hint {
+  color: var(--ui-muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.ui-integrations .ui-integrations__server,
+.ui-integrations .ui-integrations__mcp {
+  padding: 14px 16px;
+  border: 1px solid var(--ui-line-strong);
+  border-left: 3px solid var(--ui-accent);
+  background: var(--ui-bg-soft);
+}
+
+.ui-integrations .ui-integrations__server-line,
+.ui-integrations .ui-integrations__provider-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.ui-integrations .ui-integrations__connection {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+}
+
+.ui-integrations .ui-integrations__connection::before {
+  width: 6px;
+  height: 6px;
+  content: '';
+  background: var(--ui-muted);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.3);
+}
+
+.ui-integrations .ui-integrations__connection[data-state='open']::before {
+  background: var(--st-working);
+}
+
+.ui-integrations .ui-integrations__connection[data-state='connecting']::before,
+.ui-integrations .ui-integrations__connection[data-state='mock']::before {
+  background: var(--st-waiting);
+}
+
+.ui-integrations .ui-integrations__connection[data-state='closed']::before {
+  background: var(--lv-crit);
+}
+
+.ui-integrations .ui-integrations__server .ui-integrations__hint {
+  margin-top: 7px;
+}
+
+.ui-integrations h3 {
+  margin: 0 0 8px;
+  font: 700 15px/1.35 var(--font-ui);
+}
+
+.ui-integrations .ui-integrations__providers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.ui-integrations .ui-integrations__provider {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--ui-line-strong);
+  border-top: 3px solid var(--ui-accent);
+  border-radius: 4px;
+  background: var(--ui-bg-soft);
+}
+
+.ui-integrations .ui-integrations__provider h4 {
+  margin: 0;
+  font: 700 14px/1.35 var(--font-ui);
+}
+
+.ui-integrations .ui-integrations__source-status {
+  font-size: 11px;
+  color: var(--ui-muted);
+}
+
+.ui-integrations .ui-integrations__source-status[data-state='ready'] {
+  color: var(--st-working);
+}
+
+.ui-integrations .ui-integrations__source-status[data-state='error'],
+.ui-integrations .ui-integrations__source-error {
+  color: var(--st-waiting);
+}
+
+.ui-integrations .ui-integrations__sessions {
+  margin: 9px 0 12px;
+  color: var(--ui-muted);
+  font-size: 12px;
+}
+
+.ui-integrations .ui-integrations__coverage {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 7px 12px;
+  margin: 0;
+}
+
+.ui-integrations .ui-integrations__coverage dt {
+  color: var(--ui-muted);
+  font-size: 12px;
+}
+
+.ui-integrations .ui-integrations__coverage dd {
+  margin: 0;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.ui-integrations .ui-integrations__details {
+  margin-top: 14px;
+  border-top: 1px solid var(--ui-line);
+}
+
+.ui-integrations .ui-integrations__details summary {
+  display: list-item;
+  padding: 12px 0;
+  min-height: 44px;
+  cursor: pointer;
+  color: var(--ui-accent);
+  font-size: 12px;
+}
+
+.ui-integrations .ui-integrations__source {
+  margin-bottom: 12px;
+  overflow-wrap: anywhere;
+}
+
+.ui-integrations .ui-integrations__source > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 8px;
+  font-size: 11px;
+}
+
+.ui-integrations .ui-integrations__source span {
+  color: var(--ui-muted);
+}
+
+.ui-integrations .ui-integrations__source code {
+  display: block;
+  margin-top: 4px;
+  color: var(--ui-muted);
+  font: 11px/1.5 var(--font-mono);
+}
+
+.ui-integrations .ui-integrations__mcp .ui-integrations__coverage {
+  margin: 14px 0;
+}
+
+.ui-integrations .ui-integrations__inactive {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 20px;
+  margin: 12px 0;
+}
+
+.ui-integrations .ui-integrations__inactive li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 10px;
+}
+
+.ui-integrations .ui-integrations__inactive span {
+  color: var(--ui-muted);
+  font-size: 12px;
+}
+
+.ui-integrations :focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 760px) {
+  .ui-integrations .ui-integrations__providers {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .ui-integrations {
+    width: calc(100vw - 16px);
+    max-width: calc(100vw - 16px);
+    max-height: calc(100dvh - 24px);
+  }
+
+  .ui-integrations .ui-integrations__head,
+  .ui-integrations .ui-integrations__body {
+    padding: 14px;
+  }
+
+  .ui-integrations .ui-integrations__head h2 {
+    font-size: 18px;
+  }
+
+  .ui-integrations .ui-integrations__inactive {
+    grid-template-columns: 1fr;
+  }
+}
