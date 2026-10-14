@@ -1,5 +1,14 @@
 # VERIFY — AIOffice
 
+## Matriz nativa v2.3.0 — preflight completo, 2026-10-14
+
+| Verificação | Resultado |
+|---|---|
+| Workflow manual `38654902095` | Aprovado: gate completo, builds Windows x64/macOS Intel/macOS arm64/Linux x64, montagem dos quatro artifacts e notas da release. |
+| Manifestos | `latest-mac.yml` e `latest-linux.yml` gerados e validados contra os pacotes correspondentes. |
+| Conjunto de release | Aprovação dos nove arquivos esperados: setup Windows, quatro arquivos macOS, dois arquivos Linux e dois manifestos. |
+| Publicação | Etapa ignorada corretamente em `workflow_dispatch`. Não há tag `v2.3.0` ainda; executar `npm run release -- --publish` a partir de `main` limpa e sincronizada para publicar. |
+
 ## Matriz nativa v2.3.0 — primeira validação manual, 2026-10-14
 
 | Verificação | Resultado |

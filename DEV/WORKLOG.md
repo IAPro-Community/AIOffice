@@ -5,7 +5,8 @@
 - **Verificação**: `npm run desktop:verify` aprovado localmente; instalador Windows x64 2.3.0 empacotado localmente (118.453.440 bytes, SHA-256 `65622CD3AD4F2B39BD6431BD3B0CD5E05A872009EFEBD59C106C4A3F0269F1E2`, `NotSigned`). CI manual `38653090528`: verificação, Windows e os dois builds macOS passaram. Build Linux produziu os pacotes, mas a checagem expôs os nomes nativos `x86_64.AppImage` e `amd64.deb` em vez dos aliases x64 do README.
 - **Correção**: usar nome de asset x64 explícito para ambos os formatos Linux e definir `desktopName=aioffice` com sincronização do arquivo `.desktop`, alinhando launcher e WM_CLASS.
 - **Revalidação**: CI `38653586066` aprovou os quatro builds; `38654072400` repetiu o gate e os quatro builds com ações de artifacts v7/Node 24. O log Linux confirmou os aliases x64.
-- **Estado**: nenhuma tag/release `v2.3.0` foi criada. O workflow foi ajustado para validar a montagem dos artefatos e manifestos em execução manual e só enviar a release na execução de tag.
+- **Preflight final**: CI `38654902095` aprovou o gate, os quatro runners, a montagem dos artifacts, `latest-mac.yml`, `latest-linux.yml`, os nove arquivos exigidos e as notas de release. A publicação foi corretamente ignorada por ser `workflow_dispatch`.
+- **Estado**: ainda sem tag/release `v2.3.0`; a publicação está pronta para `npm run release -- --publish` em `main` limpa e sincronizada. Os builds macOS continuam sem assinatura/notarização Apple configurada.
 
 ## 2026-10-14 — Atualizador Windows pela release oficial do GitHub
 - **Mudança**: o Electron consulta releases estáveis da API GitHub, valida `AIOffice-Setup.exe` pelo tamanho e SHA-256, baixa pela URL específica da tag e abre o instalador interativo após confirmações. A seção **Sobre** recebe estado/progresso por IPC e não recarrega a página. O workflow publica um asset estável Windows x64; assinatura Authenticode tornou-se opcional.

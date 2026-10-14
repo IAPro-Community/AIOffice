@@ -1,11 +1,11 @@
 # HANDOFF — AIOffice
 
-## Distribuição nativa v2.3.0 — validação em andamento, 2026-10-14
+## Distribuição nativa v2.3.0 — preflight concluído, publicação pendente, 2026-10-14
 
-- A release atual continua sendo `v2.2.1`, apenas Windows x64. Não houve tag nem publicação `v2.3.0`.
+- A última release antes da publicação é `v2.2.1`, apenas Windows x64. A tag `v2.3.0` ainda não foi criada.
 - A primeira CI manual `38653090528` aprovou o gate completo, Windows x64 e macOS Intel/Apple silicon. Linux compilou AppImage e `.deb`, mas a etapa de validação detectou os nomes gerados com convenções `x86_64`/`amd64`.
-- Os aliases do Linux foram fixados explicitamente em x64. A matriz `38653586066` aprovou os quatro empacotamentos. A execução `38654072400` aprovou de novo o gate e os quatro empacotamentos com actions Node 24. Falta validar em um run manual a montagem dos nove assets e os manifestos antes de criar a tag.
-- O workflow agora também monta/valida os assets em `workflow_dispatch`; a etapa que cria uma release só roda após push de tag estável. A release automática continua condicionada a todos os runners e manifestos passarem.
+- Os aliases do Linux foram fixados explicitamente em x64. As matrizes `38653586066` e `38654072400` aprovaram os quatro empacotamentos. O preflight completo `38654902095` também passou: verificação, quatro runners nativos, download e montagem dos artifacts, dois manifestos, os nove assets esperados e notas da release.
+- O preflight foi disparado por `workflow_dispatch`; a etapa de publicação foi corretamente ignorada. O workflow só cria a release depois do push de uma tag estável e de todos os gates passarem. Próximo passo: `npm run release -- --publish` em `main` limpa e sincronizada.
 - Os builds macOS estão sem assinatura Apple (não há segredos configurados); o Gatekeeper pode exigir abertura manual e o updater macOS fica desabilitado até assinatura/notarização.
 
 ## Publicação AIOffice v2.2.1 — concluída, 2026-10-14

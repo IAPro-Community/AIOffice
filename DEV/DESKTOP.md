@@ -51,7 +51,7 @@ O setup é estático e instala a versão incluída nele. O atualizador Windows b
 
 ### Artefatos atualmente publicados
 
-Na release pública atual `v2.2.1`, há somente `AIOffice-Setup.exe` para Windows x64. A candidata de distribuição seguinte é `v2.3.0`; ela adiciona downloads macOS Intel/Apple silicon e Linux x64. Os links e o estado de publicação por sistema operacional ficam no [README público](../README.md#downloads) e na página [releases](https://github.com/IAPro-Community/AIOffice/releases/latest).
+Antes da publicação de `v2.3.0`, a última release era `v2.2.1`, somente Windows x64. O preflight completo de `v2.3.0` aprovou os pacotes nativos para Windows, macOS Intel/Apple silicon e Linux, além dos nove assets e manifestos. A tag ainda não existe; após publicar, os links estáveis ficam no [README público](../README.md#downloads) e na página [releases](https://github.com/IAPro-Community/AIOffice/releases/latest).
 
 `.deb` não usa o atualizador AppImage: **Ajuda → Verificar atualizações** orienta abrir GitHub Releases para baixar o próximo `.deb` e atualizá-lo pelo gerenciador do sistema. Isso respeita a elevação de privilégios e o banco de pacotes da distribuição. A desinstalação NSIS declara que não apaga `userData`.
 
