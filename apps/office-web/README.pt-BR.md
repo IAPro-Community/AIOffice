@@ -239,26 +239,30 @@ Abra uma nova sessão OMP para carregar a extensão. A ponte envia a mensagem co
 ao escritório; `npm run omp:uninstall` remove a extensão se ela não tiver sido editada. O envio segue as proteções de
 acesso local e a opção `HABBLAUD_MENSAGENS` do servidor.
 
-### Abrir no celular (opcional)
+### Acesso remoto pelo celular (opcional)
 
-Por padrão o Habblaud só aceita conexões do próprio computador. Para abrir no celular (no mesmo Wi-Fi), com Docker:
+O painel local continua em `http://127.0.0.1:4747`. Para abrir com login e HTTPS pela rede local, use o modo Node na raiz do AIOffice:
 
 ```bash
-printf 'HABBLAUD_BIND=0.0.0.0\n' > .env
-npm run docker:up -- --no-build
+npm run remote:setup
+npm run start:office
 ```
 
-Depois abra `http://<ip-do-computador>:4747` no celular (no macOS: `ipconfig getifaddr en0`; se vier vazio,
-`ipconfig getifaddr en1`). No modo Node, use `HABBLAUD_HOST=0.0.0.0 npm start`.
+O assistente cria o certificado, pede um usuário e uma senha e mostra a impressão digital da CA. Transfira o arquivo público `ca.crt` ao celular por um canal confiável; confira a impressão digital mostrada no computador antes de confiar no certificado. Depois abra no celular o endereço HTTPS exibido pelo assistente e entre. O acesso remoto começa em modo somente leitura.
 
-> ⚠️ Com isso, qualquer aparelho da rede vê a atividade dos agentes (comandos, arquivos, títulos das sessões). Use
-> só em redes de confiança. O [terminal](#terminal) (e com ele responder e mandar mensagens pelo escritório) fica
-> desligado enquanto a porta estiver exposta. Para voltar: apague o `.env` e rode `npm run docker:up -- --no-build`.
+Para liberar uma capacidade, passe-a explicitamente ao assistente, por exemplo `npm run remote:setup -- --allow permissions`. Também há `messages` (permite enviar texto às sessões) e `terminal` (permite ler conversas completas; não cria nem encerra processos). A configuração é gravada em `apps/office-web/.env`; reinicie o servidor após configurar ou desativar.
 
-### Atualizar
+Fora de casa, mantenha computador e celular conectados à mesma VPN privada, como Tailscale. Configure o acesso enquanto a VPN está conectada; para usar um nome MagicDNS, informe `--domain <nome-do-computador>` já na primeira configuração. Se uma CA existente precisar cobrir um novo nome, repita com `--domain <nome-do-computador> --new-ca`; remova a CA antiga de cada dispositivo e instale a nova. Não encaminhe portas do roteador nem use Funnel. Para desativar, rode `npm run remote:off` na raiz do AIOffice e reinicie o servidor. Este assistente é para execução Node; o acesso remoto em Docker não está publicado/configurado.
 
-A versão em uso aparece na barra superior, ao lado de "Conectado", e em **Configurações › Sobre**. A cada 6 horas o
-Habblaud confere no GitHub se saiu uma versão nova (as [releases](https://github.com/marmottajr/habblaud/releases)
+### Atualizar uma cópia standalone do Habblaud
+
+Os passos com `git pull` abaixo só valem para uma cópia standalone do Habblaud. Quando o app faz parte do monorepo
+AIOffice, **Configurações › Sobre** acompanha somente releases do AIOffice. Use **Baixar e atualizar** em instalações
+locais compatíveis; Docker, modo de desenvolvimento, checkout alterado e sessões interativas abertas são bloqueados.
+Se a atualização automática estiver bloqueada, atualize o produto completo conforme o [README do AIOffice](https://github.com/IAPro-Community/AIOffice); não puxe o Habblaud upstream para dentro do app integrado.
+
+Em uma cópia standalone, a versão em uso aparece na barra superior, ao lado de "Conectado", e em **Configurações › Sobre**.
+A cada 6 horas o Habblaud confere no GitHub se saiu uma versão nova (as [releases](https://github.com/marmottajr/habblaud/releases)
 deste repositório). Quando sai, aparece o selo verde **Nova versão** no lugar do número, com um aviso e um ponto no
 botão de configurações. Em **Sobre** ficam o link do que mudou e o botão **Verificar agora** (as notas de cada
 versão também estão no [`CHANGELOG.md`](CHANGELOG.md)). Para atualizar:
@@ -681,7 +685,7 @@ Tudo funciona sem configurar nada. Se precisar ajustar, use variáveis de ambien
 | `HABBLAUD_CODEX` | ligado | `0` desliga o Codex no escritório. |
 | `HABBLAUD_CODEX_DIRS` | detecção automática | Pastas do Codex, separadas por vírgula (no lugar de `~/.codex*` e `CODEX_HOME`). |
 | `HABBLAUD_CODEX_BIN` | `codex` do PATH (no Windows, `codex.exe`) | O binário do Codex que entrega as mensagens (`codex queue`), no modo Node ou no `npm run codex:bridge`. |
-| `HABBLAUD_UPDATE_CHECK` | ligado | `0` desliga a verificação de versão nova (uma consulta às releases do repositório no GitHub a cada 6 h). |
+| `HABBLAUD_UPDATE_CHECK` | ligado | `0` desliga a verificação de releases (AIOffice no monorepo; Habblaud standalone; a cada 6 h). |
 | `HABBLAUD_LANG` | idioma do sistema (menos inglês), senão `pt-BR` | Idioma dos textos montados pelo servidor (atividades, avisos, logs): `pt-BR`, `en`, `es` ou `fr`. A interface segue o navegador ou a escolha em Configurações › Idioma. Ver [Idiomas](#idiomas). |
 | `HABBLAUD_ACCOUNTS` | — | JSON para personalizar nome, letra ou cor, casado pelo nome da pasta da conta. Ex.: `[{"id":".claude-conta2","name":"Trabalho","short":"T","color":"#5cc97b"}]`. |
 
@@ -784,9 +788,9 @@ das contas (letra, e-mail, organização) são lidos no host pelo `docker:up` e 
   `127.0.0.1`. Não lê a conversa, não chama o modelo e não envia nada para fora do computador. Ele é lido desta
   pasta: o que estiver nela (inclusive depois de um `git pull`) é o que roda. O plugin de mensagens
   (`habblaud-mensagens`) é separado justamente porque age: digita na sessão o que você mandou pelo escritório.
-- **Só local, por padrão:** o servidor só aceita conexões do próprio computador; liberar a rede local é opcional.
-  Não há telemetria. A única chamada externa é a verificação de versão nova: a cada 6 horas, uma consulta anônima,
-  sem token, à API pública do GitHub (`api.github.com/repos/marmottajr/habblaud/releases/latest`). Ela não envia nada
+- **Só local, por padrão:** a porta principal aceita conexões do próprio computador. O acesso remoto é uma segunda porta HTTPS com usuário e senha, desligada até `npm run remote:setup`; a tela começa em modo somente leitura. O acesso pela rede Wi‑Fi ou VPN privada é documentado em [Abrir no celular](#acesso-remoto-pelo-celular-opcional). Não exponha a porta HTTP principal.
+  Não há telemetria. A única chamada externa é a verificação de releases: a cada 6 horas, uma consulta anônima,
+  sem token, à API pública do GitHub (releases AIOffice no monorepo; releases Habblaud numa cópia standalone). Ela não envia nada
   sobre as suas sessões; o GitHub vê só o seu IP e a versão em uso, que vai no `User-Agent`.
   `HABBLAUD_UPDATE_CHECK=0` desliga a consulta.
 - **Sem credenciais:** o Habblaud não lê senhas nem tokens de acesso. Do `.claude.json` de cada conta aproveita só o
@@ -795,17 +799,11 @@ das contas (letra, e-mail, organização) são lidos no host pelo `docker:up` e 
   `sk-…`, `ghp_…`, `AKIA…`, JWTs, senhas em URLs) viram `***` antes de chegar ao navegador.
 - **Protegido contra sites maliciosos:** o servidor recusa endereços que não sejam `localhost`/IP (DNS rebinding) e
   `POST` vindos de outras origens (CSRF), e não deixa a página ser embutida em outros sites.
-- **Terminal só local:** a conversa completa das sessões (e o histórico das sessões encerradas, com os
-  títulos) só sai do servidor com o Habblaud acessível apenas pelo próprio computador (`HABBLAUD_HOST` local no Node;
-  `HABBLAUD_BIND` local no Docker) — não há como
-  ligá-lo com a porta exposta — e cada pedido precisa vir por `localhost`/`127.0.0.1`: IPs da rede e nomes de
-  `HABBLAUD_ALLOWED_HOSTS` (proxies, túneis) são recusados. Segredos são mascarados e textos longos truncados antes
-  de chegar ao navegador; no modo demonstração, a conversa é fictícia. `HABBLAUD_TERMINAL=0` desliga de vez.
+- **Terminal protegido:** a leitura de conversas completas e do histórico fica no computador por padrão. O acesso remoto a transcripts exige a capability `terminal` no login HTTPS; PTY, criação de processos e encerramento de agentes continuam bloqueados remotamente. Segredos são mascarados e textos longos truncados antes de chegar ao navegador; no modo demonstração, a conversa é fictícia. `HABBLAUD_TERMINAL=0` desliga de vez.
 - **Linha do tempo do timelapse:** só os resumos que já aparecem na tela (atividade em uma linha, status, títulos,
   uso das contas, sem e-mails, comandos completos ou conversas), gravados em `~/.habblaud/timeline/` e apagados depois
   de 7 dias. `HABBLAUD_TIMELINE=0` desliga a gravação.
-- **Responder pelo escritório, só local:** aprovar ou recusar age sobre as sessões, então segue a mesma trava do
-  terminal (bind local, `Host` local, nada de proxies ou túneis) e só existe com o hook de permissão (o do plugin
+- **Responder pelo escritório:** aprovar ou recusar age sobre as sessões, então fica só local por padrão; na porta remota autenticada, exige a capability `permissions`. Só existe com o hook de permissão (o do plugin
   `habblaud-permissoes` ou o do jeito antigo) instalado por você. As respostas exigem JSON e origem local (um site
   aberto no navegador não consegue mandá-las), o hook só fala com `127.0.0.1` e, na dúvida — Habblaud fora do ar,
   erro, tempo esgotado —, sai sem decidir: vale o terminal. O comando completo ou o diff só saem do servidor para
@@ -939,10 +937,10 @@ Outro Habblaud (Node ou Docker) já está rodando. Pare-o (`npm run docker:down`
 <details>
 <summary><b>Não abre no celular</b></summary>
 
-Confira se criou o `.env` com `HABBLAUD_BIND=0.0.0.0` e recriou o container (`npm run docker:up -- --no-build`), se
-o celular está no mesmo Wi-Fi e se o firewall do computador permite conexões na porta 4747. Por IP funciona direto;
-para abrir por um nome (ex.: `meu-mac.local`), acrescente `HABBLAUD_ALLOWED_HOSTS=meu-mac.local` (no Docker, no mesmo
-`.env`).
+Use o servidor Node gerenciado (`npm run start:office`) e configure o acesso com `npm run remote:setup`. Confirme que o
+celular está no mesmo Wi-Fi, abra o endereço HTTPS mostrado pelo assistente e instale a CA pública somente depois de
+conferir a impressão digital. Fora de casa, conecte os dois dispositivos à mesma VPN privada. Não exponha a porta HTTP
+local nem encaminhe portas do roteador.
 
 </details>
 

@@ -62,7 +62,7 @@ export interface OfficeLike {
 
 export interface RegistryOptions {
   office: OfficeLike;
-  /** Páginas locais conectadas (Hub.localSize): sem nenhuma, o pedido não é desviado do terminal. */
+  /** Páginas autorizadas conectadas: local ou remota com capability permissions. */
   viewers: () => number;
   /** Transcript de um agente presente (ClaudeWatcher.transcriptPathOf). */
   transcriptPathOf?: (agentId: string) => string | undefined;

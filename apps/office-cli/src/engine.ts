@@ -8,6 +8,12 @@ export interface WorkflowResult {
   readonly decision: MaestroDecision;
   readonly handoff: MaestroHandoff;
   readonly artifactsCreated: readonly string[];
+  readonly executionMode: 'not-started' | 'maestro-fallback';
+}
+
+export interface RunTaskOptions {
+  /** The Maestro executor is a manual last-resort path, never the default executor. */
+  readonly maestroFallback?: boolean;
 }
 
 export class AIOfficeEngine {
@@ -24,11 +30,26 @@ export class AIOfficeEngine {
     this.credentials = new LocalSecureCredentialStore();
   }
 
-  public async runTask(intent: string, autoApprove = true): Promise<WorkflowResult> {
+  public async runTask(intent: string, options: RunTaskOptions = {}): Promise<WorkflowResult> {
     const taskId = `task-${Date.now()}`;
     const decision = MaestroRouter.route(intent, taskId);
+    const handoffBuilder = new HandoffBuilder(taskId, `Execução do objetivo: ${intent}`);
 
-    // 1. Instanciar adapter de runtime do OMP
+    if (!options.maestroFallback) {
+      handoffBuilder
+        .addRisk('Nenhum executor preferencial foi acionado; o executor do Maestro está reservado para último recurso.')
+        .setNextAction('Use um executor integrado preferencial. Acione o fallback do Maestro somente se ele estiver indisponível.');
+
+      return {
+        decision,
+        handoff: handoffBuilder.build(),
+        artifactsCreated: [],
+        executionMode: 'not-started',
+      };
+    }
+
+    // O CLI não tem conectores de execução preferenciais. O usuário precisa
+    // acionar explicitamente este caminho de último recurso.
     const agentId = `ag-${decision.selectedSkill}`;
     const agentName = `Agente ${decision.selectedSkill}`;
     const agentRole = decision.rationale;
@@ -40,14 +61,13 @@ export class AIOfficeEngine {
       this.workspaceRoot,
       this.broker,
       this.bridge,
-      autoApprove,
+      true,
     );
 
     // 2. Inicializar sessão visual no Habblaud
     await runtime.initSession();
 
     // 3. Montar handoff
-    const handoffBuilder = new HandoffBuilder(taskId, `Execução do objetivo: ${intent}`);
     handoffBuilder.addCompleted(`Roteamento Maestro para ${decision.selectedSkill} na fase ${decision.phase}`);
 
     const artifactsCreated: string[] = [];
@@ -142,6 +162,7 @@ export class AIOfficeEngine {
       decision,
       handoff,
       artifactsCreated,
+      executionMode: 'maestro-fallback',
     };
   }
 

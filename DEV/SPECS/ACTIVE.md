@@ -94,3 +94,46 @@ AIOffice/
 - Caminhos de projeto são canonizados no Windows para evitar salas duplicadas por diferença de barras e caixa.
 - Build, typecheck e checagem de traduções passaram; a operação real de envio ainda depende de validação do usuário.
 - Fontes ativas continuam Claude Code, Codex e OMP. Os adaptadores Devin, Antigravity, OpenCode e Freebuf permanecem inativos; não anunciar suporte universal.
+
+## 9. Diagnóstico de sessões Claude (2026-10-13)
+- **Estado local**: o serviço ativo responde saudável em `127.0.0.1:4747`; descobre 8 sessões Codex, 10 OMP e 0 Claude Code. O perfil `.claude` tem somente dois registros de sessão e transcripts modificados em 22/09/2026, sem processo CLI correspondente ativo.
+- **Distinção de produto**: o executável `claude` CLI está instalado na versão 2.1.170; os processos `claude.exe` ativos pertencem ao Claude Desktop 2.37337.1. Uma aba do Claude.ai também estava em fluxo de login. Esses produtos não devem ser tratados como a mesma fonte de sessão.
+- **Superfície confirmada**: a atividade ausente veio do Claude Desktop Chat/Cowork.
+- **MCP local**: `claude_desktop_config.json` contém `aioffice`; o processo local da bridge estava ativo. O snapshot não tinha agentes Claude porque não houve chamada a `aioffice_heartbeat` nem a `aioffice_report_activity`.
+- **Limite**: MCP expõe ferramentas que o modelo pode chamar; não fornece ao Habblaud um feed automático com todas as mensagens, transcript, estado ou caixa de entrada do Chat/Cowork. A bridge MCP permite presença e atividades explicitamente reportadas, mas não paridade com as fontes de CLI.
+- **Correção local**: descrições de ferramenta e mensagens do instalador deixam claro o acionamento explícito; respostas não afirmam sucesso quando a API Habblaud não confirma. Para carregar a versão compilada no Claude Desktop, reiniciar o cliente MCP.
+- **Referências oficiais**: [MCP local no Claude Desktop](https://support.anthropic.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop) descreve extensões/servidores locais; [exportação de dados do Claude](https://support.anthropic.com/en/articles/9450526-how-can-i-export-my-claude-data) descreve exportação manual do histórico.
+
+## 10. Melhorias de produto e decisão sobre executor (2026-10-13)
+- A Central de trabalho resume atividade observada, próximos bloqueios, tarefas e sinais de build/teste sem inventar status quando não há evento.
+- A fila de atenção prioriza pedidos de ação e erros recentes; abrir um item só seleciona o agente.
+- O catálogo mostra capacidades por fonte e separa SSE, estado de sessão e bridge MCP. Ferramentas não integradas continuam identificadas como incompletas.
+- A biblioteca inicial tem seis modelos de tarefa, em português; montar/copiar não executa nem envia o prompt.
+- **Decisão do usuário**: executor mediado pelo Orquestrador-Maestro é somente último recurso. O CLI não executa a tarefa por padrão e exige `--maestro-fallback` para ativá-lo; runtime, broker e proxy RPC não foram alterados. O caminho de demonstração explicitamente ativado mantém aprovação automática de escrita.
+
+## 11. Evolução visual do Habblaud (2026-10-13)
+- **Direção visual confirmada pelo usuário**: preservar o pixel-art existente e permitir variar tanto os cenários quanto as cores da interface.
+- **Paletas da interface**: Noite (padrão), Mata, Âmbar e Alto contraste; a paleta não altera o cenário.
+- **Cenários**: doze opções fixas: Original, Natal, Halloween, Jardim, Aurora, Pôr do sol, Ano-Novo, Carnaval, Páscoa, Dia dos Namorados, Festa Junina e Independência; Automático combina calendário e horário.
+- **Legibilidade e layout**: painéis mais opacos e textos auxiliares com contraste maior; controles organizados em grades responsivas, com cores amostradas e suporte às setas do teclado. Cabeçalho compacto preserva a marca entre 320 e 410 px.
+- **Aceitação visual**: preservar a identidade e os sprites pixel-art, oferecer todos os cenários e paletas, manter os seletores utilizáveis no celular e não introduzir overflow horizontal.
+- **Evidência**: typecheck, build, i18n e QA visual em 390/768/1280/1440 px registrados em `DEV/VERIFY.md`.
+
+## 12. Temas automáticos por calendário e horário (2026-10-13)
+- **Automático**: datas comemorativas brasileiras/internacionais prevalecem; nos demais dias, quatro faixas horárias escolhem o cenário. Datas e horários usam o fuso local do dispositivo.
+- **Calendário**: Carnaval e Páscoa são móveis e calculados a cada ano; datas fixas cobrem Dia dos Namorados (14/02 e 12/06), Festa Junina, Independência, Halloween, Natal e Ano-Novo.
+- **Configuração**: ativar/desativar eventos, ajustar o início de amanhecer/dia/fim de tarde/noite e escolher um cenário por faixa. Preferências ficam no navegador; horários precisam permanecer em ordem.
+- **Seleção manual**: todos os doze cenários, inclusive os comemorativos, aparecem na grade principal e podem ser fixados. A grade deve manter os nomes legíveis em celulares estreitos.
+- **Timelapse**: a programação usa a data/hora reproduzida. A escolha de um cenário fixo continua sobrepondo calendário e programação.
+- **Evidência**: typecheck, build, i18n e QA visual em 320–1440 px registrados em `DEV/VERIFY.md`.
+
+## 13. Atualização e acesso remoto do AIOffice (2026-10-13)
+- **Versão**: no monorepo, o selo consulta somente `IAPro-Community/AIOffice`; versões do Habblaud upstream são metadados de integração da equipe.
+- **Canal seguro na interface**: badge, notificação, botão de verificação e instalação só podem usar updates cujo repositório seja exatamente `IAPro-Community/AIOffice`. Se o servidor anunciar Habblaud ou nenhum canal, explicar que é necessário iniciar o backend gerenciado.
+- **Instalação**: **Baixar e atualizar** prepara a tag AIOffice e as dependências em pasta externa ao checkout. Só instala via Node gerenciado, origem Git oficial, árvore limpa, sem Docker/dev, supervisão extra, submódulos, dados dentro do checkout ou PTYs ativos.
+- **Confirmação**: o servidor encerra cooperativamente, o instalador troca código e artefatos de runtime sem `git clean`, reinicia e valida versão + nonce + PID em loopback. O cliente só limpa a badge quando o snapshot ao vivo anuncia a versão alvo.
+- **Recuperação**: falha de build ou health check restaura commit e runtime anterior quando possível; backup e journal permanecem para recuperação manual. Nunca encerrar PTYs à força.
+- **Acesso remoto**: porta HTTPS autenticada separada, desligada por padrão; somente leitura como padrão e allowlist opt-in para permissões, mensagens e leitura de transcripts. LAN e VPN privada; sem porta encaminhada e sem provisionar credenciais/CA/VPN/firewall automaticamente. Docker continua sem acesso remoto.
+- **Conexão móvel**: Configurações → **Acesso pelo celular** permite cadastrar usuário/senha uma vez, iniciar e parar o listener sem reiniciar o servidor e visualizar URLs privadas, usuário e impressão SHA-256 da CA. O stop mantém a configuração e a próxima ativação é explícita. As rotas de controle são exclusivas do loopback; nenhum segredo aparece no status; ausência de `meta.remoteAccess` identifica servidor antigo e orienta iniciar o AIOffice gerenciado.
+- **Identidade de versão**: selo superior e painel **Sobre** só mostram número, badge, novidades ou link de release quando `meta.updates.repo` é exatamente `IAPro-Community/AIOffice`. Habblaud upstream e canal desconhecido não podem ser rotulados como versão do produto.
+- **Gates**: `npm run typecheck`, `npm --prefix apps/office-web run typecheck`, `npm run build`, `npm --prefix apps/office-web run i18n:check`, `git diff --check` e revisão de segurança do diff.

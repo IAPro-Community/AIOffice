@@ -154,7 +154,7 @@ export class HistoryPopover implements UiComponent {
     this.input = h('input', {
       class: 'ui-search__input',
       type: 'search',
-      attrs: { placeholder: tr('Buscar por título, projeto ou conta'), 'aria-label': tr('Buscar sessões por título, projeto ou conta'), autocomplete: 'off', spellcheck: 'false' },
+      attrs: { placeholder: tr('Buscar título, projeto, conta ou ferramenta'), 'aria-label': tr('Buscar sessões por título, projeto, conta ou ferramenta'), autocomplete: 'off', spellcheck: 'false' },
     });
     this.input.addEventListener('input', () => {
       this.query = this.input.value;
@@ -189,7 +189,7 @@ export class HistoryPopover implements UiComponent {
       'div',
       { class: 'ui-popover ui-hist', role: 'dialog', tabIndex: -1, attrs: { 'aria-label': tr('Histórico de sessões'), id: 'ui-history', popover: 'auto' } },
       h('div', { class: 'ui-popover__head' }, h('h2', { text: tr('Histórico de sessões') }), close),
-      h('p', { class: 'ui-hist__hint', text: tr('Últimos 7 dias, de todas as contas. Clique para ler a conversa no terminal.') }),
+      h('p', { class: 'ui-hist__hint', text: tr('Últimos 7 dias das ferramentas com histórico ativo. Busque por título, projeto, conta ou ferramenta.') }),
       h('label', { class: 'ui-search ui-hist__search' }, searchIcon, this.input),
       this.stateEl,
       this.listEl,

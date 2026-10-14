@@ -1,5 +1,5 @@
 // Barra lateral: busca, filtro por conta e a lista de salas -> agentes -> subagentes.
-import type { AccountInfo, AgentInfo } from '../../../shared/types';
+import type { AccountInfo, AgentInfo, Provider } from '../../../shared/types';
 import { roomTheme } from '../art';
 import type { UiComponent, UiContext } from './context';
 import { moveAgent, orderAgents } from './agentorder';
@@ -9,6 +9,7 @@ import { plural, shortPath } from './format';
 import { ICONS } from './icons';
 import { groupRooms, type AgentNode, type RoomGroup } from './model';
 import { officeIsEmpty } from './overlays';
+import { PROVIDER_NAME } from './provider';
 import { createAgentRow, updateAgentRow } from './rows';
 import { createAccountChip, createProgress, updateAccountChip, updateProgress } from './widgets';
 import { tr } from '../../../shared/i18n';
@@ -42,6 +43,9 @@ export class Sidebar implements UiComponent {
   private query = '';
   private filters: HTMLElement;
   private filterList: KeyedList<AccountInfo, HTMLButtonElement>;
+  private providerFilterGroup: HTMLElement;
+  private providerFilterList: KeyedList<Provider, HTMLButtonElement>;
+  private selectedProviders: Set<Provider> | null = null;
   private scroller: HTMLElement;
   private rooms: KeyedList<RoomGroup>;
   private roomRefs = new WeakMap<HTMLElement, RoomRefs>();
@@ -61,7 +65,7 @@ export class Sidebar implements UiComponent {
     this.input = h('input', {
       class: 'ui-search__input',
       type: 'search',
-      attrs: { placeholder: tr('Buscar agente, projeto ou conta'), 'aria-label': tr('Buscar agente, projeto ou conta'), autocomplete: 'off', spellcheck: 'false' },
+      attrs: { placeholder: tr('Buscar agente, projeto, conta ou ferramenta'), 'aria-label': tr('Buscar agente, projeto, conta ou ferramenta'), autocomplete: 'off', spellcheck: 'false' },
     });
     this.input.addEventListener('input', () => {
       this.query = this.input.value;
@@ -102,6 +106,24 @@ export class Sidebar implements UiComponent {
         b.classList.toggle('is-off', hidden);
       },
     });
+    const providerItems = h('div', { class: 'ui-provider-filters__items', role: 'group', attrs: { 'aria-label': tr('Ferramentas disponíveis no escritório') } });
+    this.providerFilterList = new KeyedList<Provider, HTMLButtonElement>(providerItems, {
+      animate: false,
+      key: (provider) => provider,
+      create: (provider) => {
+        const button = h('button', { class: 'ui-acc-filter ui-provider-filter', type: 'button', text: PROVIDER_NAME[provider] });
+        button.dataset.provider = provider;
+        button.addEventListener('click', () => this.toggleProvider(provider));
+        return button;
+      },
+      update: (button, provider) => {
+        const active = this.selectedProviders === null || this.selectedProviders.has(provider);
+        setAttr(button, 'aria-pressed', String(active));
+        button.classList.toggle('is-off', !active);
+        setTitle(button, active ? tr('Ocultar agentes de {0}', [PROVIDER_NAME[provider]]) : tr('Mostrar agentes de {0}', [PROVIDER_NAME[provider]]));
+      },
+    });
+    this.providerFilterGroup = h('div', { class: 'ui-provider-filters', hidden: true }, h('span', { class: 'ui-provider-filters__label', text: tr('Ferramenta') }), providerItems);
 
     this.scroller = h('div', { class: 'ui-side__scroll' });
     const list = h('div', { class: 'ui-rooms', role: 'list', attrs: { 'aria-label': tr('Salas') } });
@@ -121,6 +143,7 @@ export class Sidebar implements UiComponent {
         click: () => {
           this.input.value = '';
           this.query = '';
+          this.selectedProviders = null;
           this.ctx.updatePrefs({ hiddenAccounts: [] });
         },
       },
@@ -132,7 +155,7 @@ export class Sidebar implements UiComponent {
     this.el = h(
       'aside',
       { class: 'ui-panel ui-sidebar', attrs: { 'aria-label': tr('Salas e agentes'), id: 'ui-sidebar' } },
-      h('div', { class: 'ui-side__head' }, h('div', { class: 'ui-side__title' }, h('h2', { text: tr('Escritório') }), close), search, this.filters),
+      h('div', { class: 'ui-side__head' }, h('div', { class: 'ui-side__title' }, h('h2', { text: tr('Escritório') }), close), search, this.filters, this.providerFilterGroup),
       this.scroller,
     );
   }
@@ -146,15 +169,18 @@ export class Sidebar implements UiComponent {
     const snap = this.ctx.store.snapshot;
     const accounts = snap?.accounts ?? [];
     const hidden = new Set(this.ctx.prefs.hiddenAccounts);
+    const providers = [...new Set((snap?.agents ?? []).map((agent) => (agent.provider ?? 'claude') as Provider))].sort((a, b) => PROVIDER_NAME[a].localeCompare(PROVIDER_NAME[b]));
     this.filterList.sync(accounts.length > 1 ? accounts : []);
     setHidden(this.filters, accounts.length <= 1);
+    this.providerFilterList.sync(providers);
+    setHidden(this.providerFilterGroup, providers.length <= 1);
 
     // Ordem das salas escolhida pelo usuário (arrastando o cabeçalho da sala).
-    const groups = orderRooms(groupRooms(snap, { query: this.query, hiddenAccounts: hidden }), (g) => g.room.id);
+    const groups = orderRooms(groupRooms(snap, { query: this.query, hiddenAccounts: hidden, ...(this.selectedProviders ? { providers: this.selectedProviders } : {}) }), (g) => g.room.id);
     this.shownRooms = groups.map((g) => g.room.id);
     this.rooms.sync(groups);
 
-    const filtering = this.query.trim().length > 0 || hidden.size > 0;
+    const filtering = this.query.trim().length > 0 || hidden.size > 0 || this.selectedProviders !== null;
     const total = snap?.agents.length ?? 0;
     // Escritório vazio sem filtro: o cartão central já explica; a lista não repete o aviso.
     const showEmpty = groups.length === 0 && (filtering || !officeIsEmpty(this.ctx));
@@ -165,10 +191,12 @@ export class Sidebar implements UiComponent {
         filtering && total > 0
           ? this.query.trim()
             ? tr('Nenhum agente encontrado para “{0}”.', [this.query.trim()])
-            : tr('Nenhum agente nas contas selecionadas.')
+            : this.selectedProviders !== null && hidden.size === 0
+              ? tr('Nenhum agente nas ferramentas selecionadas.')
+              : tr('Nenhum agente nas contas selecionadas.')
           : tr('Nenhuma sessão aberta no momento.'),
       );
-      setHidden(this.clearBtn, !(filtering && total > 0));
+      setHidden(this.clearBtn, !filtering);
     }
 
     // Ao mudar a seleção (ex.: clique no canvas), traz o item para a área visível.
@@ -191,6 +219,15 @@ export class Sidebar implements UiComponent {
     if (set.has(id)) set.delete(id);
     else set.add(id);
     this.ctx.updatePrefs({ hiddenAccounts: [...set] });
+  }
+
+  private toggleProvider(provider: Provider): void {
+    const available = [...new Set((this.ctx.store.snapshot?.agents ?? []).map((agent) => (agent.provider ?? 'claude') as Provider))];
+    const selected = new Set(this.selectedProviders ?? available);
+    if (selected.has(provider)) selected.delete(provider);
+    else selected.add(provider);
+    this.selectedProviders = selected.size === available.length ? null : selected;
+    this.ctx.invalidate();
   }
 
   // ---------------------------------------------------------------- salas

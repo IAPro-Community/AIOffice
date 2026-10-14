@@ -23,6 +23,7 @@
     "build:server": "node scripts/build-server.mjs",
     "start": "node dist/server/index.js",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p server/tsconfig.json",
+    "remote:setup": "tsx scripts/remote-setup.ts",
     "test": "vitest run",
     "i18n:check": "tsx scripts/i18n-check.ts",
     "docker:up": "tsx scripts/docker-up.ts",

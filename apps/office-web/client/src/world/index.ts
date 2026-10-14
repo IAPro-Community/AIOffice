@@ -243,7 +243,7 @@ export function createWorld(canvas: HTMLCanvasElement, store: OfficeStore): Worl
         if (!playback) for (const e of events) for (const cb of socialCbs) cb(e);
         events.length = 0;
       }
-      renderer.sync(seasonalThemeFor(options.theme, new Date()));
+      renderer.sync(seasonalThemeFor(options.theme, new Date(now), options));
       if (sim.building.cols !== lastCols) {
         lastCols = sim.building.cols;
         updateBounds();

@@ -15,9 +15,10 @@ Hierarquia de documentação operacional do projeto AIOffice.
 |---|---|---|
 | `DEV/INDEX.md` | Índice geral e mapa da pasta `DEV/` | Ativo |
 | `DEV/CONTEXT.md` | Arquitetura dos 5 pilares, decisões vigentes e restrições | Ativo |
-| `DEV/SPECS/ACTIVE.md` | Especificação técnica e roadmap faseado do AIOffice | Ativo |
+| `DEV/SPECS/ACTIVE.md` | Especificação técnica, roadmap e critérios ativos, incluindo temas automáticos do Habblaud | Ativo |
 | `DEV/ADR/ADR-0001-omp-message-delivery.md` | Decisão sobre polling, envio e ACK da extensão OMP | Atual |
-| `DEV/HANDOFF.md` | Estado atual e próxima ação segura | Ativo |
+| `DEV/ADR/ADR-0002-habblaud-update-policy.md` | Política para integrar Habblaud upstream, atualizar releases AIOffice e oferecer acesso remoto HTTPS | Atual |
+| `DEV/HANDOFF.md` | Estado operacional, evidências recentes e próxima ação segura | Ativo |
 | `DEV/UI-AUDIT-2026-10-13.md` | Auditoria da interface Habblaud, cobertura de provedores e roadmap de melhorias | Atual |
-| `DEV/VERIFY.md` | Critérios de aceitação, gates e evidências de validação | Ativo |
-| `DEV/WORKLOG.md` | Registro conciso de ações executadas | Ativo |
+| `DEV/VERIFY.md` | Critérios de aceitação, gates e evidências de validação, incluindo QA visual | Ativo |
+| `DEV/WORKLOG.md` | Registro conciso de mudanças, motivos e evidências | Ativo |

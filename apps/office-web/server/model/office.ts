@@ -17,6 +17,7 @@ import type {
   Provider,
   PtyInfo,
   PtyStatus,
+  RemoteAccessStatus,
   RoomInfo,
   ShellJob,
   SourceInfo,
@@ -75,6 +76,8 @@ export interface OfficeDeps {
   messages?: () => ReadonlySet<string>;
   /** Verificação de versão nova no GitHub (ver OfficeSnapshot.meta.updates). */
   updates?: () => UpdateStatus;
+  /** Listener HTTPS separado para acesso por celular (sem expor credenciais). */
+  remoteAccess?: () => RemoteAccessStatus;
   /** Terminais interativos (PtyManager): estado do recurso e os abertos. */
   ptys?: () => { status: PtyStatus; list: PtyInfo[] };
   now?: () => number;
@@ -1000,6 +1003,7 @@ export class Office {
         messages: this.deps.messages !== undefined,
         ...(ptys ? { pty: ptys.status } : {}),
         updates: this.deps.updates?.(),
+        remoteAccess: this.deps.remoteAccess?.(),
       },
     };
   }

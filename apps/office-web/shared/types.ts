@@ -226,9 +226,18 @@ export interface RoomEffect {
 }
 
 /**
- * Verificação de versão nova: o servidor consulta a release mais recente do repositório no GitHub
- * (server/updates/checker.ts) e compara com a versão em uso.
+ * Capacidade e progresso da instalação de uma release oficial do AIOffice.
  */
+export interface UpdateInstallationStatus {
+  /** A versão instalada só muda após a confirmação pelo servidor reiniciado. */
+  state: 'ready' | 'blocked' | 'downloading' | 'applying' | 'restarting' | 'error';
+  /** Versão oficial do AIOffice que esta operação pretende instalar. */
+  target?: string;
+  /** Progresso ou motivo concreto de bloqueio/falha. */
+  message?: string;
+}
+
+/** O servidor compara a release mais recente do GitHub com a versão realmente em execução. */
 export interface UpdateStatus {
   /**
    * - off: verificação desligada (HABBLAUD_UPDATE_CHECK=0 ou package.json sem repositório no GitHub);
@@ -250,6 +259,26 @@ export interface UpdateStatus {
   /** A release mais recente é mais nova que a versão em uso. */
   available: boolean;
   /** Motivo da falha (state "error"). */
+  error?: string;
+  /** Capacidade e progresso da instalação local; ausente = instalador indisponível. */
+  installation?: UpdateInstallationStatus;
+}
+
+/** Estado seguro do listener HTTPS separado para acesso por celular na LAN/VPN privada. */
+export interface RemoteAccessStatus {
+  /** O servidor atual suporta o fluxo gerenciado de acesso móvel. */
+  available?: boolean;
+  /** Há credenciais e certificados configurados, mesmo quando o listener está parado. */
+  configured: boolean;
+  state: 'disabled' | 'starting' | 'active' | 'error';
+  port?: number;
+  /** Usuário do acesso HTTPS (nunca inclui senha nem hash). */
+  user?: string;
+  /** Endereços HTTPS privados anunciados pelo servidor, sem credenciais. */
+  urls?: string[];
+  /** Impressão digital SHA-256 da CA pública, para conferir antes de confiar no celular. */
+  caFingerprint?: string;
+  /** Erro sanitizado do último start/configure. */
   error?: string;
 }
 
@@ -364,6 +393,8 @@ export interface OfficeSnapshot {
     pty?: PtyStatus;
     /** Verificação de versão nova no GitHub (ausente nos testes e no timelapse). */
     updates?: UpdateStatus;
+    /** Estado do acesso HTTPS por celular (ausente em servidores anteriores a esta integração). */
+    remoteAccess?: RemoteAccessStatus;
   };
 }
 

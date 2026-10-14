@@ -80,14 +80,15 @@ npm run start:office
 ```
 Abra no navegador: **[http://localhost:4747](http://localhost:4747)**
 
-### 3. Disparar Tarefas pelo Terminal
+### 3. Preparar ou executar uma tarefa pelo Terminal
 ```bash
-# Extração de Design Tokens
+# Por padrão, mostra o roteamento sem iniciar um executor
 npm start -- "Extrair design tokens e cores do aplicativo"
 
-# Pesquisa de Mercado e Dores de Usuários
-npm start -- "Analisar reviews e concorrentes do mercado"
+# Ativa explicitamente o executor Maestro como último recurso
+npm start -- --maestro-fallback "Extrair design tokens e cores do aplicativo"
 ```
+O fallback atual é uma demonstração: ele grava artefatos no workspace e aprova essas escritas automaticamente. Use-o somente quando os executores preferenciais estiverem indisponíveis.
 
 ### 4. Rodar a Suíte de Verificação
 ```bash
@@ -96,21 +97,36 @@ npm run verify
 
 ---
 
-## 🔄 Como Atualizar o Habblaud Upstream
+## 🔄 Atualizações do AIOffice e integração do Habblaud
 
-O AIOffice mantém a base do Habblaud em `apps/office-web/` desacoplada para permitir atualizações frequentes do projeto original de [marmottajr/habblaud](https://github.com/marmottajr/habblaud):
+### Para quem usa o AIOffice
+
+O verificador em **Configurações → Sobre** acompanha exclusivamente as releases do repositório AIOffice; a versão do Habblaud upstream nunca aciona o selo. Quando houver uma release nova, o botão **Baixar e atualizar** obtém a tag oficial do AIOffice, instala dependências e compila em uma pasta separada. Para reinício gerenciado, inicie pela raiz com `npm run start:office`; o instalador exige checkout Git oficial e limpo, modo Node, sem opções ou supervisor externo e sem sessões interativas ativas. Ele preserva os artefatos de runtime para recuperação, reinicia o servidor e só remove o aviso quando a instância nova confirma a versão alvo. Docker, modo de desenvolvimento e instalações fora desses critérios recebem o motivo do bloqueio para seguir as instruções manuais da release.
+
+As mudanças do [Habblaud upstream](https://github.com/marmottajr/habblaud) passam primeiro pela equipe do AIOffice. Não adicione esse repositório como remoto para mesclar diretamente no seu AIOffice.
+
+### Para a equipe que mantém o AIOffice
+
+Consulte o upstream com o verificador somente de leitura:
 
 ```bash
-# 1. Checar se há novas releases do Habblaud no GitHub
-npm run update:habblaud
-
-# 2. Puxar as atualizações da branch principal do upstream
-git fetch https://github.com/marmottajr/habblaud.git main
-git merge FETCH_HEAD --allow-unrelated-histories
-
-# 3. Recompilar a aplicação web
-npm run build:office
+npm run check:habblaud-upstream
 ```
+
+O comando consulta a API do GitHub, compara a release upstream mais recente com o marco registrado em `apps/office-web/upstream-habblaud.json` e mostra o link do diff. Ele não executa `git fetch` ou `git merge`, nem baixa código, instala dependências ou altera arquivos. Revise cada mudança em uma branch de integração; porte apenas as partes compatíveis, confira dependências, permissões, segurança e validação, e registre o que foi adotado ou adiado no manifesto. Para preparar uma release AIOffice, `npm run release` mostra as notas sem publicar. `npm run release -- --publish` exige a branch principal limpa e sincronizada e publica somente no repositório AIOffice. Nunca publique uma release do Habblaud como atualização do produto.
+
+### Acesso remoto (opcional)
+
+O acesso remoto usa uma segunda porta HTTPS com usuário e senha; o painel local continua em `http://127.0.0.1:4747`. No modo Node, configure a conta e o certificado com:
+
+```bash
+npm run remote:setup
+npm run start:office
+```
+
+O assistente mostra os endereços da rede local e o caminho da CA pública. Transfira `ca.crt` ao celular por um canal confiável e confira sua impressão digital antes de instalar/confiar no certificado. Na mesma rede Wi‑Fi, abra o endereço HTTPS exibido e entre com as credenciais escolhidas. O padrão remoto é somente leitura. Use `--allow permissions`, `--allow messages` ou `--allow terminal` para liberar cada capacidade explicitamente; mensagens enviam texto às sessões, e `terminal` revela conversas completas. O acesso remoto nunca pode criar ou encerrar processos.
+
+Fora de casa, conecte computador e celular à mesma VPN privada (por exemplo, Tailscale). Rode o assistente enquanto a VPN estiver conectada; para um endereço MagicDNS, informe `--domain <nome-do-computador>` já na primeira configuração. Se a CA existente precisar cobrir um nome novo, repita com `--domain <nome-do-computador> --new-ca`; remova a CA antiga de cada dispositivo e instale a nova. Não encaminhe portas do roteador nem use Funnel. `npm run remote:off` remove a configuração de login; reinicie o AIOffice para aplicar.
 
 ---
 

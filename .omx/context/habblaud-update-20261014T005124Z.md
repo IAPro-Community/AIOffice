@@ -1,0 +1,12 @@
+# Context snapshot — Habblaud update lifecycle
+
+- **Task:** Integrate upstream Habblaud changes deliberately and make end-user updates follow the AIOffice release lifecycle.
+- **Desired outcome:** Maintainers update and validate the Habblaud base; users update the complete AIOffice product and receive a compatible bundle.
+- **Known evidence:** Root package currently has an uncommitted AIOffice 2.0.0 version and the web package has an uncommitted Habblaud 0.11.0 version. These appeared during the analysis and the user explicitly asked to preserve them. `scripts/update-habblaud.mjs` checks the upstream release endpoint and prints manual steps, but does not integrate source. Root README currently instructs fetching `main` and merging unrelated histories. The latest upstream tag is v0.11.0 (`4ccce2537472fe5a8d432f06974494d2e778ff15`).
+- **Baseline state:** Branch `codex/habblaud-011-integration-20261013` at `2be3dc6a748ed4b75d93c35277a891428eaf6fb0`; the branch preserves the original dirty worktree plus later user-owned version/changelog changes. Do not revert or rewrite any of them.
+- **Upstream comparison:** v0.10.0 (`e3204a6a533089fa9df74970ddc4340ecc1c8cd4`) to v0.11.0 changes 95 files (~9,722 insertions). The safe transcript rewrite detector, open-wait cap, and same-millisecond permission queue fix are already present in the committed AIOffice baseline. Remote access/TLS, process spawning, dictation, and 24-hour permission waits remain deferred.
+- **Constraints:** No destructive Git operations, no commit/push/merge/publish/deploy, no automatic upstream source replacement, no service restart or live agent message. Keep OpenOrq policy mediation and local-first boundaries intact. Do not enable upstream remote access, process spawning, or microphone features as part of this update.
+- **Unknowns:** None blocking. AIOffice v1.1.0 is published; the user's current v2.0.0 changes are preserved and may be published later by the maintainer.
+- **Likely touchpoints:** `apps/office-web`, `package.json`, `package-lock.json`, `scripts/update-habblaud.mjs`, README files, `DEV/ADR`, and compact `DEV/` handoff/verification docs.
+- **Current phase:** Upstream source comparison complete; implement product-owned version detection and maintainer-safe upstream guidance.
+- **Validation target:** Build, typecheck, workspace and Habblaud tests, updater behavior check, i18n check, and `git diff --check`; no external release or deployment.

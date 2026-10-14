@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { discoverClaudeDirs } from './accounts/detect';
 import { parseAllowedHosts } from './http/guard';
 import { parseGithubRepo } from './updates/checker';
+import { parseRemoteConfig, type RemoteConfig } from './http/remote';
 import { tr } from '../shared/i18n';
 
 export interface ServerConfig {
@@ -51,6 +52,11 @@ export interface ServerConfig {
   updateCheck: boolean;
   /** Observa as sessões do Codex (sources/codex/); HABBLAUD_CODEX=0 desliga. */
   codex: boolean;
+  /** Porta HTTPS autenticada para acesso pela LAN/VPN; ausente por padrão. */
+  remote?: RemoteConfig;
+  /** Flag persistida; instalações antigas sem flag continuam ativas quando configuradas. */
+  remoteEnabled?: boolean;
+  remoteWarning?: string;
 }
 
 export function isTruthy(v: string | undefined): boolean {
@@ -77,11 +83,20 @@ export function findRoot(from: string): string {
   return resolve(from, '..');
 }
 
-/** Versão e repositório do package.json. */
-function readPackage(rootDir: string): { version: string; repo?: string } {
+/** Versão de release e repositório. No monorepo, o produto distribuído é o AIOffice. */
+export function readPackage(rootDir: string): { version: string; repo?: string } {
+  const rootPackage = resolve(rootDir, '../..');
   try {
-    const pkg = JSON.parse(readFileSync(join(rootDir, 'package.json'), 'utf8')) as { version?: unknown; repository?: unknown };
-    return { version: typeof pkg.version === 'string' ? pkg.version : '0.0.0', repo: parseGithubRepo(pkg.repository) };
+    const product = JSON.parse(readFileSync(join(rootPackage, 'package.json'), 'utf8')) as { name?: unknown; version?: unknown; repository?: unknown };
+    if (product.name === 'aioffice') {
+      return { version: typeof product.version === 'string' ? product.version : '0.0.0', repo: parseGithubRepo(product.repository) };
+    }
+  } catch {
+    // Instalação standalone do Habblaud: usa os metadados do próprio app abaixo.
+  }
+  try {
+    const app = JSON.parse(readFileSync(join(rootDir, 'package.json'), 'utf8')) as { version?: unknown; repository?: unknown };
+    return { version: typeof app.version === 'string' ? app.version : '0.0.0', repo: parseGithubRepo(app.repository) };
   } catch {
     return { version: '0.0.0' };
   }
@@ -151,6 +166,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, argv: string[] 
   const rootDir = findRoot(dirname(fileURLToPath(import.meta.url)));
   const host = env.HABBLAUD_HOST?.trim() || '127.0.0.1';
   const pkg = readPackage(rootDir);
+  const remote = parseRemoteConfig(env, inDocker);
   return {
     port: Number.isFinite(port) && port > 0 && port < 65536 ? port : 4747,
     host,
@@ -170,5 +186,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, argv: string[] 
     repo: pkg.repo,
     updateCheck: !env.HABBLAUD_UPDATE_CHECK?.trim() || isTruthy(env.HABBLAUD_UPDATE_CHECK),
     codex: !env.HABBLAUD_CODEX?.trim() || isTruthy(env.HABBLAUD_CODEX),
+    remote: remote.config,
+    remoteEnabled: env.HABBLAUD_REMOTE_ENABLED === undefined || isTruthy(env.HABBLAUD_REMOTE_ENABLED),
+    remoteWarning: remote.warning,
   };
 }

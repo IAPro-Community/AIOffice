@@ -56,7 +56,8 @@ export function showsProviderTag(provider: Provider, accountName = ''): boolean 
   if (provider === 'omp') return true;
   // Para codex: mostra se o nome não inclui "codex"
   if (provider === 'codex') return !/codex/i.test(accountName);
-  // Para todos os demais provedores (claude, devin, antigravity, opencode, freebuf):
+  if (provider === 'claude') return false;
+  // Para todos os demais provedores (devin, antigravity, opencode, freebuf):
   // mostra o selo quando o nome não inclui o nome do provedor (case-insensitive)
   return !new RegExp(`^${provider}`, 'i').test(accountName);
 }
@@ -75,10 +76,21 @@ export function accountChipLabel(account: Pick<AccountInfo, 'name' | 'email' | '
  */
 export function emptyOfficeHint(accounts: readonly Pick<AccountInfo, 'short' | 'provider'>[]): string {
   const keys = shortcutHint(accounts.filter((a) => !a.provider));
-  const tools = ['Claude Code'];
-  if (accounts.some(isCodex)) tools.push('Codex');
+  const tools = ['o Claude Code'];
+  if (accounts.some(isCodex)) tools.push('o Codex');
   if (accounts.some((a) => a.provider === 'omp')) tools.push('oh-my-pi');
-  return tr('Abra {0} em qualquer projeto e veja seu agente chegar.', [`${tools.slice(0, -1).join(', ')}${tools.length > 1 ? ` ou ${tools.at(-1)}` : ''}${keys ? ` (${keys})` : ''}`]);
+  if (tools.length === 1) {
+    return keys
+      ? tr('Abra {0} em qualquer projeto ({1}) e veja seu agente chegar.', [tools[0], keys])
+      : tr('Abra {0} em qualquer projeto e veja seu agente chegar.', [tools[0]]);
+  }
+  const first = tools[0];
+  const last = tools.at(-1)!;
+  const middle = tools.slice(1, -1);
+  const rest = middle.length ? `${middle.join(', ')} ou ${last}` : last;
+  return keys
+    ? tr('Abra {0} ({1}) ou {2} em qualquer projeto e veja seu agente chegar.', [first, keys, rest])
+    : tr('Abra {0} ou {1} em qualquer projeto e veja seu agente chegar.', [first, rest]);
 }
 
 /** Algum pedido de permissão do Codex esperando: o prazo é curto e o cartão conta os segundos (relógio de 1 s). */

@@ -1,0 +1,30 @@
+{
+  "upstreamRepository": "marmottajr/habblaud",
+  "reviewedThrough": {
+    "tag": "v0.11.0",
+    "commit": "4ccce2537472fe5a8d432f06974494d2e778ff15",
+    "reviewedAt": "2026-10-13"
+  },
+  "integrationPolicy": "selective",
+  "scope": "O marco registra a revisão das mudanças upstream, não paridade completa de funcionalidades.",
+  "alreadyPresentInAioffice": [
+    {
+      "change": "Detectar quando um transcript é regravado no mesmo inode.",
+      "files": ["server/sources/tail.ts", "server/sources/tail.test.ts"]
+    },
+    {
+      "change": "Limitar a 1.000 registros diários de espera, mesmo quando todos continuam abertos.",
+      "files": ["shared/daystats.ts", "shared/daystats.test.ts"]
+    },
+    {
+      "change": "Preservar a ordem de permissões simultâneas no mesmo milissegundo.",
+      "files": ["server/permissions/registry.ts", "server/permissions/registry.test.ts"]
+    }
+  ],
+  "deferredFeatures": [
+    "Acesso remoto por telefone e terminação HTTPS.",
+    "Criação de agentes por PTY, protegida por HABBLAUD_PTY.",
+    "Ditado local com Whisper.",
+    "Esperas de aprovação de até 24 horas."
+  ]
+}

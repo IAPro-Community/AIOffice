@@ -231,26 +231,36 @@ Codex deja también `npm run codex:bridge` en ejecución en el Mac (consulta [Co
 
 ### Abrir en el celular (opcional)
 
-Por defecto, Habblaud solo acepta conexiones de la propia computadora. Para abrirlo en el celular (en la misma red
-Wi-Fi), con Docker:
+El panel local sigue en `http://127.0.0.1:4747`. Para abrirlo en el celular con inicio de sesión y HTTPS por la red
+local, ejecuta el modo Node desde la raíz del AIOffice:
 
 ```bash
-printf 'HABBLAUD_BIND=0.0.0.0\n' > .env
-npm run docker:up -- --no-build
+npm run remote:setup
+npm run start:office
 ```
 
-Luego abre `http://<ip-do-computador>:4747` en el celular (en macOS: `ipconfig getifaddr en0`; si sale vacío,
-`ipconfig getifaddr en1`). En modo Node, usa `HABBLAUD_HOST=0.0.0.0 npm start`.
+El asistente configura certificados y pide un usuario y una contraseña. Transfiere el `ca.crt` público al celular por
+un canal confiable y comprueba la huella digital que se muestra en el computador antes de confiar en el certificado.
+Después abre una dirección HTTPS que imprime el asistente e inicia sesión. El acceso remoto empieza en modo de solo
+lectura.
 
-> ⚠️ Con esto, cualquier dispositivo de la red ve la actividad de los agentes (comandos, archivos, títulos de las
-> sesiones). Úsalo solo en redes de confianza. La [terminal](#terminal) (y con ella responder y enviar mensajes desde
-> la oficina) queda desactivada mientras el puerto esté expuesto. Para volver atrás: borra el `.env` y ejecuta
-> `npm run docker:up -- --no-build`.
+Para habilitar una capacidad, pásala explícitamente al asistente, por ejemplo `npm run remote:setup -- --allow
+permissions`. También están `messages` (envía texto a las sesiones) y `terminal` (lee conversaciones completas; no
+crea ni cierra procesos). Fuera de casa, conecta el computador y el celular a la misma VPN privada, como Tailscale.
+Configura el acceso mientras la VPN está conectada; incluye `--domain <nombre-del-computador>` desde la primera
+configuración para usar MagicDNS. Si una CA existente necesita cubrir un nombre nuevo, repite con `--domain
+<nombre-del-computador> --new-ca`; elimina la CA anterior de cada dispositivo e instala la nueva. No reenvíes puertos
+del router ni uses Funnel. Para desactivarlo, ejecuta `npm run remote:off` y reinicia AIOffice. El
+asistente es para Node; el acceso remoto en Docker aún no está configurado.
 
-### Actualizar
+### Actualizar una copia independiente de Habblaud
 
-La versión en uso aparece en la barra superior, junto a "Conectado", y en **Configuración › Acerca de**. Cada 6 horas,
-Habblaud revisa en GitHub si salió una versión nueva (las [releases](https://github.com/marmottajr/habblaud/releases)
+Los pasos con `git pull` de abajo solo se aplican a una copia independiente de Habblaud. Cuando la aplicación forma
+parte del monorepo AIOffice, **Configuración › Acerca de** revisa las releases de AIOffice. Actualiza el producto completo
+siguiendo las instrucciones del [README de AIOffice](https://github.com/IAPro-Community/AIOffice); no traigas Habblaud upstream a la aplicación integrada.
+
+En una copia independiente, la versión en uso aparece en la barra superior, junto a "Conectado", y en **Configuración › Acerca de**.
+Cada 6 horas, Habblaud revisa en GitHub si salió una versión nueva (las [releases](https://github.com/marmottajr/habblaud/releases)
 de este repositorio). Cuando sale, aparece el sello verde **Nueva versión** en lugar del número, con un aviso y un
 punto en el botón de configuración. En **Acerca de** están el enlace a lo que cambió y el botón **Comprobar ahora**
 (las notas de cada versión también están en el [`CHANGELOG.md`](CHANGELOG.md)). Para actualizar:
@@ -696,7 +706,7 @@ Todo funciona sin configurar nada. Si necesitas ajustar algo, usa variables de e
 | `HABBLAUD_CODEX` | activado | `0` desactiva Codex en la oficina. |
 | `HABBLAUD_CODEX_DIRS` | detección automática | Carpetas de Codex, separadas por comas (en lugar de `~/.codex*` y `CODEX_HOME`). |
 | `HABBLAUD_CODEX_BIN` | `codex` del PATH (en Windows, `codex.exe`) | El binario de Codex que entrega los mensajes (`codex queue`), en modo Node o en `npm run codex:bridge`. |
-| `HABBLAUD_UPDATE_CHECK` | activada | `0` desactiva la comprobación de versión nueva (una consulta a las releases del repositorio en GitHub cada 6 h). |
+| `HABBLAUD_UPDATE_CHECK` | activada | `0` desactiva la consulta de releases (AIOffice en el monorepo; Habblaud independiente; cada 6 h). |
 | `HABBLAUD_LANG` | idioma del sistema (salvo inglés); si no, `pt-BR` | Idioma de los textos que arma el servidor (actividades, avisos, logs): `pt-BR`, `en`, `es` o `fr`. La interfaz sigue al navegador o la elección en Configuración › Idioma. Consulta [Idiomas](#idiomas). |
 | `HABBLAUD_ACCOUNTS` | — | JSON para personalizar el nombre, la letra o el color, emparejado por el nombre de la carpeta de la cuenta. P. ej.: `[{"id":".claude-conta2","name":"Trabalho","short":"T","color":"#5cc97b"}]`. |
 
@@ -803,8 +813,8 @@ los pasa al contenedor.
   carpeta: lo que haya en ella (incluso después de un `git pull`) es lo que se ejecuta. El plugin de mensajes
   (`habblaud-mensagens`) está separado justamente porque actúa: escribe en la sesión lo que enviaste desde la oficina.
 - **Solo local, por defecto:** el servidor solo acepta conexiones de la propia computadora; abrirlo a la red local es
-  opcional. No hay telemetría. La única llamada externa es la comprobación de versión nueva: cada 6 horas, una
-  consulta anónima, sin token, a la API pública de GitHub (`api.github.com/repos/marmottajr/habblaud/releases/latest`).
+  opcional. No hay telemetría. La única llamada externa es la comprobación de releases: cada 6 horas, una
+  consulta anónima, sin token, a la API pública de GitHub (releases de AIOffice en el monorepo; de Habblaud en una copia independiente).
   No envía nada sobre tus sesiones; GitHub ve solo tu IP y la versión en uso, que va en el `User-Agent`.
   `HABBLAUD_UPDATE_CHECK=0` desactiva la consulta.
 - **Sin credenciales:** Habblaud no lee contraseñas ni tokens de acceso. Del `.claude.json` de cada cuenta aprovecha
@@ -962,10 +972,10 @@ Ya hay otro Habblaud (Node o Docker) en ejecución. Detenlo (`npm run docker:dow
 <details>
 <summary><b>No abre en el celular</b></summary>
 
-Comprueba que creaste el `.env` con `HABBLAUD_BIND=0.0.0.0` y que recreaste el contenedor
-(`npm run docker:up -- --no-build`), que el celular está en la misma red Wi-Fi y que el firewall de la computadora
-permite conexiones en el puerto 4747. Por IP funciona directamente; para abrirlo por un nombre (p. ej.,
-`meu-mac.local`), agrega `HABBLAUD_ALLOWED_HOSTS=meu-mac.local` (en Docker, en el mismo `.env`).
+Usa el servidor Node administrado (`npm run start:office`) y configura el acceso con `npm run remote:setup`. Comprueba
+que el teléfono esté en la misma Wi-Fi, abre la dirección HTTPS que mostró el asistente e instala la CA pública
+después de verificar su huella digital. Fuera de casa, ambos dispositivos deben estar conectados a la misma VPN
+privada; no expongas el puerto HTTP local ni reenvíes puertos del router.
 
 </details>
 

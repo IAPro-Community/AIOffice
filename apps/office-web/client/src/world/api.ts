@@ -17,24 +17,122 @@ export interface WorldOptions {
   dayNight: boolean;
   /** (Opcional, aditivo) Ciclo dia/noite: automático, sempre dia ou sempre noite. Vale sobre `dayNight`. */
   daylight?: DaylightMode;
-  /** Tema visual: automático (segue o calendário; ver seasonalThemeFor), nenhum, Natal ou Halloween. */
+  /** Cenário visual do escritório: calendário, original ou uma ambientação selecionável. */
   theme?: OfficeTheme;
+  /** Horários locais e cenários do modo automático. */
+  themeSchedule?: ThemeSchedule;
+  /** Ativa temas de datas comemorativas no modo automático. */
+  holidayThemes?: boolean;
 }
 
-/** Tema que o renderer desenha: o escritório original ('none') ou um dos sazonais. */
-export type SeasonalTheme = 'none' | 'christmas' | 'halloween';
+/** Cenário que o renderer desenha no escritório. */
+export type SeasonalTheme =
+  | 'none'
+  | 'christmas'
+  | 'halloween'
+  | 'garden'
+  | 'aurora'
+  | 'sunset'
+  | 'new-year'
+  | 'carnival'
+  | 'easter'
+  | 'valentine'
+  | 'festa-junina'
+  | 'independence';
 export type OfficeTheme = 'auto' | SeasonalTheme;
 
+export interface ThemeTimeSlot {
+  /** Hora local em HH:mm; cada faixa termina quando começa a próxima. */
+  start: string;
+  theme: SeasonalTheme;
+}
+
+/** Quatro faixas ordenadas: amanhecer, dia, fim de tarde e noite. */
+export type ThemeSchedule = [ThemeTimeSlot, ThemeTimeSlot, ThemeTimeSlot, ThemeTimeSlot];
+
+export const DEFAULT_THEME_SCHEDULE: ThemeSchedule = [
+  { start: '06:00', theme: 'garden' },
+  { start: '10:00', theme: 'none' },
+  { start: '17:00', theme: 'sunset' },
+  { start: '20:00', theme: 'aurora' },
+];
+
+interface ThemeAutomationOptions {
+  themeSchedule?: ThemeSchedule;
+  holidayThemes?: boolean;
+}
+
 /**
- * Tema desenhado numa data (hora local). No automático: Halloween de 1º a 31 de outubro, Natal de 1º de novembro a
- * 26 de dezembro e, no resto do ano, o escritório original.
+ * Resolve o cenário usando a data e a hora locais do dispositivo. Sem as opções de automação, conserva o
+ * comportamento sazonal legado para consumidores antigos do contrato do mundo.
  */
-export function seasonalThemeFor(theme: OfficeTheme | undefined, date: Date): SeasonalTheme {
+export function seasonalThemeFor(theme: OfficeTheme | undefined, date: Date, automation?: ThemeAutomationOptions): SeasonalTheme {
   if (theme && theme !== 'auto') return theme;
+  if (!automation) {
+    const month = date.getMonth();
+    if (month === 9) return 'halloween';
+    if (month === 10 || (month === 11 && date.getDate() <= 26)) return 'christmas';
+    return 'none';
+  }
+
+  if (automation.holidayThemes !== false) {
+    const holiday = holidayThemeFor(date);
+    if (holiday) return holiday;
+  }
+
+  const schedule = automation.themeSchedule ?? DEFAULT_THEME_SCHEDULE;
+  const slots = schedule.filter((slot) => /^([01]\d|2[0-3]):[0-5]\d$/.test(slot.start)).sort((a, b) => timeOfDay(a.start) - timeOfDay(b.start));
+  if (!slots.length) return 'none';
+  const minute = date.getHours() * 60 + date.getMinutes();
+  let active = slots[slots.length - 1];
+  for (const slot of slots) {
+    if (timeOfDay(slot.start) > minute) break;
+    active = slot;
+  }
+  return active.theme;
+}
+
+function timeOfDay(value: string): number {
+  const [hours, minutes] = value.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+
+function dayNumber(year: number, month: number, day: number): number {
+  return Math.floor(Date.UTC(year, month, day) / 86_400_000);
+}
+
+/** Algoritmo gregoriano de Meeus/Jones/Butcher: devolve o domingo de Páscoa. */
+function easterSunday(year: number): number {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const value = h + l - 7 * m + 114;
+  return dayNumber(year, Math.floor(value / 31) - 1, (value % 31) + 1);
+}
+
+/** Calendário internacional com datas brasileiras; as datas fixas e móveis usam o ano local. */
+function holidayThemeFor(date: Date): SeasonalTheme | null {
   const month = date.getMonth();
+  const day = date.getDate();
+  const deltaFromEaster = dayNumber(date.getFullYear(), month, day) - easterSunday(date.getFullYear());
+  if (deltaFromEaster >= -50 && deltaFromEaster <= -47) return 'carnival';
+  if (deltaFromEaster >= -2 && deltaFromEaster <= 0) return 'easter';
+  if ((month === 11 && day >= 27) || (month === 0 && day <= 2)) return 'new-year';
   if (month === 9) return 'halloween';
-  if (month === 10 || (month === 11 && date.getDate() <= 26)) return 'christmas';
-  return 'none';
+  if ((month === 10 && day >= 1) || (month === 11 && day <= 26)) return 'christmas';
+  if (month === 5 && day >= 15 && day <= 30) return 'festa-junina';
+  if ((month === 1 && day === 14) || (month === 5 && day === 12)) return 'valentine';
+  if (month === 8 && day === 7) return 'independence';
+  return null;
 }
 
 /** Ciclo dia/noite: segue a hora local, ou fixa o dia ou a noite. */
@@ -150,4 +248,6 @@ export const DEFAULT_WORLD_OPTIONS: WorldOptions = {
   followSelected: false,
   dayNight: true,
   theme: 'auto',
+  themeSchedule: DEFAULT_THEME_SCHEDULE,
+  holidayThemes: true,
 };

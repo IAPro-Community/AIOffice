@@ -34,6 +34,7 @@ class ElementStub extends EventTarget {
   className = '';
   textContent = '';
   value = '';
+  dataset: Record<string, string> = {};
   children: ElementStub[] = [];
   classList = { add() {}, toggle() {} };
   style = { getPropertyValue: () => '', setProperty() {} };

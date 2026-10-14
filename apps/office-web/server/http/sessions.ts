@@ -12,6 +12,7 @@ import { HISTORY_DAYS, HISTORY_LIMIT } from '../sources/history';
 import type { SessionLookup } from '../sources/source';
 import { sendJson } from './app';
 import { isLoopbackHost } from './guard';
+import { isRemoteRequest } from './remote';
 import type { TerminalStreams } from './terminal';
 import { tr } from '../../shared/i18n';
 
@@ -27,9 +28,9 @@ const RECENT_ROUTE = '/api/sessions/recent';
 const TERMINAL_ROUTE = /^\/api\/sessions\/([^/]+)\/([^/]+)\/terminal$/;
 
 /** Por que a trava recusa a requisição (undefined = liberada): os mesmos textos do terminal do agente. */
-export function sessionsLockError(enabled: boolean, host: string | undefined): string | undefined {
+export function sessionsLockError(enabled: boolean, host: string | undefined, remote = false): string | undefined {
   if (!enabled) return tr('terminal desligado: ele só funciona com o Habblaud acessível apenas pelo próprio computador');
-  if (!isLoopbackHost(host)) return tr('o terminal só abre pelo próprio computador (http://localhost ou http://127.0.0.1)');
+  if (!remote && !isLoopbackHost(host)) return tr('o terminal só abre pelo próprio computador (http://localhost ou http://127.0.0.1)');
   return undefined;
 }
 
@@ -52,7 +53,7 @@ export function handleSessionsRoute(req: IncomingMessage, res: ServerResponse, p
     return sendJson(res, 405, { error: tr('método não permitido') });
   }
   const { history, terminals } = deps;
-  const locked = sessionsLockError(!!history && !!terminals, req.headers.host);
+  const locked = sessionsLockError(!!history && !!terminals, req.headers.host, isRemoteRequest(req));
   if (locked || !history || !terminals) return sendJson(res, 403, { error: locked });
 
   if (recent) {

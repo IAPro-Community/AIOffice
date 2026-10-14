@@ -287,13 +287,11 @@ export class TerminalStreams {
   private sourceFor(agentId: string): ConversationSource | string {
     const office = this.opts.office;
     if (office.has(agentId)) {
-      const path = this.opts.transcriptPathOf(agentId);
-      if (!path) {
-        if (office.detail(agentId)) {
-          return new DemoSource(agentId, { office, demoEntries: this.demoEntries, initEntries: this.initEntries }, this.demoPollMs);
-        }
-        return tr('transcript do agente não encontrado');
+      if (agentId.startsWith(DEMO_PREFIX) && office.detail(agentId)) {
+        return new DemoSource(agentId, { office, demoEntries: this.demoEntries, initEntries: this.initEntries }, this.demoPollMs);
       }
+      const path = this.opts.transcriptPathOf(agentId);
+      if (!path) return tr('transcript do agente não encontrado');
       const parserFor = this.opts.parserFor;
       const createParser = parserFor ? () => parserFor(agentId) ?? this.createParser() : this.createParser;
       const o = { transcriptPathOf: this.opts.transcriptPathOf, createParser, initTailBytes: this.initTailBytes, initEntries: this.initEntries };

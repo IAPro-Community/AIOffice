@@ -1,14 +1,16 @@
 // Rotas da API (/api/*). Respostas JSON; rotas desconhecidas -> 404 JSON.
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { NAME_MAX, parseAppearanceParts, parseCharacterName, parseSeed } from '../../shared/appearance';
-import type { AgentInfo, AgentStatus, ModSummary, OfficeSnapshot, SourceInfo, UpdateStatus } from '../../shared/types';
+import type { AgentInfo, AgentStatus, ModSummary, OfficeSnapshot, RemoteAccessStatus, SourceInfo, UpdateInstallationStatus, UpdateStatus } from '../../shared/types';
 import type { AccountsService } from '../accounts/service';
 import { handleCodexEvent } from '../codex/http';
 import type { DayStatsService } from '../history/daystats';
 import type { Office } from '../model/office';
 import type { CodexLive } from '../sources/codex/live';
+import { RemoteAccessError } from '../remote/runtime';
 import type { SessionLookup } from '../sources/source';
 import { isJsonContentType, isLoopbackHost } from './guard';
+import { isRemoteRequest, safeEqual } from './remote';
 import { handleSessionsRoute } from './sessions';
 import type { Hub } from './sse';
 import { handleStatsRoute } from './stats';
@@ -59,10 +61,27 @@ export interface ApiDeps {
   renameRoom?: (id: string, name: string) => string | undefined;
   /** Estatísticas do "Meu dia" (GET /api/stats, http/stats.ts). */
   stats?: DayStatsService;
-  /** Verificação de versão nova no GitHub (GET /api/updates, POST /api/updates/check; updates/checker.ts). */
+  /** Releases oficiais e instalação local (GET /api/updates, POST /api/updates/check|install). */
   updates?: {
     status(): UpdateStatus;
     check(opts: { manual?: boolean }): Promise<UpdateStatus>;
+    /** Instala somente a release oficial solicitada; o gerenciador valida origem, árvore e rollback. */
+    install?: (target: string) => Promise<UpdateInstallationStatus>;
+  };
+  /** Valores efêmeros e ações usados somente pelo worker local de atualização. */
+  updateNonce?: () => string | undefined;
+  updateShutdownStarted?: () => boolean;
+  hasActivePtys?: () => boolean;
+  beginUpdateShutdown?: () => void;
+  cancelUpdateShutdown?: () => void;
+  shutdownForUpdate?: () => void;
+  /** Conta e ciclo da porta HTTPS, controlados apenas pelo navegador local. */
+  remoteAccess?: {
+    status(): RemoteAccessStatus;
+    configure(user: unknown, password: unknown): Promise<RemoteAccessStatus>;
+    start(): Promise<RemoteAccessStatus>;
+    stop(): Promise<RemoteAccessStatus>;
+    ca(): string | undefined;
   };
 }
 
@@ -119,7 +138,7 @@ export function sendJson(res: ServerResponse, status: number, body: unknown): vo
 }
 
 /** Lê o corpo JSON. Exige `Content-Type: application/json` (barreira contra CSRF; ver http/guard.ts). */
-export function readJson(req: IncomingMessage): Promise<unknown> {
+export function readJson(req: IncomingMessage, requireBody = false): Promise<unknown> {
   if (!isJsonContentType(req.headers['content-type'])) {
     req.resume();
     return Promise.reject(new HttpError(415, tr('envie o corpo como JSON (Content-Type: application/json)')));
@@ -136,7 +155,7 @@ export function readJson(req: IncomingMessage): Promise<unknown> {
     req.on('end', () => {
       if (size > MAX_BODY) return;
       const raw = Buffer.concat(chunks).toString('utf8');
-      if (!raw.trim()) return ok({});
+      if (!raw.trim()) return requireBody ? fail(new HttpError(400, 'Envie um corpo JSON.')) : ok({});
       try {
         ok(JSON.parse(raw));
       } catch {
@@ -243,6 +262,67 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
     const method = req.method ?? 'GET';
     const isRead = method === 'GET' || method === 'HEAD';
 
+    if (path.startsWith('/api/remote-access/')) {
+      if (isRemoteRequest(req) || !isLoopbackHost(req.headers.host) || !isLoopbackAddress(req.socket.remoteAddress)) {
+        req.resume();
+        sendJson(res, 403, { error: 'Gerencie o acesso remoto pelo próprio computador (http://localhost).' });
+        return true;
+      }
+      const access = deps.remoteAccess;
+      if (!access) {
+        req.resume();
+        sendJson(res, 503, { error: 'Gerenciamento de acesso remoto indisponível.' });
+        return true;
+      }
+      if (path === '/api/remote-access/status' || path === '/api/remote-access/ca') {
+        req.resume();
+        if (method !== 'GET') methodNotAllowed(res, 'GET');
+        else if (path.endsWith('/status')) sendJson(res, 200, { remoteAccess: access.status() });
+        else {
+          const ca = access.ca();
+          if (!ca) sendJson(res, 404, { error: 'A CA pública ainda não está disponível. Configure o acesso primeiro.' });
+          else {
+            res.writeHead(200, {
+              'Content-Type': 'application/x-x509-ca-cert',
+              'Content-Disposition': 'attachment; filename="aioffice-ca.crt"',
+              'Content-Length': Buffer.byteLength(ca),
+              'Cache-Control': 'no-store',
+              'X-Content-Type-Options': 'nosniff',
+              'Cross-Origin-Resource-Policy': 'same-origin',
+            });
+            res.end(ca);
+          }
+        }
+        return true;
+      }
+      if (!['/api/remote-access/configure', '/api/remote-access/start', '/api/remote-access/stop'].includes(path)) {
+        req.resume();
+        sendJson(res, 404, { error: tr('rota desconhecida') });
+      } else if (method !== 'POST') {
+        req.resume();
+        methodNotAllowed(res, 'POST');
+      } else if (req.headers.origin !== `http://${req.headers.host}`) {
+        req.resume();
+        sendJson(res, 403, { error: 'Origem não permitida. Abra o AIOffice pelo navegador neste computador.' });
+      } else if (deps.updateShutdownStarted?.()) {
+        req.resume();
+        sendJson(res, 409, { error: 'O servidor está encerrando para aplicar uma atualização.' });
+      } else {
+        readJson(req, true).then(async (body) => {
+          if (typeof body !== 'object' || body === null || Array.isArray(body)) throw new HttpError(400, 'Envie um objeto JSON.');
+          const fields = body as Record<string, unknown>;
+          const status = path.endsWith('/configure') ? await access.configure(fields.user, fields.password)
+            : path.endsWith('/start') ? await access.start() : await access.stop();
+          sendJson(res, 200, { remoteAccess: status });
+        }).catch((error: unknown) => {
+          if (res.headersSent) return void res.destroy();
+          if (error instanceof RemoteAccessError) sendJson(res, error.status, { error: error.message, remoteAccess: access.status() });
+          else fail(res, error);
+        });
+      }
+      return true;
+    }
+
     if (path === '/api/stream') {
       if (method !== 'GET') methodNotAllowed(res, 'GET');
       else hub.attach(req, res);
@@ -291,7 +371,7 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
       if (method !== 'GET') methodNotAllowed(res, 'GET');
       else if (!terminals) {
         sendJson(res, 403, { error: tr('terminal desligado: ele só funciona com o Habblaud acessível apenas pelo próprio computador') });
-      } else if (!isLoopbackHost(req.headers.host)) {
+      } else if (!isRemoteRequest(req) && !isLoopbackHost(req.headers.host)) {
         sendJson(res, 403, { error: tr('o terminal só abre pelo próprio computador (http://localhost ou http://127.0.0.1)') });
       } else {
         let id: string;
@@ -318,7 +398,7 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
       // Responder pelo escritório age sobre as sessões: a mesma trava do terminal (bind local + Host local).
       if (!deps.permissions) {
         sendJson(res, 403, { error: tr('responder pelo escritório desligado: só funciona com o Habblaud acessível apenas pelo próprio computador') });
-      } else if (!isLoopbackHost(req.headers.host)) {
+      } else if (!isRemoteRequest(req) && !isLoopbackHost(req.headers.host)) {
         sendJson(res, 403, { error: tr('pedidos de permissão só são respondidos pelo próprio computador (http://localhost ou http://127.0.0.1)') });
       } else {
         deps.permissions(req, res, path);
@@ -326,7 +406,8 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
       return true;
     }
     if (path === '/api/pty' || path.startsWith('/api/pty/') || AGENT_ACTION_ROUTE.test(path)) {
-      if (!deps.pty) sendJson(res, 403, { error: tr('terminal interativo desligado (veja o log do servidor)') });
+      if (deps.updateShutdownStarted?.()) sendJson(res, 409, { error: tr('O servidor está encerrando para aplicar uma atualização.') });
+      else if (!deps.pty) sendJson(res, 403, { error: tr('terminal interativo desligado (veja o log do servidor)') });
       else deps.pty(req, res, path);
       return true;
     }
@@ -336,7 +417,7 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
       if (method !== 'PUT' && method !== 'DELETE') methodNotAllowed(res, 'PUT, DELETE');
       else if (!deps.terminal) {
         sendJson(res, 403, { error: tr('editar o personagem desligado: só funciona com o Habblaud acessível apenas pelo próprio computador') });
-      } else if (!isLoopbackHost(req.headers.host)) {
+      } else if (!isRemoteRequest(req) && !isLoopbackHost(req.headers.host)) {
         sendJson(res, 403, { error: tr('o personagem só é editado pelo próprio computador (http://localhost ou http://127.0.0.1)') });
       } else {
         let id: string;
@@ -459,7 +540,7 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
         sendJson(res, 403, {
           error: tr('mensagens pelo escritório desligadas: só funcionam com o Habblaud acessível apenas pelo próprio computador (e sem HABBLAUD_MENSAGENS=0)'),
         });
-      } else if (!isLoopbackHost(req.headers.host)) {
+      } else if (!isRemoteRequest(req) && !isLoopbackHost(req.headers.host)) {
         sendJson(res, 403, { error: tr('mensagens só são mandadas pelo próprio computador (http://localhost ou http://127.0.0.1)') });
       } else {
         deps.messages(req, res, path);
@@ -512,6 +593,107 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
     if (path === '/api/updates') {
       if (!isRead) methodNotAllowed(res, 'GET');
       else sendJson(res, 200, { version: deps.version, ...(deps.updates?.status() ?? { state: 'off', available: false }) });
+      return true;
+    }
+    if (path === '/api/updates/health') {
+      if (method !== 'GET') methodNotAllowed(res, 'GET');
+      else if (!isLoopbackHost(req.headers.host) || !isLoopbackAddress(req.socket.remoteAddress)) {
+        sendJson(res, 403, { error: tr('Rota disponível apenas no próprio computador.') });
+      } else {
+        sendJson(res, 200, { version: deps.version, nonce: deps.updateNonce?.(), pid: process.pid });
+      }
+      return true;
+    }
+    if (path === '/api/updates/shutdown') {
+      if (method !== 'POST') methodNotAllowed(res, 'POST');
+      else if (
+        !isLoopbackHost(req.headers.host) ||
+        !isLoopbackAddress(req.socket.remoteAddress) ||
+        req.headers.origin !== `http://${req.headers.host}`
+      ) {
+        sendJson(res, 403, { error: tr('Encerramento da atualização permitido somente pelo próprio computador.') });
+      } else {
+        readJson(req)
+          .then((body) => {
+            const request = body as { nonce?: unknown; pid?: unknown } | null;
+            const expected = deps.updateNonce?.();
+            if (
+              typeof request?.nonce !== 'string' ||
+              !expected ||
+              !safeEqual(request.nonce, expected) ||
+              request.pid !== process.pid
+            ) {
+              sendJson(res, 403, { error: tr('Identidade do servidor não confere.') });
+              return;
+            }
+            if (deps.hasActivePtys?.()) {
+              sendJson(res, 409, { error: tr('Feche as sessões interativas antes de atualizar.') });
+              return;
+            }
+            deps.beginUpdateShutdown?.();
+            sendJson(res, 202, { ok: true, pid: process.pid });
+            setTimeout(() => deps.shutdownForUpdate?.(), 50).unref();
+          })
+          .catch((err) => fail(res, err));
+      }
+      return true;
+    }
+    if (path === '/api/updates/install') {
+      if (method !== 'POST') methodNotAllowed(res, 'POST');
+      else if (
+        deps.inDocker ||
+        !isLoopbackHost(req.headers.host) ||
+        !isLoopbackAddress(req.socket.remoteAddress) ||
+        req.headers.origin !== `http://${req.headers.host}`
+      ) {
+        sendJson(res, 403, { error: tr('Atualizações só podem ser instaladas pelo próprio computador, fora do Docker.') });
+      } else {
+        readJson(req)
+          .then(async (body) => {
+            const target = (body as { version?: unknown } | null)?.version;
+            if (typeof target !== 'string' || !/^\d{1,6}\.\d{1,6}\.\d{1,6}(?:-[0-9A-Za-z.-]{1,40})?$/.test(target)) {
+              throw new HttpError(400, tr('Informe a versão oficial do AIOffice que deseja instalar.'));
+            }
+            const updates = deps.updates;
+            const status = updates?.status();
+            if (!updates?.install || status?.repo?.toLowerCase() !== 'iapro-community/aioffice') {
+              sendJson(res, 409, {
+                version: deps.version,
+                ...(status ?? { state: 'off', available: false }),
+                installation: { state: 'blocked', target, message: tr('O instalador de releases oficiais do AIOffice não está disponível neste servidor.') },
+              });
+              return;
+            }
+            if (status.state !== 'ok' || !status.available || status.latest !== target) {
+              sendJson(res, 409, {
+                version: deps.version,
+                ...status,
+                installation: { state: 'blocked', target, message: tr('Verifique novamente as releases antes de instalar esta versão.') },
+              });
+              return;
+            }
+            if (deps.hasActivePtys?.()) {
+              sendJson(res, 409, {
+                version: deps.version,
+                ...status,
+                installation: { state: 'blocked', target, message: tr('Feche as sessões interativas antes de atualizar.') },
+              });
+              return;
+            }
+            // Bloqueia a abertura de novos terminais assim que a atualização começa a preparar a release.
+            deps.beginUpdateShutdown?.();
+            const installation = await updates.install(target);
+            if (!['downloading', 'applying', 'restarting'].includes(installation.state)) {
+              deps.cancelUpdateShutdown?.();
+            }
+            sendJson(res, installation.state === 'blocked' ? 409 : installation.state === 'error' ? 500 : 200, {
+              version: deps.version,
+              ...updates.status(),
+              installation,
+            });
+          })
+          .catch((err) => fail(res, err));
+      }
       return true;
     }
     if (path === '/api/updates/check') {

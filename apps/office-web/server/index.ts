@@ -40,6 +40,8 @@ import { OmpSource } from './sources/omp/source';
 import { OmpHistory } from './sources/omp/history';
 import { createBuildReader } from './build';
 import { UpdateChecker } from './updates/checker';
+import { UpdateInstaller } from './updates/installer';
+import { RemoteAccessRuntime } from './remote/runtime';
 import { tr } from '../shared/i18n';
 
 const config = loadConfig();
@@ -63,7 +65,15 @@ roomAliases.load();
 
 // Office, contas e fontes de agentes se referenciam (avisos de mudança / fontes): ligação tardia.
 const late: { office?: Office; agents?: SourceSet; permissions?: PermissionRegistry; messages?: MessageRegistry; ptys?: PtyManager; ptyOff?: string } = {};
-// Versão nova: consulta a release mais recente no GitHub a cada 6 h (HABBLAUD_UPDATE_CHECK=0 desliga).
+let updateInstaller: UpdateInstaller | undefined;
+let updateShutdownRequested = false;
+const remoteAccess = new RemoteAccessRuntime({
+  config,
+  onRequest: (req, res) => handleRequest(req, res, true),
+  onChange: () => late.office?.markDirty(),
+  log,
+});
+// Versão do AIOffice: consulta somente o repositório oficial do produto a cada 6 h.
 const updates = new UpdateChecker({
   current: config.version,
   repo: config.repo,
@@ -93,7 +103,8 @@ const office = new Office({
   permissions: () => late.permissions?.snapshot() ?? new Map(),
   messages: config.messages ? () => late.messages?.reachable() ?? new Set() : undefined,
   ptys: () => (late.ptys ? { status: late.ptys.status(), list: late.ptys.list() } : { status: { enabled: false, reason: late.ptyOff ?? tr('desligado') }, list: [] }),
-  updates: () => updates.status(),
+  updates: () => ({ ...updates.status(), installation: updateInstaller?.status() }),
+  remoteAccess: () => remoteAccess.status(),
 });
 // Fontes de agentes, uma por ferramenta (sources/source.ts): a do Claude Code e, depois dela, a do Codex (quando há
 // pastas do Codex; HABBLAUD_CODEX=0 desliga), com o histórico dela no HistorySet abaixo e as contas registradas por
@@ -133,7 +144,7 @@ if (timeline) hub.onSnapshot((snap) => timeline.ingest(snap));
 const permissions = config.terminal
   ? new PermissionRegistry({
       office,
-      viewers: () => hub.localSize,
+      viewers: () => hub.permissionViewerSize,
       // Só o Claude Code: a busca da resposta dada no terminal lê o formato do transcript dele.
       transcriptPathOf: (id) => claude.transcriptPathOf(id),
       // Pedidos do hook do Codex: a conta pela pasta CODEX_HOME que ele manda.
@@ -200,6 +211,17 @@ const ptys = spawnPty
 late.ptys = ptys;
 late.ptyOff = ptyOff;
 
+updateInstaller = new UpdateInstaller({
+  config,
+  checker: updates,
+  hasActivePtys: () => !!ptys?.list().some((pty) => pty.exitedAt === undefined),
+  onChange: (status) => {
+    updateShutdownRequested = ['downloading', 'applying', 'restarting'].includes(status.state);
+    office.markDirty();
+  },
+  shutdown: () => shutdown('AIOffice update'),
+});
+
 if (config.demo) office.setDemo(true);
 // As fontes síncronas (a do Claude Code) terminam o boot aqui, antes de o hub começar a transmitir.
 void agents.start();
@@ -244,7 +266,24 @@ const api = createApiHandler({
   pty: ptys ? createPtyRoutes(ptys) : undefined,
   codexLive,
   stats,
-  updates,
+  updates: {
+    status: () => ({ ...updates.status(), installation: updateInstaller?.status() }),
+    check: (opts) => updates.check(opts),
+    install: (version) => updateInstaller!.install(version),
+  },
+  updateNonce: () => process.env.AIOFFICE_UPDATE_NONCE,
+  updateShutdownStarted: () => updateShutdownRequested,
+  hasActivePtys: () => !!ptys?.list().some((pty) => pty.exitedAt === undefined),
+  beginUpdateShutdown: () => { updateShutdownRequested = true; },
+  cancelUpdateShutdown: () => { updateShutdownRequested = false; },
+  shutdownForUpdate: () => process.emit('SIGTERM'),
+  remoteAccess: {
+    status: () => remoteAccess.status(),
+    configure: (user, password) => remoteAccess.configure(user, password),
+    start: () => remoteAccess.start(),
+    stop: () => remoteAccess.stop(),
+    ca: () => remoteAccess.ca(),
+  },
 });
 
 const server = http.createServer();
@@ -277,18 +316,19 @@ if (config.dev) {
 
 // Host/Origin/Content-Type: barra DNS rebinding e CSRF antes de qualquer rota (inclusive o Vite).
 const guard = createRequestGuard({ allowedHosts: config.allowedHosts });
-
-server.on('request', (req, res) => {
+function handleRequest(req: http.IncomingMessage, res: http.ServerResponse, isRemote = false): void {
   const url = parseUrl(req);
   try {
     if (guard(req, res)) return;
+    if (isRemote && remoteAccess.handleRequest(req, res, url)) return;
     if (!api(req, res, url)) fallback(req, res, url);
   } catch (err) {
     log.warn(tr('Erro ao responder {0} {1}: {2}', [req.method, url.pathname, errMsg(err)]));
     if (!res.headersSent) sendJson(res, 500, { error: tr('erro interno') });
     else res.destroy();
   }
-});
+}
+server.on('request', (req, res) => handleRequest(req, res));
 
 server.on('error', (err: NodeJS.ErrnoException) => {
   if (err.code === 'EADDRINUSE') log.error(tr('A porta {0} já está em uso (defina HABBLAUD_PORT para usar outra).', [config.port]));
@@ -344,6 +384,12 @@ server.listen(config.port, config.host, () => {
       ? tr('   Versão nova: verificando as releases de github.com/{0} a cada 6 h.', [config.repo])
       : tr('   Versão nova: verificação desligada ({0}).', [config.repo ? 'HABBLAUD_UPDATE_CHECK' : tr('package.json sem repositório no GitHub')]),
   );
+  if (config.remoteWarning) log.warn(config.remoteWarning);
+  void remoteAccess.initialize().then((status) => {
+    if (status.state !== 'active') return;
+    for (const endpoint of status.urls ?? []) log.info(`   Acesso remoto HTTPS autenticado: ${endpoint}`);
+    log.info(tr('   Para acessar de fora da rede local, conecte computador e celular à mesma VPN privada.'));
+  }).catch((error: unknown) => log.error(`Acesso remoto desligado: ${errMsg(error)}`));
 });
 
 let shuttingDown = false;
@@ -362,6 +408,8 @@ function shutdown(signal: string): void {
   messages?.stop();
   ptys?.stopAll();
   updates.stop();
+  updateInstaller?.stop();
+  void remoteAccess.shutdown();
   names.flush();
   void closeVite?.();
   server.close(() => process.exit(0));
