@@ -27,4 +27,4 @@ Hierarquia de documentação operacional do projeto AIOffice.
 | `apps/office-web/README*.md` | Guias Habblaud em inglês, português, espanhol e francês | Ativo |
 
 ## Estado da release
-- Última release oficial: `v2.1.0`, com somente o instalador Windows x64. macOS e Linux ainda não têm binários publicados. A candidata local `v2.2.0` inclui o atualizador Windows via API GitHub/digest SHA-256 e o workflow de um único asset; verificações locais passaram, mas a integração/publicação aguarda revisão humana. Consulte `DEV/HANDOFF.md` e `DEV/SPECS/ACTIVE.md`.
+- Última release oficial: `v2.2.1`, com instalador Windows x64. A versão `v2.3.0` prepara builds nativos para Windows, macOS Intel/Apple silicon e Linux x64, publicação condicionada ao sucesso de todas as plataformas e manifestos para atualização nativa. Consulte `DEV/HANDOFF.md`, `DEV/DESKTOP.md` e `DEV/VERIFY.md` para o estado real dos runners e artefatos.

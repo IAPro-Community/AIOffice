@@ -93,6 +93,7 @@ module.exports = {
   }],
   win: {
     target: [{ target: 'nsis', arch: ['x64'] }],
+    artifactName: 'AIOffice-Setup.exe',
     icon: 'apps/office-web/client/public/assets/brand/icon-512.png',
     ...(windowsPublisher ? { publisherName: [windowsPublisher] } : {}),
   },
@@ -108,12 +109,14 @@ module.exports = {
   },
   mac: {
     target: ['dmg', 'zip'],
+    artifactName: 'AIOffice-Setup-macOS-${arch}.${ext}',
     category: 'public.app-category.productivity',
     icon: 'apps/office-web/client/public/assets/brand/icon-512.png',
     ...(requireSigning ? { hardenedRuntime: true, notarize: true } : {}),
   },
   linux: {
     target: ['AppImage', 'deb'],
+    artifactName: 'AIOffice-Setup-Linux-${arch}.${ext}',
     category: 'Office',
     executableName: 'aioffice',
     icon: 'apps/office-web/client/public/assets/brand/icon-512.png',

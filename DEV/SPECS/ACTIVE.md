@@ -2,7 +2,7 @@
 
 ## 1. Identificação do Projeto
 - **Nome**: AIOffice
-- **Status**: Fase 5 concluída; desktop Electron implementado e empacotado para Windows; auditoria ampla da interface concluída; paridade de provedores aberta; acesso móvel por Quick Tunnel com QR local; ativação gerenciada e validação operacional pendentes
+- **Status**: desktop Electron implementado; release Windows `v2.2.1` ativa; distribuição multi-plataforma `v2.3.0` em execução com builds nativos Windows/macOS/Linux e publicação após validação completa; auditoria ampla da interface concluída; paridade de provedores aberta; ativação gerenciada e validação operacional pendentes
 - **Localização**: Repositório AIOffice
 
 ## 2. Pilares de Integração

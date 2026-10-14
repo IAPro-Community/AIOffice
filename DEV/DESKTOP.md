@@ -15,6 +15,8 @@ npm run desktop:verify
 npm run desktop:build
 npm run desktop:package:win
 npm run desktop:package:mac
+npm run desktop:package:mac:x64
+npm run desktop:package:mac:arm64
 npm run desktop:package:linux
 ```
 
@@ -41,15 +43,15 @@ O main só cria a janela depois que `/api/health` responde `ok` e a versão coin
 
 ## Atualizações estáveis
 
-O Windows consulta somente a API da release estável mais recente de `IAPro-Community/AIOffice` ao abrir e a cada seis horas. A release precisa conter o único asset `AIOffice-Setup.exe`, com versão estável e digest SHA-256 publicado pelo GitHub. O aplicativo baixa pela URL da tag específica, aceita redirecionamentos apenas para hosts oficiais do GitHub, valida tamanho e digest, guarda o pacote no perfil local e pede confirmação antes de abri-lo. O instalador NSIS continua interativo e pode mostrar o aviso normal do SmartScreen enquanto o executável não tiver assinatura Authenticode. As credenciais de dados permanecem em `userData`, fora dos arquivos substituídos.
+O Windows consulta a API da release estável mais recente de `IAPro-Community/AIOffice` ao abrir e a cada seis horas. O aplicativo baixa `AIOffice-Setup.exe` da tag oficial, aceita redirecionamentos somente para hosts do GitHub, valida tamanho e SHA-256, guarda o pacote no perfil local e pede confirmação antes de abri-lo. O instalador NSIS continua interativo e pode mostrar o aviso normal do SmartScreen enquanto não houver assinatura Authenticode. As credenciais permanecem em `userData`, fora dos arquivos substituídos.
 
 Esse fluxo roda no processo principal do Electron e atualiza o status do painel por IPC; a verificação periódica nunca dá reload na página. O download inicia depois de confirmação; a instalação e o encerramento do app também exigem confirmação. A verificação web `HABBLAUD_UPDATE_CHECK=0` continua desligada no processo embutido porque seu instalador gerenciado opera apenas sobre checkouts Node/Git, não sobre o pacote Electron.
 
-O setup é estático e instala a versão incluída nele. O link estável [releases/latest/download/AIOffice-Setup.exe](https://github.com/IAPro-Community/AIOffice/releases/latest/download/AIOffice-Setup.exe) serve para downloads manuais; o atualizador do aplicativo resolve o tag estável pela API e baixa a URL do setup desse tag, evitando cache antigo do alias `latest/download`. A release pública `v2.1.0` contém somente esse instalador, versão `2.1.0`, atualizado manualmente em 2026-10-14. A versão instalada em questão é também `2.1.0`, então ainda não há atualização disponível. O código local `2.2.0` já contém o novo atualizador, mas essa release e o workflow ainda não estão publicados. Quem estiver no instalador `2.1.0` precisará instalar manualmente a primeira versão publicada com este atualizador; versões posteriores poderão detectar e baixar a próxima release em background.
+O setup é estático e instala a versão incluída nele. O atualizador Windows busca a release mais recente pela API e baixa a URL da tag específica; o alias `latest/download` é destinado a downloads manuais. O atualizador AppImage Linux lê `latest-linux.yml`. O atualizador macOS usa `latest-mac.yml` e só é habilitado quando o app é assinado. Builds unsigned do macOS direcionam a pessoa à página oficial para instalação manual; `.deb` também é atualizado manualmente pelo gerenciador de pacotes.
 
 ### Artefatos atualmente publicados
 
-Na release `v2.1.0`, o único binário é `AIOffice-Setup.exe` para Windows x64. Não há instaladores macOS ou Linux publicados; `.dmg`, `.zip`, `.AppImage` e `.deb` dependem dos runners correspondentes e do workflow de release. A candidata local `v2.2.0` e o instalador Windows sem assinatura não são downloads oficiais. O [README público](../README.md#downloads) mantém os links e a disponibilidade por sistema operacional.
+Na release pública atual `v2.2.1`, há somente `AIOffice-Setup.exe` para Windows x64. A candidata de distribuição seguinte é `v2.3.0`; ela adiciona downloads macOS Intel/Apple silicon e Linux x64. Os links e o estado de publicação por sistema operacional ficam no [README público](../README.md#downloads) e na página [releases](https://github.com/IAPro-Community/AIOffice/releases/latest).
 
 `.deb` não usa o atualizador AppImage: **Ajuda → Verificar atualizações** orienta abrir GitHub Releases para baixar o próximo `.deb` e atualizá-lo pelo gerenciador do sistema. Isso respeita a elevação de privilégios e o banco de pacotes da distribuição. A desinstalação NSIS declara que não apaga `userData`.
 
@@ -61,7 +63,7 @@ O cliente mantém o estado do escritório atualizado pelo stream SSE; em Quick T
 
 ## Releases e assinatura
 
-O workflow `.github/workflows/release-desktop.yml` roda quando uma tag estável `vX.Y.Z` é enviada. Ele verifica a aplicação e o shell, compila o instalador Windows x64 e publica somente um asset na release: `AIOffice-Setup.exe`. O GitHub registra o digest SHA-256 do asset, que o atualizador verifica antes de abri-lo. Authenticode é opcional no workflow; quando configurado, reduz avisos de identidade/reputação. A matriz fica em Windows porque ainda não há runners, assinatura/notarização e artefatos macOS/Linux validados. `npm run release -- --publish` envia apenas a tag verificada para iniciar esse workflow.
+O workflow `.github/workflows/release-desktop.yml` tem uma validação manual prévia e roda em tags estáveis `vX.Y.Z`. Ele verifica a aplicação, empacota Windows x64, macOS Intel, macOS Apple silicon e Linux x64 em runners nativos e publica somente se todos os builds e a checagem do conjunto final passarem. Os assets incluem setup Windows, `.dmg`/`.zip` macOS, `.AppImage`/`.deb` Linux e manifestos `latest-mac.yml`/`latest-linux.yml`. `npm run release -- --publish` envia a tag verificada depois da validação dos builds.
 
 Configure estes valores nas configurações do repositório **antes** de enviar uma tag de release:
 
@@ -70,16 +72,21 @@ Configure estes valores nas configurações do repositório **antes** de enviar 
 | Secret | `AIOFFICE_WINDOWS_CERTIFICATE_BASE64` | Certificado Authenticode PFX/P12 codificado em Base64 (opcional). |
 | Secret | `AIOFFICE_WINDOWS_CERTIFICATE_PASSWORD` | Senha do certificado Windows (opcional). |
 | Variable | `AIOFFICE_WINDOWS_PUBLISHER_NAME` | Nome da entidade exatamente como aparece no certificado Authenticode (opcional). |
+| Secret | `AIOFFICE_MAC_CERTIFICATE_BASE64` | Certificado Developer ID P12 codificado em Base64 (opcional). |
+| Secret | `AIOFFICE_MAC_CERTIFICATE_PASSWORD` | Senha do certificado Developer ID (opcional). |
+| Secret | `AIOFFICE_APPLE_API_KEY_P8_BASE64` | Chave App Store Connect P8 codificada em Base64 (opcional). |
+| Secret | `AIOFFICE_APPLE_API_KEY_ID` | ID da chave App Store Connect (opcional). |
+| Secret | `AIOFFICE_APPLE_API_ISSUER` | Issuer ID da chave App Store Connect (opcional). |
 
-O workflow só exige as três configurações de certificado Windows se alguma delas for preenchida; configurações parciais falham explicitamente. Não coloque certificados/senhas em arquivos versionados. Releases unsigned ainda são protegidas por verificação do digest GitHub no atualizador, mas o Windows pode mostrar avisos SmartScreen.
+Cada plataforma exige todas as configurações de assinatura correspondentes ou nenhuma; configuração parcial falha. No macOS, assinatura Developer ID e notarização são necessárias para remover a restrição de atualização automática e reduzir avisos do Gatekeeper. Até configurar os cinco segredos Apple, os downloads macOS permanecem unsigned e instalação manual. Não coloque certificados/senhas em arquivos versionados.
 
 Passos do mantenedor:
 
 1. Atualize `version` no `package.json` raiz e escreva as notas de `CHANGELOG.md`.
-2. Execute `npm run desktop:verify` no checkout; se for assinar Windows, confira as três configurações opcionais acima.
-3. Envie a tag correspondente (`vX.Y.Z`) para a origem oficial.
-4. Acompanhe **Actions → AIOffice Desktop Release**. A release aparece somente após o sucesso de todos os jobs.
-5. Confirme que a release contém apenas `AIOffice-Setup.exe`, registre o digest SHA-256 da API GitHub e teste a atualização de uma instalação anterior.
+2. Execute `npm run desktop:verify` e acione manualmente **Actions → AIOffice Desktop Release** na `main` para validar os quatro runners sem publicar uma versão.
+3. Depois que todos os jobs nativos passarem, envie a tag correspondente (`vX.Y.Z`) pela rotina `npm run release -- --publish`.
+4. Acompanhe **Actions → AIOffice Desktop Release**; a publicação depende do sucesso de todos os builds e manifestos.
+5. Confirme os nove assets, checksums e URLs da release; teste atualização Windows e AppImage, além da instalação manual `.dmg`/`.deb`.
 
 Histórico: o primeiro asset foi anexado à release existente `v2.1.0`; nenhuma nova tag ou release foi criada naquela etapa. A release atual foi publicada pelo workflow tag-gated documentado abaixo.
 
@@ -91,8 +98,8 @@ Histórico: o primeiro asset foi anexado à release existente `v2.1.0`; nenhuma 
 - Se uma instância que oferece o shutdown autenticado recusar a parada por sessões interativas, feche essas sessões e abra o desktop de novo. Releases antigos sem esse handshake só podem ser identificados pelo PID antes do encerramento direcionado.
 - Processo não inicia ou fecha: a mensagem diferencia conflito de porta, configuração inválida, falha do Maestro, instalação incompleta, permissões, erro de criação do processo e timeout; consulte `aioffice.log` no diretório de dados indicado acima. A interface só abre para uma API com versão correspondente.
 - Ausência de agente no escritório: instale/autentique a ferramenta separadamente e confira o `PATH`; Codex e OMP leem os perfis/sessões já conhecidos pelo servidor.
-- A consulta e o download do Windows exigem acesso HTTPS ao GitHub. O fluxo do novo atualizador local ainda precisa ser exercitado ponta a ponta após publicar uma release posterior; a instalação atual `2.1.0` não carrega o código novo.
-- Esta máquina de desenvolvimento é Windows. `.exe` é o alvo que pode ser empacotado localmente; `.dmg`, `.AppImage` e `.deb` requerem runners macOS/Linux. CI usa `macos-latest` e `ubuntu-24.04`, mas esses artefatos só ficam validados depois de uma execução real bem-sucedida.
+- A consulta e o download exigem HTTPS ao GitHub. Uma instalação `2.1.0` precisa do upgrade manual inicial para receber o atualizador Windows.
+- A máquina de desenvolvimento é Windows; builds macOS/Linux só ficam validados após sucesso nos respectivos runners nativos e inspeção dos assets publicados.
 
 ## Diagnóstico inicial da atualização automática — 2026-10-14 (superado pela implementação acima)
 
@@ -108,7 +115,7 @@ Histórico: o primeiro asset foi anexado à release existente `v2.1.0`; nenhuma 
 - `apps/office-desktop/github-release-updater.mjs` consulta a API oficial, aceita apenas releases estáveis com `AIOffice-Setup.exe`, URL/tamanho/digest válidos e SHA-256 disponível. O download usa a URL da tag específica, permite redirecionamentos HTTPS somente para hosts oficiais e confirma tamanho e digest antes de executar o NSIS.
 - O main verifica ao abrir e a cada seis horas; o menu e Configurações → Sobre permitem consulta manual. IPC comunica estados e progresso ao cliente. Nenhuma checagem ou download recarrega a página.
 - O usuário confirma o download e, depois da validação, confirma a abertura do instalador interativo. O app para seus serviços e fecha antes que o usuário complete a instalação. O cache fica no perfil AIOffice; os dados do servidor continuam separados.
-- `.github/workflows/release-desktop.yml` está preparado para publicar somente `AIOffice-Setup.exe` na tag estável Windows x64. O digest vem da API do GitHub. Authenticode é opcional; SmartScreen pode alertar em binários sem assinatura.
+- Na publicação `v2.2.1`, o workflow ainda gerava somente `AIOffice-Setup.exe` para Windows x64. A pipeline multi-plataforma atual está descrita na seção **Releases e assinatura** acima.
 - A tag `v2.2.0` foi enviada, mas duas execuções de Actions falharam nos testes de registro Claude e ingestão OMP no Windows; nenhuma release/asset foi criada. Ela permanece imutável.
 - A correção compara conteúdo de registros Claude e também o tamanho dos transcripts OMP para detectar gravações quando o `mtime` se mantém igual. Há testes que fixam o timestamp e confirmam as duas situações.
 - `npm run desktop:verify` passou localmente após `npm ci`: 22 testes do monorepo, 1.257 testes web (10 ignorados), 14 testes desktop, typechecks, build, i18n e sintaxe. O bundle cliente continua acima de 500 kB.

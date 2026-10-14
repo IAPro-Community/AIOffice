@@ -21,15 +21,17 @@
 
 ## Downloads
 
-A versão da tabela é a **última release publicada**. O código no repositório pode conter mudanças posteriores; confira os artefatos na página de [releases](https://github.com/IAPro-Community/AIOffice/releases/latest).
+Estes links sempre apontam para a **última release publicada**. Uma mudança no código só aparece aqui depois que os builds de todos os sistemas passam e a release é publicada. Consulte também a página de [releases](https://github.com/IAPro-Community/AIOffice/releases/latest) para notas, checksums e arquivos da versão.
 
-| Sistema | Pacote | Download | Disponibilidade |
-|---|---|---|---|
-| Windows x64 | Instalador `.exe` | [Baixar AIOffice-Setup.exe](https://github.com/IAPro-Community/AIOffice/releases/download/v2.1.0/AIOffice-Setup.exe?nocache=987654321) | `v2.1.0` publicado; o instalador atual não tem assinatura Authenticode. |
-| macOS | `.dmg` / `.zip` | [Ver releases](https://github.com/IAPro-Community/AIOffice/releases/latest) | Ainda sem compilado publicado. |
-| Linux | `.AppImage` / `.deb` | [Ver releases](https://github.com/IAPro-Community/AIOffice/releases/latest) | Ainda sem compilado publicado. |
+| Sistema | Pacote | Download |
+|---|---|---|
+| Windows x64 | Instalador `.exe` | [Baixar AIOffice-Setup.exe](https://github.com/IAPro-Community/AIOffice/releases/latest/download/AIOffice-Setup.exe) |
+| macOS Apple silicon (M1/M2/M3/M4) | Imagem `.dmg` | [Baixar AIOffice-Setup-macOS-arm64.dmg](https://github.com/IAPro-Community/AIOffice/releases/latest/download/AIOffice-Setup-macOS-arm64.dmg) |
+| macOS Intel | Imagem `.dmg` | [Baixar AIOffice-Setup-macOS-x64.dmg](https://github.com/IAPro-Community/AIOffice/releases/latest/download/AIOffice-Setup-macOS-x64.dmg) |
+| Linux x64 | AppImage portátil | [Baixar AIOffice-Setup-Linux-x64.AppImage](https://github.com/IAPro-Community/AIOffice/releases/latest/download/AIOffice-Setup-Linux-x64.AppImage) |
+| Linux x64 | Pacote Debian/Ubuntu `.deb` | [Baixar AIOffice-Setup-Linux-x64.deb](https://github.com/IAPro-Community/AIOffice/releases/latest/download/AIOffice-Setup-Linux-x64.deb) |
 
-Os links de macOS e Linux levam à página oficial para evitar downloads quebrados: os arquivos só estarão disponíveis depois que os respectivos jobs de release forem executados e publicados. O instalador Windows disponível é da `v2.1.0`; mudanças posteriores no repositório ainda não fazem parte desse pacote.
+Os instaladores macOS desta release não têm assinatura Apple configurada. O Gatekeeper pode impedir a primeira abertura; siga o procedimento de abertura manual do macOS. O atualizador automático do macOS só é habilitado em builds assinadas e notarizadas. No Linux, a atualização em segundo plano é compatível com o AppImage; o `.deb` é atualizado pelo gerenciador de pacotes. No Windows, o app consulta releases em background, sem recarregar a página, e valida o instalador pelo SHA-256 publicado pelo GitHub antes de pedir confirmação para instalá-lo. O instalador Windows ainda pode exibir SmartScreen enquanto não houver certificado Authenticode.
 
 O desktop inclui o runtime Node e inicia o servidor e a interface local. Claude Code, Codex e oh-my-pi são ferramentas separadas: instale e autentique cada uma conforme seu próprio fluxo. AIOffice identifica disponibilidade local; não cria nem valida suas contas nesses provedores.
 
@@ -54,7 +56,7 @@ Escolha paleta, cenário, calendário de datas comemorativas, horários e idioma
 
 ### Usar o aplicativo desktop
 
-Baixe o instalador Windows disponível na tabela acima, instale e abra **AIOffice** pelo menu Iniciar ou atalho. O aplicativo sobe a interface em `http://127.0.0.1:4747` automaticamente. O suporte de distribuição para macOS e Linux depende dos artefatos publicados na página de releases.
+Baixe o pacote correspondente ao seu sistema na tabela acima e abra **AIOffice**. O aplicativo sobe a interface local em `http://127.0.0.1:4747` automaticamente. O instalador inclui o runtime necessário; não precisa instalar Node.js para executar o desktop. No macOS, escolha `arm64` para Apple silicon e `x64` para Intel. No Linux, o AppImage é portátil; o `.deb` integra com Debian e Ubuntu.
 
 ### Executar pelo código-fonte
 
@@ -91,12 +93,13 @@ O acesso passa pela infraestrutura Cloudflare e fica disponível pela internet e
 npm run desktop:dev
 npm run desktop:build
 npm run desktop:package:win
-npm run desktop:package:mac
+npm run desktop:package:mac:x64
+npm run desktop:package:mac:arm64
 npm run desktop:package:linux
 npm run desktop:verify
 ```
 
-Cada instalador deve ser criado no sistema operacional correspondente. O workflow oficial usa runners Windows, macOS e Linux e só publica quando todos os jobs passam. Windows exige certificado Authenticode; macOS exige assinatura Apple e notarização. Consulte [DEV/DESKTOP.md](DEV/DESKTOP.md) para detalhes, requisitos e limites atuais.
+Cada instalador deve ser criado no sistema operacional correspondente. O workflow oficial testa Windows x64, macOS Intel, macOS Apple silicon e Linux x64 em runners nativos; uma etapa final valida os arquivos e manifestos de atualização e só então publica a release. Authenticode e assinatura/notarização Apple são opcionais no workflow, mas sem elas os sistemas podem mostrar avisos e o macOS mantém atualização manual. Consulte [DEV/DESKTOP.md](DEV/DESKTOP.md) para detalhes, requisitos e limites atuais.
 
 ## Integrações
 

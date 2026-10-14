@@ -505,14 +505,17 @@ async function checkForUpdates(manual = false) {
   const strategy = updateStrategy({ packaged: app.isPackaged, platform: process.platform, env: process.env, release: desktopReleaseMetadata });
   if (strategy.mode === 'disabled') {
     if (manual && strategy.reason === 'unsigned-build') {
-      await dialog.showMessageBox(mainWindow, {
+      const { response } = await dialog.showMessageBox(mainWindow, {
         type: 'info',
         title: 'Atualizações do AIOffice',
-        message: 'Esta compilação local não recebe atualizações automáticas.',
-        detail: 'Use uma versão estável assinada do AIOffice para habilitar a validação do instalador durante as atualizações.',
-        buttons: ['Fechar'],
+        message: 'Esta versão do macOS não recebe atualizações automáticas porque não tem assinatura Apple.',
+        detail: 'Baixe manualmente a versão mais recente na página oficial de releases do AIOffice.',
+        buttons: ['Abrir GitHub Releases', 'Fechar'],
+        defaultId: 0,
+        cancelId: 1,
         noLink: true,
       });
+      if (response === 0) void shell.openExternal('https://github.com/IAPro-Community/AIOffice/releases/latest');
     }
     return { ok: false, reason: strategy.reason };
   }

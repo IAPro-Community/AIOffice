@@ -11,8 +11,9 @@ test('unsigned macOS builds cannot install unverifiable updates', () => {
   assert.equal(updateStrategy({ packaged: true, platform: 'darwin' }).reason, 'unsigned-build');
 });
 
-test('native stable updates remain available for signed macOS apps', () => {
+test('signed macOS builds use the GitHub update feed and unsigned builds remain manual', () => {
   assert.deepEqual(updateStrategy({ packaged: true, platform: 'darwin', release: { signed: true } }), { mode: 'automatic', channel: 'latest' });
+  assert.equal(updateStrategy({ packaged: true, platform: 'darwin', release: { signed: false } }).reason, 'unsigned-build');
 });
 
 test('Linux AppImage supports native updates while DEB follows the system package manager', () => {

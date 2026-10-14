@@ -5,6 +5,19 @@ All notable changes to AIOffice will be documented in this file.
 ## [Não lançado]
 Nenhuma mudança registrada.
 
+## [v2.3.0] - 2026-10-14
+
+### Adicionado
+- Instaladores nativos para Windows x64, macOS Intel, macOS Apple silicon e Linux x64: `.exe`, `.dmg`, `.AppImage` e `.deb`.
+- Workflow de release com verificação comum e builds em runners nativos. A publicação só acontece após todos os sistemas e a validação do conjunto completo de arquivos.
+- Manifestos `latest-mac.yml` e `latest-linux.yml` com hashes SHA-512 e tamanhos para as atualizações nativas.
+- Downloads por sistema no README, com links estáveis para a última release publicada e instruções específicas de instalação.
+
+### Alterado
+- A publicação de uma nova versão usa aliases estáveis separados por plataforma e arquitetura; o README aponta sempre para os assets da última release.
+- A compilação macOS pode ser assinada e notarizada quando os segredos Apple estiverem configurados. Sem eles, os pacotes são unsigned, podem exigir autorização manual do Gatekeeper e não habilitam atualização automática no macOS.
+- AppImage Linux recebe manifesto para atualização em background; `.deb` permanece sob gestão do sistema de pacotes. A verificação de atualização do desktop não recarrega a página.
+
 ## [v2.2.1] - 2026-10-14
 
 ### Adicionado

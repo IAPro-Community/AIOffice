@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -13,12 +14,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
-    name: Build and publish the Windows installer
+  verify:
+    name: Verify source and release version
     runs-on: windows-latest
     timeout-minutes: 90
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,6 +28,7 @@ jobs:
           node-version: 24
           cache: npm
       - name: Validate release tag
+        if: github.event_name == 'push'
         shell: pwsh
         run: |
           $version = node -p "require('./package.json').version"
@@ -36,9 +36,42 @@ jobs:
             throw "Release tag $env:GITHUB_REF_NAME must be a stable v$version tag matching package.json."
           }
       - run: npm ci
-      - name: Verify the application and desktop shell
+      - name: Verify application and desktop shell
         run: npm run desktop:verify
+
+  package:
+    name: Package ${{ matrix.label }}
+    needs: verify
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: windows-x64
+            label: Windows x64
+            os: windows-latest
+          - id: macos-arm64
+            label: macOS Apple silicon
+            os: macos-15
+          - id: macos-x64
+            label: macOS Intel
+            os: macos-15-intel
+          - id: linux-x64
+            label: Linux x64
+            os: ubuntu-24.04
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
       - name: Configure optional Windows code signing
+        if: matrix.id == 'windows-x64'
         shell: pwsh
         env:
           WIN_CERTIFICATE_BASE64: ${{ secrets.AIOFFICE_WINDOWS_CERTIFICATE_BASE64 }}
@@ -47,11 +80,11 @@ jobs:
         run: |
           $provided = @($env:WIN_CERTIFICATE_BASE64, $env:WIN_CERTIFICATE_PASSWORD, $env:WIN_CERTIFICATE_PUBLISHER) | Where-Object { $_ }
           if ($provided.Count -eq 0) {
-            Write-Host 'Authenticode signing is not configured. The updater will verify the official GitHub release SHA-256 before opening this installer.'
+            Write-Host 'Authenticode signing is not configured. The updater verifies GitHub release SHA-256 before opening the installer.'
             exit 0
           }
           if ($provided.Count -ne 3) {
-            throw 'Configure all three values: AIOFFICE_WINDOWS_CERTIFICATE_BASE64, AIOFFICE_WINDOWS_CERTIFICATE_PASSWORD, and AIOFFICE_WINDOWS_PUBLISHER_NAME.'
+            throw 'Configure AIOFFICE_WINDOWS_CERTIFICATE_BASE64, AIOFFICE_WINDOWS_CERTIFICATE_PASSWORD, and AIOFFICE_WINDOWS_PUBLISHER_NAME together.'
           }
           $certificatePath = Join-Path $env:RUNNER_TEMP 'aioffice-windows-signing.p12'
           [IO.File]::WriteAllBytes($certificatePath, [Convert]::FromBase64String($env:WIN_CERTIFICATE_BASE64))
@@ -59,32 +92,152 @@ jobs:
           "CSC_KEY_PASSWORD=$env:WIN_CERTIFICATE_PASSWORD" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "AIOFFICE_WINDOWS_PUBLISHER_NAME=$env:WIN_CERTIFICATE_PUBLISHER" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           'AIOFFICE_REQUIRE_SIGNING=1' | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-      - name: Build Windows x64 installer
+
+      - name: Configure optional Apple signing and notarization
+        if: matrix.id == 'macos-arm64' || matrix.id == 'macos-x64'
+        shell: bash
+        env:
+          MAC_CERTIFICATE_BASE64: ${{ secrets.AIOFFICE_MAC_CERTIFICATE_BASE64 }}
+          MAC_CERTIFICATE_PASSWORD: ${{ secrets.AIOFFICE_MAC_CERTIFICATE_PASSWORD }}
+          APPLE_API_KEY_P8_BASE64: ${{ secrets.AIOFFICE_APPLE_API_KEY_P8_BASE64 }}
+          APPLE_API_KEY_ID: ${{ secrets.AIOFFICE_APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.AIOFFICE_APPLE_API_ISSUER }}
+        run: |
+          provided=0
+          for value in "$MAC_CERTIFICATE_BASE64" "$MAC_CERTIFICATE_PASSWORD" "$APPLE_API_KEY_P8_BASE64" "$APPLE_API_KEY_ID" "$APPLE_API_ISSUER"; do
+            if [[ -n "$value" ]]; then provided=$((provided + 1)); fi
+          done
+          if [[ "$provided" -eq 0 ]]; then
+            echo 'Apple signing is not configured. This release will contain unsigned macOS downloads; Gatekeeper may require manual approval.'
+            exit 0
+          fi
+          if [[ "$provided" -ne 5 ]]; then
+            echo 'Configure all five Apple signing secrets together; partial signing configuration is not supported.' >&2
+            exit 1
+          fi
+          certificate_path="$RUNNER_TEMP/aioffice-macos-signing.p12"
+          api_key_path="$RUNNER_TEMP/AuthKey_${APPLE_API_KEY_ID}.p8"
+          CERTIFICATE_PATH="$certificate_path" MAC_CERTIFICATE_BASE64="$MAC_CERTIFICATE_BASE64" node -e 'require("node:fs").writeFileSync(process.env.CERTIFICATE_PATH, Buffer.from(process.env.MAC_CERTIFICATE_BASE64, "base64"))'
+          API_KEY_PATH="$api_key_path" APPLE_API_KEY_P8_BASE64="$APPLE_API_KEY_P8_BASE64" node -e 'require("node:fs").writeFileSync(process.env.API_KEY_PATH, Buffer.from(process.env.APPLE_API_KEY_P8_BASE64, "base64"))'
+          {
+            echo "CSC_LINK=$certificate_path"
+            echo "CSC_KEY_PASSWORD=$MAC_CERTIFICATE_PASSWORD"
+            echo "APPLE_API_KEY=$api_key_path"
+            echo "APPLE_API_KEY_ID=$APPLE_API_KEY_ID"
+            echo "APPLE_API_ISSUER=$APPLE_API_ISSUER"
+            echo 'AIOFFICE_REQUIRE_SIGNING=1'
+          } >> "$GITHUB_ENV"
+
+      - name: Build Windows x64 installers
+        if: matrix.id == 'windows-x64'
         run: npm run desktop:package:win
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Prepare the single stable download
+      - name: Build macOS Apple silicon installers
+        if: matrix.id == 'macos-arm64'
+        run: npm run desktop:package:mac:arm64
+      - name: Build macOS Intel installers
+        if: matrix.id == 'macos-x64'
+        run: npm run desktop:package:mac:x64
+      - name: Build Linux x64 installers
+        if: matrix.id == 'linux-x64'
+        run: npm run desktop:package:linux
+
+      - name: Validate and stage Windows assets
+        if: matrix.id == 'windows-x64'
         shell: pwsh
         run: |
-          $installer = Join-Path $env:GITHUB_WORKSPACE "dist/installers/AIOffice-$($env:GITHUB_REF_NAME.TrimStart('v'))-win-x64.exe"
-          if (-not (Test-Path -LiteralPath $installer -PathType Leaf)) { throw "Versioned Windows installer is missing: $installer" }
-          $releaseDirectory = Join-Path $env:RUNNER_TEMP 'aioffice-release'
-          New-Item -ItemType Directory -Path $releaseDirectory -Force | Out-Null
-          $stableInstaller = Join-Path $releaseDirectory 'AIOffice-Setup.exe'
-          Copy-Item -LiteralPath $installer -Destination $stableInstaller
-          if ((Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash -ne (Get-FileHash -LiteralPath $stableInstaller -Algorithm SHA256).Hash) {
-            throw 'The stable setup does not match the versioned installer.'
-          }
-          Get-FileHash -LiteralPath $stableInstaller -Algorithm SHA256 | Format-List
-          "AIOFFICE_RELEASE_ASSET=$stableInstaller" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-      - name: Create the GitHub release with one installer asset
-        shell: pwsh
+          $installer = Join-Path $env:GITHUB_WORKSPACE 'dist/installers/AIOffice-Setup.exe'
+          if (-not (Test-Path -LiteralPath $installer -PathType Leaf)) { throw "Windows installer is missing: $installer" }
+          New-Item -ItemType Directory -Path 'dist/release-assets' -Force | Out-Null
+          Copy-Item -LiteralPath $installer -Destination 'dist/release-assets/AIOffice-Setup.exe'
+      - name: Validate macOS assets
+        if: matrix.id == 'macos-arm64'
+        run: test -s dist/installers/AIOffice-Setup-macOS-arm64.dmg && test -s dist/installers/AIOffice-Setup-macOS-arm64.zip
+      - name: Validate macOS assets
+        if: matrix.id == 'macos-x64'
+        run: test -s dist/installers/AIOffice-Setup-macOS-x64.dmg && test -s dist/installers/AIOffice-Setup-macOS-x64.zip
+      - name: Validate Linux assets
+        if: matrix.id == 'linux-x64'
+        run: test -s dist/installers/AIOffice-Setup-Linux-x64.AppImage && test -s dist/installers/AIOffice-Setup-Linux-x64.deb
+
+      - name: Upload Windows assets
+        if: matrix.id == 'windows-x64'
+        uses: actions/upload-artifact@v4
+        with:
+          name: aioffice-installers-windows-x64
+          path: dist/release-assets/AIOffice-Setup.exe
+          if-no-files-found: error
+      - name: Upload macOS Apple silicon assets
+        if: matrix.id == 'macos-arm64'
+        uses: actions/upload-artifact@v4
+        with:
+          name: aioffice-installers-macos-arm64
+          path: |
+            dist/installers/AIOffice-Setup-macOS-arm64.dmg
+            dist/installers/AIOffice-Setup-macOS-arm64.zip
+          if-no-files-found: error
+      - name: Upload macOS Intel assets
+        if: matrix.id == 'macos-x64'
+        uses: actions/upload-artifact@v4
+        with:
+          name: aioffice-installers-macos-x64
+          path: |
+            dist/installers/AIOffice-Setup-macOS-x64.dmg
+            dist/installers/AIOffice-Setup-macOS-x64.zip
+          if-no-files-found: error
+      - name: Upload Linux assets
+        if: matrix.id == 'linux-x64'
+        uses: actions/upload-artifact@v4
+        with:
+          name: aioffice-installers-linux-x64
+          path: |
+            dist/installers/AIOffice-Setup-Linux-x64.AppImage
+            dist/installers/AIOffice-Setup-Linux-x64.deb
+          if-no-files-found: error
+
+  publish:
+    name: Publish all platform installers
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: package
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: aioffice-installers-*
+          path: dist/release-assets
+          merge-multiple: true
+      - name: Generate native update manifests
+        run: node scripts/create-desktop-update-manifests.mjs
+      - name: Validate complete release asset set
+        shell: bash
+        run: |
+          for asset in \
+            AIOffice-Setup.exe \
+            AIOffice-Setup-macOS-arm64.dmg AIOffice-Setup-macOS-arm64.zip \
+            AIOffice-Setup-macOS-x64.dmg AIOffice-Setup-macOS-x64.zip \
+            AIOffice-Setup-Linux-x64.AppImage AIOffice-Setup-Linux-x64.deb \
+            latest-mac.yml latest-linux.yml; do
+            test -s "dist/release-assets/$asset" || { echo "Missing release asset: $asset" >&2; exit 1; }
+          done
+      - name: Generate release notes
+        shell: bash
+        run: |
+          RELEASE_VERSION="${GITHUB_REF_NAME#v}" RELEASE_NOTES_PATH="$RUNNER_TEMP/release-notes.md" node --input-type=module -e '
+            import { readFileSync, writeFileSync } from "node:fs";
+            import { changelogSection } from "./scripts/release-aioffice.mjs";
+            writeFileSync(process.env.RELEASE_NOTES_PATH, changelogSection(readFileSync("CHANGELOG.md", "utf8"), process.env.RELEASE_VERSION) + "\n", "utf8");
+          '
+      - name: Publish the GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          $version = $env:GITHUB_REF_NAME.TrimStart('v')
-          $env:RELEASE_VERSION = $version
-          $env:RELEASE_NOTES_PATH = Join-Path $env:RUNNER_TEMP 'release-notes.md'
-          node --input-type=module -e 'import { readFileSync, writeFileSync } from "node:fs"; import { changelogSection } from "./scripts/release-aioffice.mjs"; writeFileSync(process.env.RELEASE_NOTES_PATH, changelogSection(readFileSync("CHANGELOG.md", "utf8"), process.env.RELEASE_VERSION) + "\n", "utf8")'
-          if ($LASTEXITCODE -ne 0) { throw 'Could not generate release notes from CHANGELOG.md.' }
-          gh release create $env:GITHUB_REF_NAME $env:AIOFFICE_RELEASE_ASSET --verify-tag --title "AIOffice $env:GITHUB_REF_NAME" --notes-file $env:RELEASE_NOTES_PATH
+        run: gh release create "$GITHUB_REF_NAME" dist/release-assets/* --verify-tag --title "AIOffice $GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/release-notes.md"
