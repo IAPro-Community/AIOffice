@@ -4,6 +4,19 @@ All notable changes to AIOffice will be documented in this file.
 
 ## [Não lançado]
 
+Nenhuma mudança registrada.
+
+## [v2.1.0] - 2026-10-13
+
+### Adicionado
+- **Temas de interface e cenários:** paletas Noite, Mata, Âmbar e Alto contraste; cenários de Ano-Novo, Carnaval, Páscoa, Dia dos Namorados, Festa Junina e Independência.
+- **Automação de cenários:** calendário comemorativo com datas móveis, quatro faixas de horário configuráveis no fuso local e suporte ao instante reproduzido no timelapse.
+- **Consulta de upstream para mantenedores:** `npm run check:habblaud-upstream` mostra releases novas do Habblaud sem baixar código nem alterar o repositório.
+
+### Alterado
+- O Habblaud integrado identifica e consulta releases oficiais do AIOffice; instruções de atualização tratam o produto completo.
+- Todos os 12 cenários podem ser fixados manualmente; a grade de temas mantém os rótulos legíveis em telas estreitas.
+
 ## [v2.0.0] - 2026-10-13
 
 ### Adicionado
@@ -90,7 +103,8 @@ All notable changes to AIOffice will be documented in this file.
 ### Security
 - None
 
-[Não lançado]: https://github.com/IAPro-Community/AIOffice/compare/v2.0.0...HEAD
+[Não lançado]: https://github.com/IAPro-Community/AIOffice/compare/v2.1.0...HEAD
+[v2.1.0]: https://github.com/IAPro-Community/AIOffice/releases/tag/v2.1.0
 [v2.0.0]: https://github.com/IAPro-Community/AIOffice/releases/tag/v2.0.0
 [v1.1.0]: https://github.com/IAPro-Community/AIOffice/releases/tag/v1.1.0
 [v1.0.0-beta]: https://github.com/IAPro-Community/AIOffice/releases/tag/v1.0.0-beta

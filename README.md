@@ -97,21 +97,23 @@ npm run verify
 
 ---
 
-## 🔄 Como Atualizar o Habblaud Upstream
+## 🔄 Atualizações do AIOffice e integração do Habblaud
 
-O AIOffice mantém a base do Habblaud em `apps/office-web/` desacoplada para permitir atualizações frequentes do projeto original de [marmottajr/habblaud](https://github.com/marmottajr/habblaud):
+### Para quem usa o AIOffice
+
+O verificador em **Configurações → Sobre** acompanha as releases do repositório AIOffice. Quando uma nova versão oficial estiver disponível, atualize o AIOffice completo seguindo as instruções daquela release. O verificador informa que há uma versão nova e abre as notas; ele não instala nem altera arquivos automaticamente.
+
+As mudanças do [Habblaud upstream](https://github.com/marmottajr/habblaud) passam primeiro pela equipe do AIOffice. Não adicione esse repositório como remoto para mesclar diretamente no seu AIOffice.
+
+### Para a equipe que mantém o AIOffice
+
+Consulte o upstream com o verificador somente de leitura:
 
 ```bash
-# 1. Checar se há novas releases do Habblaud no GitHub
-npm run update:habblaud
-
-# 2. Puxar as atualizações da branch principal do upstream
-git fetch https://github.com/marmottajr/habblaud.git main
-git merge FETCH_HEAD --allow-unrelated-histories
-
-# 3. Recompilar a aplicação web
-npm run build:office
+npm run check:habblaud-upstream
 ```
+
+O comando consulta a API do GitHub, compara a release upstream mais recente com o marco registrado em `apps/office-web/upstream-habblaud.json` e mostra o link do diff. Ele não executa `git fetch` ou `git merge`, nem baixa código, instala dependências ou altera arquivos. Revise cada mudança em uma branch de integração; porte apenas as partes compatíveis, confira dependências, permissões, segurança e testes, e registre o que foi adotado ou adiado no manifesto. Depois valide e publique uma release própria do AIOffice. Os usuários atualizam somente essa release.
 
 ---
 

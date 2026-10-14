@@ -63,8 +63,8 @@ describe('updateStatusLine', () => {
 describe('versionChipTitle', () => {
   it('diz as duas versões quando há novidade', () => {
     expect(versionChipTitle('0.2.0', ok({ latest: '0.3.0', available: true }), NOW)).toBe(
-      'Nova versão do Habblaud: v0.3.0 (você usa a v0.2.0). Clique para ver as novidades e como atualizar.',
+      'Nova versão do AIOffice: v0.3.0 (você usa a v0.2.0). Clique para ver as novidades e como atualizar.',
     );
-    expect(versionChipTitle('0.2.0', ok({ latest: '0.2.0' }), NOW)).toBe('Habblaud v0.2.0. Você está na versão mais recente · verificado há 2 h. Clique para ver detalhes.');
+    expect(versionChipTitle('0.2.0', ok({ latest: '0.2.0' }), NOW)).toBe('AIOffice v0.2.0. Você está na versão mais recente · verificado há 2 h. Clique para ver detalhes.');
   });
 });

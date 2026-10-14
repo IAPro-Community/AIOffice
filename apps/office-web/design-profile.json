@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "product": {
+    "name": "AIOffice / Habblaud",
+    "kind": "tooling",
+    "description": "Escritório virtual pixel-art para acompanhar agentes de desenvolvimento."
+  },
+  "designSystem": {
+    "provider": "habblaud-local-pixel-art",
+    "themeDefault": "midnight",
+    "themeStorageKey": "habblaud:prefs",
+    "metadataSource": "Decisão do usuário em 13/10/2026; client/src/ui/styles.css, client/src/ui/prefs.ts e client/src/world/render/seasonal.ts."
+  },
+  "design": {
+    "creativity": "medium",
+    "personality": ["productive", "dense", "clear", "visual", "playful"],
+    "avoid": ["generic-saas", "excessive-gradients", "excessive-glassmorphism", "low-contrast-gray-text", "giant-radius", "shadow-excess"]
+  },
+  "layout": {
+    "density": "medium",
+    "mobileFirst": false
+  },
+  "accessibility": {
+    "standard": "WCAG-AA"
+  },
+  "responsive": {
+    "viewports": [320, 390, 768, 1024, 1440]
+  },
+  "implementation": {
+    "componentLibrary": "Habblaud local UI components",
+    "styling": "css",
+    "importStyle": "barrel"
+  },
+  "policy": {
+    "defaultPosture": "evolve",
+    "unsolicitedRedesign": "ask"
+  }
+}

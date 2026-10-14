@@ -2,9 +2,14 @@
   "name": "aioffice",
   "private": true,
   "type": "module",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "AIOffice - Virtual AI Office & Studio unindo Orquestrador-Maestro, OpenOrq, Habblaud, oh-my-pi e replica-skill",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/IAPro-Community/AIOffice.git"
+  },
+  "homepage": "https://github.com/IAPro-Community/AIOffice#readme",
   "engines": {
     "node": ">=22.0.0"
   },
@@ -22,7 +27,7 @@
     "start": "node apps/office-cli/dist/cli.js",
     "start:office": "node apps/office-web/dist/server/index.js",
     "setup": "npm install && npm --prefix apps/office-web install && npm run build",
-    "update:habblaud": "node scripts/update-habblaud.mjs",
+    "check:habblaud-upstream": "node scripts/check-habblaud-upstream.mjs",
     "install:mcp": "node scripts/install-mcp-bridges.mjs",
     "verify": "npm run build && npm test"
   },

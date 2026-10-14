@@ -57,3 +57,76 @@ Conexões MCP de Cursor, Windsurf, Claude Desktop ou Antigravity são uma integr
 | QA visual | Central de trabalho e catálogo inspecionados na interface local; layout responsivo conferido em 390 px e desktop. |
 
 **Operação:** a build do cliente está disponível para recarga no serviço local. O processo backend não foi reiniciado e segue na versão em execução, para não interromper sessões ativas. As alterações de terminal/servidor desta rodada ainda precisam de reinício seguro antes de validação operacional; não foram enviados prompts nem mensagens.
+
+## Evolução visual do Habblaud — 2026-10-13
+
+| Verificação | Resultado |
+|---|---|
+| `npm --prefix apps/office-web run typecheck` | Aprovado para cliente e servidor. |
+| `npm --prefix apps/office-web run build` | Aprovado; cliente e servidor compilados. O aviso existente de bundle acima de 500 kB permanece. |
+| `npm --prefix apps/office-web run i18n:check` | Aprovado: 2.195/2.195 textos ativos em en/es/fr; somente chaves antigas não utilizadas. |
+| `git diff --check` | Aprovado; Git reportou somente avisos de normalização LF/CRLF em arquivos já modificados. |
+| QA visual | Simulação carregada e inspecionada em 320, 341, 375, 390, 410, 768, 1280 e 1440 px. Sem overflow horizontal; cabeçalho permaneceu em uma linha sem corte nos tamanhos estreitos. Em 390/768/1280/1440 px: sem erros de console/página ou controles sem nome. Paleta alto contraste, seletor e cenário Aurora conferidos visualmente em desktop; seletor conferido em celular. |
+
+**Operação:** verificação executada em Vite separado na porta 5174 com dados mockados. O serviço 4747 e as sessões ativas não foram reiniciados. Nenhuma mensagem ou ação real foi enviada.
+
+## Canal de atualização do AIOffice — 2026-10-13
+
+| Verificação | Resultado |
+|---|---|
+| `npm run build` | Aprovado para workspaces, cliente e servidor. Permanece o aviso existente de bundle acima de 500 kB. |
+| `npm --prefix apps/office-web run typecheck` | Aprovado para cliente e servidor. |
+| `npm test` | 22 testes aprovados em 8 suítes. |
+| `npm --prefix apps/office-web run i18n:check` | Aprovado: 2.194/2.194 textos por idioma em en/es/fr; há chaves antigas sem uso. |
+| Testes completos do app (`npx vitest run --testTimeout=15000`) | 101 arquivos; 1.219 aprovados e 10 ignorados. |
+| `npm --prefix apps/office-web test` com limite padrão | Dois testes que iniciam subprocessos excederam 5 s (`codex-hook` e `permission-hook`). Com limite de 15 s, a suíte completa passou. |
+| Testes específicos do versionamento/configuração | 3 arquivos, 24 testes aprovados. |
+| `npm run check:habblaud-upstream` | Aprovado; API do GitHub confirmou que a release upstream mais recente segue em `v0.11.0`, igual ao marco revisado. Consulta somente de leitura. |
+| `git diff --check` | Aprovado; Git exibiu apenas avisos de normalização LF/CRLF em arquivos alterados. |
+
+**Operação à época:** nenhuma release foi publicada nem serviço local foi reiniciado durante aquela etapa.
+
+## Calendário e programação automática de temas — 2026-10-13
+
+| Verificação | Resultado |
+|---|---|
+| `npm --prefix apps/office-web run typecheck` | Aprovado para cliente e servidor. |
+| `npm --prefix apps/office-web run build` | Aprovado; aviso existente do bundle cliente acima de 500 kB permanece. |
+| `npm --prefix apps/office-web run i18n:check` | 2.210/2.210 textos ativos em en/es/fr; somente chaves antigas sem uso. |
+| `git diff --check` | Aprovado; apenas avisos existentes de normalização LF/CRLF. |
+| Frontend visual QA | PASS em 390, 768, 1280 e 1440 px: sem erro de console/página, overflow ou controle sem nome. |
+| Popover em 320×568 | Largura 304 px, documento sem overflow; conteúdo de configurações permanece acessível por rolagem vertical. |
+| Inspeção de cenários | Carnaval, Páscoa e Ano-Novo conferidos no canvas em pixel-art. |
+
+**Testes automatizados:** não executados nesta etapa.
+
+**Operação:** build do cliente atualizada no serviço local; backend e sessões não foram reiniciados.
+
+## Release AIOffice v2.1.0 — 2026-10-13
+
+| Verificação | Resultado |
+|---|---|
+| `npm run verify` | Aprovado: TypeScript, build do monorepo e 22 testes raiz. |
+| `npm --prefix apps/office-web run typecheck` | Aprovado para cliente e servidor. |
+| `npm --prefix apps/office-web run test -- --testTimeout=15000` | Aprovado: 100 arquivos, 1.217 testes aprovados e 10 ignorados. |
+| `npm --prefix apps/office-web run i18n:check` | Aprovado: 2.209/2.209 traduções ativas em en/es/fr; apenas chaves antigas não utilizadas. |
+| `npm run check:habblaud-upstream` | Aprovado; a release upstream mais recente continua `v0.11.0`, conforme o manifesto revisado. Consulta somente de leitura. |
+| `npm ci --ignore-scripts` | Aprovado; auditoria reportou 0 vulnerabilidades. |
+| `git diff --check` | Aprovado, sem erros de whitespace. |
+| QA visual de temas | Aprovado anteriormente para os mesmos arquivos de temas: 320–1440 px, sem overflow horizontal; cenários comemorativos inspecionados. |
+
+**Release:** publicada como `v2.1.0` na branch `main`. Nenhuma migração de banco foi necessária. Nenhum serviço local foi reiniciado; o aviso do bundle principal acima de 500 kB permanece.
+
+## Seletor manual de cenários comemorativos — 2026-10-13
+
+| Verificação | Resultado |
+|---|---|
+| Seletor principal após build | 13 opções visíveis: Automático e os 12 cenários fixos, incluindo os seis comemorativos. |
+| Seleção de cenário | Carnaval pode ser selecionado diretamente e passa a ser a opção marcada como fixa. |
+| Inspeção visual em 390×844 e 320×568 | Todos os nomes aparecem sem corte; rótulos longos quebram linha e o painel mantém rolagem vertical no celular estreito. |
+| Frontend visual QA | PASS em 390, 768, 1280 e 1440 px; sem erros de console/página, overflow horizontal, controles sem nome ou achados de contraste. |
+| `npm --prefix apps/office-web run typecheck` e `build` | Aprovados; o aviso existente do bundle cliente acima de 500 kB permanece. |
+| `npm --prefix apps/office-web run i18n:check` | Exit code 0; as novas opções usam chaves já traduzidas. O relatório também lista textos de servidor já sem tradução. |
+| `git diff --check` | Aprovado; somente avisos LF/CRLF nos arquivos modificados. |
+
+**Testes automatizados:** não executados nesta etapa.

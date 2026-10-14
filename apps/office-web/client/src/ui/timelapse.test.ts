@@ -32,6 +32,7 @@ vi.mock('./topbar', () => ({ TopBar: class {
 /** DOM mínimo para os controles do player, sem layout nem canvas. */
 class ElementStub extends EventTarget {
   className = '';
+  dataset: Record<string, string> = {};
   textContent = '';
   value = '';
   children: ElementStub[] = [];

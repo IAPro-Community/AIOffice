@@ -77,11 +77,20 @@ export function findRoot(from: string): string {
   return resolve(from, '..');
 }
 
-/** Versão e repositório do package.json. */
-function readPackage(rootDir: string): { version: string; repo?: string } {
+/** Versão de release e repositório. No monorepo, o produto distribuído é o AIOffice. */
+export function readPackage(rootDir: string): { version: string; repo?: string } {
+  const rootPackage = resolve(rootDir, '../..');
   try {
-    const pkg = JSON.parse(readFileSync(join(rootDir, 'package.json'), 'utf8')) as { version?: unknown; repository?: unknown };
-    return { version: typeof pkg.version === 'string' ? pkg.version : '0.0.0', repo: parseGithubRepo(pkg.repository) };
+    const product = JSON.parse(readFileSync(join(rootPackage, 'package.json'), 'utf8')) as { name?: unknown; version?: unknown; repository?: unknown };
+    if (product.name === 'aioffice') {
+      return { version: typeof product.version === 'string' ? product.version : '0.0.0', repo: parseGithubRepo(product.repository) };
+    }
+  } catch {
+    // Instalação standalone do Habblaud: usa os metadados do próprio app abaixo.
+  }
+  try {
+    const app = JSON.parse(readFileSync(join(rootDir, 'package.json'), 'utf8')) as { version?: unknown; repository?: unknown };
+    return { version: typeof app.version === 'string' ? app.version : '0.0.0', repo: parseGithubRepo(app.repository) };
   } catch {
     return { version: '0.0.0' };
   }

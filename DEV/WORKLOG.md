@@ -1,10 +1,18 @@
 # WORKLOG — AIOffice
 
-## 2026-10-13 — Preparação da release AIOffice v2.0.0
-- **Versões**: pacote raiz `2.0.0`; CLI `0.2.0`. O Habblaud permanece em `0.10.0` nesta release.
-- **Compatibilidade**: o CLI deixa de executar o fallback Maestro por padrão; `--maestro-fallback` ativa o executor de demonstração explicitamente. Não há migração de banco de dados.
-- **Validação no commit isolado**: `npm run verify` passou (build e 22 testes); typecheck passou; suíte Habblaud passou com 4 workers (1.217 aprovados, 10 ignorados); i18n passou com 2.185/2.185 textos em en/es/fr. A execução padrão da suíte Habblaud com 100 workers atingiu timeout de teste de 5 s; a repetição limitada a 4 workers passou.
-- **Operação**: bundle principal continua acima de 500 kB. O serviço local não será reiniciado durante a publicação para preservar sessões ativas.
+## 2026-10-13 — Publicação da release AIOffice v2.1.0
+- **Escopo**: quatro paletas de interface, 12 cenários pixel-art selecionáveis, temas automáticos por calendário e faixas horárias locais, e consulta somente de leitura das releases upstream do Habblaud.
+- **Distribuição**: changelog atualizado; versão raiz `2.1.0`; commit publicado na `main`, tag `v2.1.0` e release GitHub criadas.
+- **Verificação**: `npm run verify`, typecheck e testes do app (1.217 aprovados, 10 ignorados), i18n, auditoria de dependências (0 vulnerabilidades), consulta upstream e `git diff --check` aprovados. QA visual registrado para os mesmos arquivos de tema em 320–1440 px.
+- **Operação/rollback**: sem migração de banco ou reinício do serviço local. Se houver regressão, publicar hotfix `v2.1.1`; manter a tag `v2.1.0` imutável.
+
+## 2026-10-13 — Canal próprio de atualização do AIOffice
+- **Decisão**: mantenedores revisam e integram seletivamente mudanças do Habblaud; usuários acompanham e instalam uma release completa do AIOffice. Registrada em `DEV/ADR/ADR-0002-habblaud-update-policy.md`.
+- **Implementação**: o verificador dentro do escritório lê a versão/repositório do pacote raiz AIOffice no monorepo e mantém fallback standalone. A interface aponta para releases AIOffice. O README raiz e as quatro versões linguísticas do README web distinguem atualização do AIOffice e clone standalone do Habblaud.
+- **Ferramenta da equipe**: `npm run check:habblaud-upstream` só consulta GitHub e apresenta o diff desde o marco registrado; não baixa nem altera arquivos. `apps/office-web/upstream-habblaud.json` registra a avaliação até Habblaud `v0.11.0`, correções já presentes e recursos adiados.
+- **Versões**: preservada a versão candidata `2.0.0` do pacote raiz. O pacote web permanece `0.10.0`, pois não houve adoção completa das funcionalidades upstream `0.11.0`.
+- **Validação**: build, typecheck raiz e do app, i18n (2.194/2.194), root tests (22) e verificador upstream passaram. A suíte do app passou com timeout de 15 s (101 arquivos, 1.219 testes, 10 ignorados); no timeout padrão de 5 s, dois testes de subprocesso expiraram. Testes focalizados de configuração/atualização: 24 aprovados. `git diff --check` sem erros; avisos apenas LF/CRLF.
+- **Operação**: sem commit, push, publicação, implantação ou reinício de serviço.
 
 ## 2026-10-13 — Diagnóstico de sessão Claude ausente no Habblaud
 - **Sintoma**: atividade feita com Claude não apareceu no escritório.
@@ -78,3 +86,18 @@
 - **Traduções**: novas chaves em inglês, espanhol e francês; o catálogo usa pluralização natural nas quatro línguas.
 - **Verificação**: build raiz e do cliente/servidor passou; typecheck do Habblaud passou; 100 arquivos de teste do Habblaud (1.217 aprovados, 10 ignorados) e 22 testes do workspace passaram; `i18n:check` não aponta textos sem tradução (2.185 por idioma); `git diff --check` passou, com avisos existentes de normalização LF/CRLF.
 - **Limite operacional**: a nova interface foi conferida após recarregar a aba local e em largura desktop/celular. O serviço backend não foi reiniciado nesta rodada para preservar sessões ativas; alterações do servidor só entram em vigor após reinício seguro. Nenhuma mensagem de teste foi enviada.
+
+## 2026-10-13 — Evolução visual do Habblaud
+- **Direção aprovada pelo usuário**: manter o pixel-art atual e oferecer variedade tanto nos cenários do escritório quanto nas cores dos painéis.
+- **Interface**: adicionadas as paletas Noite, Mata, Âmbar e Alto contraste; os cenários Jardim, Aurora e Pôr do sol juntam-se a Original, Natal e Halloween. Seletor reorganizado em grades legíveis, com amostras de cor, navegação por setas e paletas independentes do cenário.
+- **Visibilidade**: painéis mais opacos, linhas e textos auxiliares mais claros, hierarquia e espaçamento refinados; alto contraste disponível sob demanda. A marca do topo agora cabe sem corte em celulares estreitos.
+- **Pixel art**: novos props de flores, cristais e sol; paredes, tapetes, luzes e janelas recebem cores/motivos próprios por cenário.
+- **Verificação**: `typecheck`, `build`, `i18n:check` e `git diff --check` passaram. QA visual em simulação entre 320 e 1440 px: sem overflow horizontal, erro de console ou controles sem nome. Capturas e relatório foram salvos em `apps/office-web/.frontend-excellence/after/`.
+- **Operação**: Vite de QA em porta separada; backend e sessões locais em execução não foram reiniciados ou alterados.
+
+## 2026-10-13 — Calendário e programação automática de temas
+- **Mudança**: o cenário automático agora aplica temas para Ano-Novo, Carnaval, Páscoa, Dia dos Namorados, Festa Junina e Independência, além de manter Halloween e Natal. O calendário trata datas móveis e usa o fuso local.
+- **Seletor manual**: os seis cenários comemorativos também aparecem na grade principal e podem ser fixados sem depender do calendário automático.
+- **Configuração**: preferências persistidas incluem liga/desliga das datas comemorativas e quatro horários configuráveis com um tema por faixa; eventos têm prioridade. Timelapse acompanha a data/hora reproduzida.
+- **Visual**: cenários comemorativos receberam paletas e motivos pixel-art próprios; o painel de configurações se adapta e rola em telas menores.
+- **Verificação**: typecheck, build, i18n e QA visual passaram em 390/768/1280/1440 px; 320 px conferido sem overflow. Testes automatizados não foram executados.

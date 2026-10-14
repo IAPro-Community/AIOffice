@@ -247,10 +247,14 @@ Luego abre `http://<ip-do-computador>:4747` en el celular (en macOS: `ipconfig g
 > la oficina) queda desactivada mientras el puerto esté expuesto. Para volver atrás: borra el `.env` y ejecuta
 > `npm run docker:up -- --no-build`.
 
-### Actualizar
+### Actualizar una copia independiente de Habblaud
 
-La versión en uso aparece en la barra superior, junto a "Conectado", y en **Configuración › Acerca de**. Cada 6 horas,
-Habblaud revisa en GitHub si salió una versión nueva (las [releases](https://github.com/marmottajr/habblaud/releases)
+Los pasos con `git pull` de abajo solo se aplican a una copia independiente de Habblaud. Cuando la aplicación forma
+parte del monorepo AIOffice, **Configuración › Acerca de** revisa las releases de AIOffice. Actualiza el producto completo
+siguiendo las instrucciones del [README de AIOffice](https://github.com/IAPro-Community/AIOffice); no traigas Habblaud upstream a la aplicación integrada.
+
+En una copia independiente, la versión en uso aparece en la barra superior, junto a "Conectado", y en **Configuración › Acerca de**.
+Cada 6 horas, Habblaud revisa en GitHub si salió una versión nueva (las [releases](https://github.com/marmottajr/habblaud/releases)
 de este repositorio). Cuando sale, aparece el sello verde **Nueva versión** en lugar del número, con un aviso y un
 punto en el botón de configuración. En **Acerca de** están el enlace a lo que cambió y el botón **Comprobar ahora**
 (las notas de cada versión también están en el [`CHANGELOG.md`](CHANGELOG.md)). Para actualizar:
@@ -696,7 +700,7 @@ Todo funciona sin configurar nada. Si necesitas ajustar algo, usa variables de e
 | `HABBLAUD_CODEX` | activado | `0` desactiva Codex en la oficina. |
 | `HABBLAUD_CODEX_DIRS` | detección automática | Carpetas de Codex, separadas por comas (en lugar de `~/.codex*` y `CODEX_HOME`). |
 | `HABBLAUD_CODEX_BIN` | `codex` del PATH (en Windows, `codex.exe`) | El binario de Codex que entrega los mensajes (`codex queue`), en modo Node o en `npm run codex:bridge`. |
-| `HABBLAUD_UPDATE_CHECK` | activada | `0` desactiva la comprobación de versión nueva (una consulta a las releases del repositorio en GitHub cada 6 h). |
+| `HABBLAUD_UPDATE_CHECK` | activada | `0` desactiva la consulta de releases (AIOffice en el monorepo; Habblaud independiente; cada 6 h). |
 | `HABBLAUD_LANG` | idioma del sistema (salvo inglés); si no, `pt-BR` | Idioma de los textos que arma el servidor (actividades, avisos, logs): `pt-BR`, `en`, `es` o `fr`. La interfaz sigue al navegador o la elección en Configuración › Idioma. Consulta [Idiomas](#idiomas). |
 | `HABBLAUD_ACCOUNTS` | — | JSON para personalizar el nombre, la letra o el color, emparejado por el nombre de la carpeta de la cuenta. P. ej.: `[{"id":".claude-conta2","name":"Trabalho","short":"T","color":"#5cc97b"}]`. |
 
@@ -803,8 +807,8 @@ los pasa al contenedor.
   carpeta: lo que haya en ella (incluso después de un `git pull`) es lo que se ejecuta. El plugin de mensajes
   (`habblaud-mensagens`) está separado justamente porque actúa: escribe en la sesión lo que enviaste desde la oficina.
 - **Solo local, por defecto:** el servidor solo acepta conexiones de la propia computadora; abrirlo a la red local es
-  opcional. No hay telemetría. La única llamada externa es la comprobación de versión nueva: cada 6 horas, una
-  consulta anónima, sin token, a la API pública de GitHub (`api.github.com/repos/marmottajr/habblaud/releases/latest`).
+  opcional. No hay telemetría. La única llamada externa es la comprobación de releases: cada 6 horas, una
+  consulta anónima, sin token, a la API pública de GitHub (releases de AIOffice en el monorepo; de Habblaud en una copia independiente).
   No envía nada sobre tus sesiones; GitHub ve solo tu IP y la versión en uso, que va en el `User-Agent`.
   `HABBLAUD_UPDATE_CHECK=0` desactiva la consulta.
 - **Sin credenciales:** Habblaud no lee contraseñas ni tokens de acceso. Del `.claude.json` de cada cuenta aprovecha

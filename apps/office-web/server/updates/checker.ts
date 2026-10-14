@@ -245,7 +245,7 @@ export class UpdateChecker {
     const s = this.status();
     if (!s.available || s.latest === this.announced) return;
     this.announced = s.latest;
-    log.info(tr('⬆️  Nova versão do Habblaud: v{0} (em uso: v{1}). Novidades: {2}', [s.latest, this.opts.current, s.url]));
+    log.info(tr('⬆️  Nova versão do AIOffice: v{0} (em uso: v{1}). Novidades: {2}', [s.latest, this.opts.current, s.url]));
   }
 }
 

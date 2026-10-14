@@ -86,7 +86,8 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi)
     updatePrefs(patch) {
       prefs = { ...prefs, ...patch };
       savePrefs(storage, prefs);
-      world.setOptions(worldOptionsFrom(prefs));
+      root.dataset.uiPalette = prefs.uiPalette;
+      world.setOptions(worldOptionsFrom(prefs, true));
       invalidate();
     },
     now: () => timelapse?.replayTime ?? Date.now() + skew,
@@ -224,6 +225,7 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi)
   const scrim = h('div', { class: 'ui-scrim', attrs: { 'aria-hidden': 'true' }, on: { click: () => ctx.togglePanel('sidebar', false) } });
 
   root.classList.add('ui-root');
+  root.dataset.uiPalette = prefs.uiPalette;
   root.append(timelapse.vignette, topbar.el, sidebar.el, scrim, feed.el, drawer.el, terminal.el, pty.el, timelapse.el, timelapse.badge, toasts.el, banner.el, update.el, empty.el, tip.el, settings.el, history.el, help.el, attention.el, integrations.el, templates.el, workCenter.el, renamer.el, live, splash.el);
   area = new FreeArea(world, { root, topbar: topbar.el, sidebar: sidebar.el, drawer: drawer.el, feed: feed.el }, () => ({
     sidebar: panels.sidebar,
@@ -401,7 +403,7 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi)
   }
 
   // ---------------------------------------------------------------- início
-  world.setOptions(worldOptionsFrom(prefs));
+  world.setOptions(worldOptionsFrom(prefs, true));
   applyLayout();
   renderAll();
 }

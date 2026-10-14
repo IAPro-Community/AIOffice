@@ -243,10 +243,14 @@ Then open `http://<ip-do-computador>:4747` on your phone (on macOS: `ipconfig ge
 > only on trusted networks. The [terminal](#terminal) (and with it, answering and sending messages from the office) stays
 > off while the port is exposed. To go back: delete `.env` and run `npm run docker:up -- --no-build`.
 
-### Updating
+### Updating a standalone Habblaud checkout
 
-The version in use shows up in the top bar, next to "Connected", and in **Settings › About**. Every 6 hours
-Habblaud checks GitHub for a new version (the [releases](https://github.com/marmottajr/habblaud/releases)
+This section's `git pull` steps apply only to a standalone clone of Habblaud. When this app is part of the AIOffice
+monorepo, **Settings › About** checks AIOffice releases. Update the complete product using the instructions in the
+[AIOffice README](https://github.com/IAPro-Community/AIOffice); do not pull Habblaud upstream into the embedded app.
+
+In a standalone clone, the version in use shows up in the top bar, next to "Connected", and in **Settings › About**.
+Every 6 hours Habblaud checks GitHub for a new version (the [releases](https://github.com/marmottajr/habblaud/releases)
 of this repository). When there is one, the green **New version** badge appears in place of the number, along with a notice and a dot on the
 settings button. **About** has the link to what changed and the **Check now** button (each version's notes
 are also in [`CHANGELOG.md`](CHANGELOG.md)). To update:
@@ -669,7 +673,7 @@ Everything works without configuring anything. If you need to adjust something, 
 | `HABBLAUD_CODEX` | on | `0` turns off Codex in the office. |
 | `HABBLAUD_CODEX_DIRS` | automatic detection | Codex folders, comma-separated (instead of `~/.codex*` and `CODEX_HOME`). |
 | `HABBLAUD_CODEX_BIN` | `codex` from PATH (on Windows, `codex.exe`) | The Codex binary that delivers the messages (`codex queue`), in Node mode or in `npm run codex:bridge`. |
-| `HABBLAUD_UPDATE_CHECK` | on | `0` turns off the new-version check (a request to the repository's releases on GitHub every 6 h). |
+| `HABBLAUD_UPDATE_CHECK` | on | `0` turns off the release check (AIOffice in the monorepo; Habblaud when standalone; every 6 h). |
 | `HABBLAUD_LANG` | system language (except English), otherwise `pt-BR` | Language of the texts the server builds (activities, notices, logs): `pt-BR`, `en`, `es` or `fr`. The interface follows the browser or the choice in Settings › Language. See [Languages](#languages). |
 | `HABBLAUD_ACCOUNTS` | — | JSON to customize name, letter or color, matched by the account folder name. E.g. `[{"id":".claude-conta2","name":"Trabalho","short":"T","color":"#5cc97b"}]`. |
 
@@ -773,8 +777,8 @@ metadata (letter, email, organization) is read on the host by `docker:up` and pa
   folder: whatever is in it (including after a `git pull`) is what runs. The messages plugin
   (`habblaud-mensagens`) is separate precisely because it acts: it types into the session what you sent from the office.
 - **Local only, by default:** the server only accepts connections from the computer it runs on; opening it to the local network is optional.
-  There's no telemetry. The only external call is the new-version check: every 6 hours, an anonymous request,
-  with no token, to the public GitHub API (`api.github.com/repos/marmottajr/habblaud/releases/latest`). It doesn't send anything
+  There's no telemetry. The only external call is the release check: every 6 hours, an anonymous request,
+  with no token, to the public GitHub API (AIOffice releases in the monorepo; Habblaud releases in a standalone clone). It doesn't send anything
   about your sessions; GitHub only sees your IP and the version in use, which goes in the `User-Agent`.
   `HABBLAUD_UPDATE_CHECK=0` turns off the request.
 - **No credentials:** Habblaud doesn't read passwords or access tokens. From each account's `.claude.json` it only uses the

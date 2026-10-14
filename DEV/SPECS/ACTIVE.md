@@ -110,3 +110,21 @@ AIOffice/
 - O catálogo mostra capacidades por fonte e separa SSE, estado de sessão e bridge MCP. Ferramentas não integradas continuam identificadas como incompletas.
 - A biblioteca inicial tem seis modelos de tarefa, em português; montar/copiar não executa nem envia o prompt.
 - **Decisão do usuário**: executor mediado pelo Orquestrador-Maestro é somente último recurso. O CLI não executa a tarefa por padrão e exige `--maestro-fallback` para ativá-lo; runtime, broker e proxy RPC não foram alterados. O caminho de demonstração explicitamente ativado mantém aprovação automática de escrita.
+
+## 11. Evolução visual do Habblaud (2026-10-13)
+- **Direção visual confirmada pelo usuário**: preservar o pixel-art existente e permitir variar tanto os cenários quanto as cores da interface.
+- **Paletas da interface**: Noite (padrão), Mata, Âmbar e Alto contraste; a paleta não altera o cenário.
+- **Cenários**: doze opções fixas: Original, Natal, Halloween, Jardim, Aurora, Pôr do sol, Ano-Novo, Carnaval, Páscoa, Dia dos Namorados, Festa Junina e Independência; Automático combina calendário e horário.
+- **Legibilidade e layout**: painéis mais opacos e textos auxiliares com contraste maior; controles organizados em grades responsivas, com cores amostradas e suporte às setas do teclado. Cabeçalho compacto preserva a marca entre 320 e 410 px.
+- **Aceitação visual**: preservar a identidade e os sprites pixel-art, oferecer todos os cenários e paletas, manter os seletores utilizáveis no celular e não introduzir overflow horizontal.
+- **Evidência**: typecheck, build, i18n e QA visual em 390/768/1280/1440 px registrados em `DEV/VERIFY.md`.
+- **Status**: entregue na release AIOffice `v2.1.0` da branch `main`.
+
+## 12. Temas automáticos por calendário e horário (2026-10-13)
+- **Automático**: datas comemorativas brasileiras/internacionais prevalecem; nos demais dias, quatro faixas horárias escolhem o cenário. Datas e horários usam o fuso local do dispositivo.
+- **Calendário**: Carnaval e Páscoa são móveis e calculados a cada ano; datas fixas cobrem Dia dos Namorados (14/02 e 12/06), Festa Junina, Independência, Halloween, Natal e Ano-Novo.
+- **Configuração**: ativar/desativar eventos, ajustar o início de amanhecer/dia/fim de tarde/noite e escolher um cenário por faixa. Preferências ficam no navegador; horários precisam permanecer em ordem.
+- **Seleção manual**: todos os doze cenários, inclusive os comemorativos, aparecem na grade principal e podem ser fixados. A grade deve manter os nomes legíveis em celulares estreitos.
+- **Timelapse**: a programação usa a data/hora reproduzida. A escolha de um cenário fixo continua sobrepondo calendário e programação.
+- **Evidência**: typecheck, build, i18n e QA visual em 320–1440 px registrados em `DEV/VERIFY.md`.
+- **Status**: entregue na release AIOffice `v2.1.0` da branch `main`.

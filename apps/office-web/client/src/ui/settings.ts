@@ -3,13 +3,30 @@ import type { UiComponent, UiContext } from './context';
 import { h, iconButton, setAttr, setHidden, setText } from './dom';
 import { ICONS } from './icons';
 import { notificationState, type Notifier } from './notify';
-import type { UiPrefs } from './prefs';
+import { isValidThemeSchedule, type UiPrefs } from './prefs';
 import { SoundSettingsGroup } from './settings-sound';
 import type { SoundControl } from './sound';
 import { AboutGroup } from './version';
 import { LOCALE_STORAGE_KEY, LOCALES, normalizeLocale, tr, type Locale } from '../../../shared/i18n';
+import { DEFAULT_THEME_SCHEDULE, type SeasonalTheme, type ThemeSchedule } from '../world/api';
 
 type LanguageChoice = 'auto' | Locale;
+
+const THEME_SCHEDULE_LABELS = [tr('Amanhecer'), tr('Dia'), tr('Fim de tarde'), tr('Noite')] as const;
+const SCENE_CHOICES: [SeasonalTheme, string][] = [
+  ['none', tr('Original')],
+  ['garden', tr('Jardim')],
+  ['sunset', tr('Pôr do sol')],
+  ['aurora', tr('Aurora')],
+  ['christmas', tr('Natal')],
+  ['halloween', tr('Halloween')],
+  ['new-year', tr('Ano-Novo')],
+  ['carnival', tr('Carnaval')],
+  ['easter', tr('Páscoa')],
+  ['valentine', tr('Dia dos Namorados')],
+  ['festa-junina', tr('Festa Junina')],
+  ['independence', tr('Independência')],
+];
 
 /** Idioma escolhido nas Configurações ("auto" = o do navegador). */
 function savedLanguage(): LanguageChoice {
@@ -55,11 +72,12 @@ function segmented<T extends string>(label: string, options: readonly [T, string
     b.addEventListener('click', () => onPick(value));
     b.addEventListener('keydown', (e) => {
       // Setas navegam entre as opções (padrão de radiogroup).
-      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      if (!['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) return;
       e.preventDefault();
       e.stopPropagation();
       const i = options.findIndex(([v]) => v === value);
-      const next = options[(i + (e.key === 'ArrowRight' ? 1 : options.length - 1)) % options.length];
+      const forward = e.key === 'ArrowRight' || e.key === 'ArrowDown';
+      const next = options[(i + (forward ? 1 : options.length - 1)) % options.length];
       onPick(next[0]);
       buttons[options.indexOf(next)].focus();
     });
@@ -85,7 +103,11 @@ export class SettingsPopover implements UiComponent {
   private bubbles: ReturnType<typeof segmented<UiPrefs['bubbles']>>;
   private liveliness: ReturnType<typeof segmented<UiPrefs['liveliness']>>;
   private daylight: ReturnType<typeof segmented<UiPrefs['daylight']>>;
+  private uiPalette: ReturnType<typeof segmented<UiPrefs['uiPalette']>>;
   private theme: ReturnType<typeof segmented<UiPrefs['theme']>>;
+  private holidayThemesRow: HTMLElement;
+  private themeScheduleGroup: HTMLElement;
+  private themeScheduleFields: { start: HTMLInputElement; theme: HTMLSelectElement }[] = [];
   private language: ReturnType<typeof segmented<LanguageChoice>>;
   private soundGroup: SoundSettingsGroup;
   private demoGroup: HTMLElement;
@@ -133,12 +155,78 @@ export class SettingsPopover implements UiComponent {
       (v) => ctx.updatePrefs({ daylight: v }),
     );
     this.daylight.row.append(h('span', { class: 'ui-set__hint', text: tr('Automático: céu, luzes e sol nas janelas seguem a hora local.') }));
+    this.uiPalette = segmented<UiPrefs['uiPalette']>(
+      tr('Paleta da interface'),
+      [
+        ['midnight', tr('Noite')],
+        ['forest', tr('Mata')],
+        ['ember', tr('Âmbar')],
+        ['high-contrast', tr('Alto contraste')],
+      ],
+      (v) => ctx.updatePrefs({ uiPalette: v }),
+    );
+    this.uiPalette.row.classList.add('ui-set--palette');
+    this.uiPalette.row.append(h('span', { class: 'ui-set__hint', text: tr('A paleta muda os painéis e destaques. Ela é independente do cenário do escritório.') }));
     this.theme = segmented<UiPrefs['theme']>(
-      tr('Tema do escritório'),
-      [['auto', tr('Automático')], ['none', tr('Nenhum')], ['christmas', tr('Natal')], ['halloween', tr('Halloween')]],
+      tr('Cenário do escritório'),
+      [
+        ['auto', tr('Automático')],
+        ['none', tr('Original')],
+        ['christmas', tr('Natal')],
+        ['halloween', tr('Halloween')],
+        ['garden', tr('Jardim')],
+        ['aurora', tr('Aurora')],
+        ['sunset', tr('Pôr do sol')],
+        ['new-year', tr('Ano-Novo')],
+        ['carnival', tr('Carnaval')],
+        ['easter', tr('Páscoa')],
+        ['valentine', tr('Dia dos Namorados')],
+        ['festa-junina', tr('Festa Junina')],
+        ['independence', tr('Independência')],
+      ],
       (v) => ctx.updatePrefs({ theme: v }),
     );
-    this.theme.row.append(h('span', { class: 'ui-set__hint', text: tr('Automático: Halloween em outubro e Natal de 1º de novembro a 26 de dezembro; no resto do ano, o visual original. Nenhum: sempre o original.') }));
+    this.theme.row.classList.add('ui-set--scene-theme');
+    this.theme.row.append(h('span', { class: 'ui-set__hint', text: tr('Automático alterna por datas e horários; selecione outro cenário para mantê-lo fixo.') }));
+    this.holidayThemesRow = sw(
+      'holidayThemes',
+      tr('Datas comemorativas'),
+      tr('Calendário brasileiro e internacional no fuso local: Carnaval (sexta a terça antes da Quaresma), Páscoa (sexta a domingo), Namorados (14/02 e 12/06), Festa Junina (15–30/06), Independência (07/09), Halloween (outubro), Natal (01/11–26/12) e Ano-Novo (27/12–02/01).'),
+      flip('holidayThemes'),
+    );
+    const scheduleRows = THEME_SCHEDULE_LABELS.map((label, index) => {
+      const slotName = label;
+      const start = h('input', {
+        class: 'ui-theme-schedule__time',
+        type: 'time',
+        attrs: { step: 60, 'aria-label': tr('Horário de início: {0}', [slotName]) },
+      });
+      const themeSelect = h('select', {
+        class: 'ui-theme-schedule__scene',
+        attrs: { 'aria-label': tr('Cenário de {0}', [slotName]) },
+      });
+      for (const [value, name] of SCENE_CHOICES) {
+        themeSelect.append(h('option', { text: name, attrs: { value } }));
+      }
+      start.addEventListener('change', () => this.updateThemeSchedule(index, { start: start.value }));
+      themeSelect.addEventListener('change', () => this.updateThemeSchedule(index, { theme: themeSelect.value as SeasonalTheme }));
+      this.themeScheduleFields.push({ start, theme: themeSelect });
+      return h(
+        'div',
+        { class: 'ui-theme-schedule__row' },
+        h('span', { class: 'ui-theme-schedule__period', text: slotName }),
+        start,
+        themeSelect,
+      );
+    });
+    this.themeScheduleGroup = h(
+      'div',
+      { class: 'ui-theme-schedule' },
+      h('h3', { text: tr('Programação por horário') }),
+      h('span', { class: 'ui-set__hint', text: tr('Usa o relógio e o fuso horário do dispositivo. Cada cenário vale até o próximo horário.') }),
+      h('div', { class: 'ui-theme-schedule__grid' }, ...scheduleRows),
+      h('span', { class: 'ui-set__hint', text: tr('As datas comemorativas ativadas têm prioridade sobre estes horários.') }),
+    );
     this.soundGroup = new SoundSettingsGroup(ctx, sound);
 
     // Nomes dos idiomas sempre na própria língua, para quem não entende o idioma atual achar o seu.
@@ -165,7 +253,7 @@ export class SettingsPopover implements UiComponent {
       'div',
       { class: 'ui-popover ui-settings', role: 'dialog', tabIndex: -1, attrs: { 'aria-label': tr('Configurações'), id: 'ui-settings', popover: 'auto' } },
       h('div', { class: 'ui-popover__head' }, h('h2', { text: tr('Configurações') }), close),
-      h('div', { class: 'ui-set-group' }, h('h3', { text: tr('Aparência') }), this.theme.row),
+      h('div', { class: 'ui-set-group' }, h('h3', { text: tr('Aparência') }), this.uiPalette.row, this.theme.row, this.holidayThemesRow, this.themeScheduleGroup),
       h(
         'div',
         { class: 'ui-set-group' },
@@ -244,7 +332,14 @@ export class SettingsPopover implements UiComponent {
     this.bubbles.set(p.bubbles);
     this.liveliness.set(p.liveliness);
     this.daylight.set(p.daylight);
+    this.uiPalette.set(p.uiPalette);
     this.theme.set(p.theme);
+    setHidden(this.holidayThemesRow, p.theme !== 'auto');
+    setHidden(this.themeScheduleGroup, p.theme !== 'auto');
+    this.themeScheduleFields.forEach((field, index) => {
+      field.start.value = p.themeSchedule[index].start || DEFAULT_THEME_SCHEDULE[index].start;
+      field.theme.value = p.themeSchedule[index].theme;
+    });
     this.language.set(savedLanguage());
     this.soundGroup.render();
     setHidden(this.demoGroup, this.ctx.store.mock);
@@ -260,6 +355,18 @@ export class SettingsPopover implements UiComponent {
           : tr('Avisa quando alguém precisa de você e a aba está em segundo plano.');
     setText(notif.hint, hint);
     notif.btn.disabled = state === 'unsupported';
+  }
+
+  private updateThemeSchedule(index: number, patch: Partial<UiPrefs['themeSchedule'][number]>): void {
+    const schedule = this.ctx.prefs.themeSchedule.map((slot) => ({ ...slot })) as ThemeSchedule;
+    schedule[index] = { ...schedule[index], ...patch };
+    if (!isValidThemeSchedule(schedule)) {
+      this.ctx.announce(tr('Mantenha os horários em ordem, do mais cedo ao mais tarde.'));
+      this.themeScheduleFields[index].start.value = this.ctx.prefs.themeSchedule[index].start;
+      this.themeScheduleFields[index].theme.value = this.ctx.prefs.themeSchedule[index].theme;
+      return;
+    }
+    this.ctx.updatePrefs({ themeSchedule: schedule });
   }
 
   private async toggleNotifications(): Promise<void> {

@@ -250,10 +250,14 @@ résultat est vide, `ipconfig getifaddr en1`). En mode Node, utilisez `HABBLAUD_
 > de messages depuis le bureau) reste désactivé tant que le port est exposé. Pour revenir en arrière : supprimez le
 > `.env` et lancez `npm run docker:up -- --no-build`.
 
-### Mettre à jour
+### Mettre à jour un clone Habblaud autonome
 
-La version utilisée apparaît dans la barre du haut, à côté de « Connecté », et dans **Réglages › À propos**. Toutes les
-6 heures, Habblaud vérifie sur GitHub si une nouvelle version est sortie (les [releases](https://github.com/marmottajr/habblaud/releases)
+Les commandes `git pull` ci-dessous s'appliquent uniquement à un clone Habblaud autonome. Quand l'application fait
+partie du monorepo AIOffice, **Réglages › À propos** vérifie les releases AIOffice. Mettez à jour le produit complet
+en suivant les instructions du [README AIOffice](https://github.com/IAPro-Community/AIOffice) ; ne récupérez pas Habblaud upstream dans l'application intégrée.
+
+Dans un clone autonome, la version utilisée apparaît dans la barre du haut, à côté de « Connecté », et dans **Réglages › À propos**.
+Toutes les 6 heures, Habblaud vérifie sur GitHub si une nouvelle version est sortie (les [releases](https://github.com/marmottajr/habblaud/releases)
 de ce dépôt). Si c'est le cas, le badge vert **Nouvelle version** remplace le numéro, avec une alerte et un point sur
 le bouton des réglages. Dans **À propos**, vous trouverez le lien vers ce qui a changé et le bouton **Vérifier
 maintenant** (les notes de chaque version sont aussi dans [`CHANGELOG.md`](CHANGELOG.md)). Pour mettre à jour :
@@ -697,7 +701,7 @@ Tout fonctionne sans rien configurer. Si vous avez besoin d'ajuster quelque chos
 | `HABBLAUD_CODEX` | activé | `0` désactive Codex dans le bureau. |
 | `HABBLAUD_CODEX_DIRS` | détection automatique | Dossiers de Codex, séparés par des virgules (à la place de `~/.codex*` et `CODEX_HOME`). |
 | `HABBLAUD_CODEX_BIN` | `codex` du PATH (sous Windows, `codex.exe`) | Le binaire de Codex qui remet les messages (`codex queue`), en mode Node ou dans `npm run codex:bridge`. |
-| `HABBLAUD_UPDATE_CHECK` | activé | `0` désactive la vérification de nouvelle version (une requête aux releases du dépôt sur GitHub toutes les 6 h). |
+| `HABBLAUD_UPDATE_CHECK` | activé | `0` désactive la vérification des releases (AIOffice dans le monorepo ; Habblaud en autonome ; toutes les 6 h). |
 | `HABBLAUD_LANG` | langue du système (sauf l'anglais), sinon `pt-BR` | Langue des textes générés par le serveur (activités, alertes, journaux) : `pt-BR`, `en`, `es` ou `fr`. L'interface suit le navigateur ou le choix fait dans Réglages › Langue. Voir [Langues](#langues). |
 | `HABBLAUD_ACCOUNTS` | — | JSON pour personnaliser le nom, la lettre ou la couleur, associé par le nom du dossier du compte. Ex. : `[{"id":".claude-conta2","name":"Trabalho","short":"T","color":"#5cc97b"}]`. |
 
@@ -805,9 +809,8 @@ avec `no-new-privileges`. Les métadonnées des comptes (lettre, e-mail, organis
   est ce qui s'exécute. Le plugin de messages (`habblaud-mensagens`) est séparé justement parce qu'il agit : il tape dans
   la session ce que vous avez envoyé depuis le bureau.
 - **Local uniquement, par défaut :** le serveur n'accepte que les connexions venant de l'ordinateur lui-même ; ouvrir
-  l'accès au réseau local est facultatif. Il n'y a pas de télémétrie. Le seul appel externe est la vérification de
-  nouvelle version : toutes les 6 heures, une requête anonyme, sans token, à l'API publique de GitHub
-  (`api.github.com/repos/marmottajr/habblaud/releases/latest`). Elle n'envoie rien sur vos sessions ; GitHub ne voit que
+  l'accès au réseau local est facultatif. Il n'y a pas de télémétrie. Le seul appel externe est la vérification des
+  releases : toutes les 6 heures, une requête anonyme, sans token, à l'API publique de GitHub (releases AIOffice dans le monorepo ; Habblaud dans un clone autonome). Elle n'envoie rien sur vos sessions ; GitHub ne voit que
   votre IP et la version utilisée, qui figure dans le `User-Agent`.
   `HABBLAUD_UPDATE_CHECK=0` désactive la requête.
 - **Sans identifiants :** Habblaud ne lit ni mots de passe ni tokens d'accès. Du `.claude.json` de chaque compte, il

@@ -20,3 +20,13 @@ O **AIOffice** é uma plataforma integrada de engenharia de software assistida p
 - Os modelos geram texto para revisão e cópia; não enviam prompts nem iniciam agentes. A fila de atenção seleciona o agente; não aprova pedidos.
 - Claude Code, Codex e OMP são as fontes de sessão ativas. Claude Desktop Chat/Cowork reporta apenas atividade MCP explícita. OpenCode, Antigravity, Devin e Freebuf seguem marcados como incompletos, sem suporte anunciado.
 - O CLI não inicia o executor Maestro por padrão. `--maestro-fallback` é uma ativação explícita de último recurso; o runtime, o policy-broker e o RPC não foram alterados. Esse caminho do CLI mantém o comportamento de demonstração anterior e aprova automaticamente as escritas de artefatos.
+
+## 4. Temas automáticos do Habblaud — 2026-10-13
+- O cenário Automático combina um calendário brasileiro/internacional com quatro faixas de hora local configuráveis; eventos comemorativos têm prioridade.
+- A agenda e a opção de eventos ficam salvas nas preferências locais do navegador. O cenário fixo continua independente da agenda automática.
+- Os doze cenários fixos, inclusive os seis comemorativos, ficam disponíveis no seletor principal.
+- Datas móveis de Carnaval e Páscoa são calculadas para cada ano; o horário é reavaliado pelo relógio local e pelo relógio reproduzido no timelapse.
+
+## 5. Release atual — AIOffice v2.1.0
+- A versão `2.1.0` está publicada na branch `main`; o changelog lista temas, calendário/horários automáticos e consulta de releases upstream.
+- O canal dentro do escritório acompanha releases do AIOffice em modo somente leitura. Acesso remoto e instalação automática seguem adiados.
