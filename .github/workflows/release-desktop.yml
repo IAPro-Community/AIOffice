@@ -166,14 +166,14 @@ jobs:
 
       - name: Upload Windows assets
         if: matrix.id == 'windows-x64'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: aioffice-installers-windows-x64
           path: dist/release-assets/AIOffice-Setup.exe
           if-no-files-found: error
       - name: Upload macOS Apple silicon assets
         if: matrix.id == 'macos-arm64'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: aioffice-installers-macos-arm64
           path: |
@@ -182,7 +182,7 @@ jobs:
           if-no-files-found: error
       - name: Upload macOS Intel assets
         if: matrix.id == 'macos-x64'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: aioffice-installers-macos-x64
           path: |
@@ -191,7 +191,7 @@ jobs:
           if-no-files-found: error
       - name: Upload Linux assets
         if: matrix.id == 'linux-x64'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: aioffice-installers-linux-x64
           path: |
@@ -214,7 +214,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 24
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           pattern: aioffice-installers-*
           path: dist/release-assets
