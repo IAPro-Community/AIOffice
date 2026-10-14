@@ -103,13 +103,15 @@ O asset foi anexado à release existente `v2.1.0`; nenhuma nova tag ou release f
 - `gh secret list` e `gh variable list` no escopo do repositório não retornaram entradas de assinatura; secrets de organização não foram inspecionados. Para habilitar instalação automática segura, integre e publique o shell/workflow e uma release posterior assinada com os metadados de update necessários. Mantenha o asset estável `AIOffice-Setup.exe` como atalho de download se desejado; ele sozinho não substitui o manifesto do updater.
 - Não remova a trava do servidor web isoladamente: isso faria o painel mostrar uma ação de instalação que não suporta o desktop empacotado. A implementação atual usa o atualizador do processo Electron descrito acima.
 
-## Atualizador Windows via digest do GitHub — candidata local 2.2.0
+## Atualizador Windows via digest do GitHub — candidata local 2.2.1
 
 - `apps/office-desktop/github-release-updater.mjs` consulta a API oficial, aceita apenas releases estáveis com `AIOffice-Setup.exe`, URL/tamanho/digest válidos e SHA-256 disponível. O download usa a URL da tag específica, permite redirecionamentos HTTPS somente para hosts oficiais e confirma tamanho e digest antes de executar o NSIS.
 - O main verifica ao abrir e a cada seis horas; o menu e Configurações → Sobre permitem consulta manual. IPC comunica estados e progresso ao cliente. Nenhuma checagem ou download recarrega a página.
 - O usuário confirma o download e, depois da validação, confirma a abertura do instalador interativo. O app para seus serviços e fecha antes que o usuário complete a instalação. O cache fica no perfil AIOffice; os dados do servidor continuam separados.
 - `.github/workflows/release-desktop.yml` está preparado para publicar somente `AIOffice-Setup.exe` na tag estável Windows x64. O digest vem da API do GitHub. Authenticode é opcional; SmartScreen pode alertar em binários sem assinatura.
-- A release `v2.1.0` e o app instalado ainda não incluem esse fluxo; ambos usam 2.1.0. O código está na candidata local 2.2.0. É necessária uma primeira instalação manual após publicar essa candidata; só a próxima release será detectada pela versão que já tiver o atualizador.
-- Typechecks, build, i18n, sintaxe Node, inspeção do ASAR e parse do workflow YAML passaram. NSIS `2.2.0` local foi produzido; suítes automatizadas, execução de Actions e atualização contra uma release futura ainda não foram validadas. Nenhuma mudança foi publicada, commitada ou tagueada.
+- A tag `v2.2.0` foi enviada, mas duas execuções de Actions falharam nos testes de registro Claude e ingestão OMP no Windows; nenhuma release/asset foi criada. Não mover nem sobrescrever a tag.
+- A correção compara conteúdo de registros Claude e também o tamanho dos transcripts OMP para detectar gravações quando o `mtime` se mantém igual. Há testes que fixam o timestamp e confirmam as duas situações.
+- `npm run desktop:verify` passou localmente após `npm ci`: 22 testes do monorepo, 1.257 testes web (10 ignorados), 14 testes desktop, typechecks, build, i18n e sintaxe. O bundle cliente continua acima de 500 kB.
+- A candidata `2.2.1` ainda precisa ser commitada/enviada e validada por Actions. A release pública continua `v2.1.0`; a primeira instalação posterior será manual e releases seguintes serão detectadas pelo atualizador.
 
 Os avisos de terceiros acompanham o instalador em `resources/THIRD-PARTY-NOTICES.md`; os arquivos de licença das dependências e do Electron/Chromium acompanham o runtime empacotado.

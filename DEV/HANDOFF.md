@@ -1,5 +1,14 @@
 # HANDOFF — AIOffice
 
+## Publicação AIOffice v2.2.1 — estado atual, 2026-10-14
+
+- `main` já contém a integração completa em `082b435`; a release pública ainda é `v2.1.0`.
+- A tag `v2.2.0` foi enviada, mas duas execuções do workflow falharam em testes Windows que dependiam de mudanças no `mtime`; nenhuma release ou instalador foi criado. A tag permanece imutável.
+- Corrigido o cache dos registros Claude para comparar o conteúdo lido e o scanner OMP para detectar alterações por tamanho além do horário. Testes de regressão reproduzem arquivos com `mtime` fixo.
+- A candidata local agora é `2.2.1`. `npm run desktop:verify` passou: 22 testes do monorepo, 1.257 testes web (10 ignorados), 14 testes desktop, typechecks, build e i18n.
+- Próximo passo: revisar e enviar as correções à `main`, publicar `v2.2.1` pelo helper e acompanhar o workflow até validar o único asset Windows x64 `AIOffice-Setup.exe`.
+- A instalação `2.1.0` ainda exige uma atualização manual única; ela não contém o atualizador por digest. Atualizações seguintes serão verificadas em background sem recarregar a página.
+
 ## Atualizador Windows para a release estável — 2026-10-14
 
 - O shell desktop agora consulta `/releases/latest` da API oficial, compara versões estáveis e baixa o asset `AIOffice-Setup.exe` da tag específica, com tamanho e SHA-256 conferidos pelo digest publicado pelo GitHub. A verificação inicial ocorre após a abertura e repete-se a cada seis horas.

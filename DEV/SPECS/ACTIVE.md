@@ -184,15 +184,15 @@ AIOffice/
 - Sessões já abertas precisam de `/reload-plugins` após a primeira instalação. `HABBLAUD_MENSAGENS=0` desliga a entrega e evita a instalação automática.
 - **Aceitação**: instalação manual verificada na conta local; typecheck/build/i18n e `git diff --check` registrados em `DEV/VERIFY.md`. Testes automatizados não foram solicitados.
 
-## 17. Candidata de release AIOffice v2.2.0 — 2026-10-14
-- **Escopo**: consolidar no changelog as mudanças de acesso móvel e sessões, desktop Electron, atualização do Orquestrador-Maestro, launchers e publicação multiplataforma.
-- **Versão**: `package.json` e `package-lock.json` usam `2.2.0`; notas da candidata estão em `CHANGELOG.md` e as notas de `v2.1.0` foram recuperadas da release oficial.
-- **Gates locais**: `npm run desktop:verify`, `npm run release -- --dry-run` e `git diff --check` passaram; instalador Windows x64 local produzido sem assinatura para inspeção.
+## 17. Candidata de release AIOffice v2.2.1 — 2026-10-14
+- **Escopo**: publicar as mudanças de acesso móvel e sessões, desktop Electron, atualização do Orquestrador-Maestro, launchers e integração detalhada das atividades OMP.
+- **Versão**: `package.json`, `package-lock.json` e notas do `CHANGELOG.md` usam `2.2.1`; a release pública continua em `v2.1.0`.
+- **Falha de CI anterior**: a tag imutável `v2.2.0` permanece no GitHub, mas duas execuções do workflow falharam em testes Windows que assumiam alterações de `mtime`; nenhuma release ou asset foi criado.
+- **Correção**: registros Claude são comparados pelo conteúdo a cada poll; transcripts OMP também comparam o tamanho. Testes fixam o `mtime` para validar mudanças de status e append.
+- **Gates locais**: `npm run desktop:verify` passou após `npm ci`; 22 testes do monorepo, 1.257 aprovados/10 ignorados no app web, 14 testes desktop, typechecks, build e i18n. O dry-run da nova seção e `git diff --check` ainda devem ser repetidos antes da tag.
 - **Compatibilidade**: não há migração de banco nesta versão. O desktop copia configurações/dados legados para `userData` somente quando o destino não existe; falhas de update mantêm a versão ativa e preservam os dados.
-- **Ordem de publicação**: revisar e integrar sobre a `main` atualizada; verificar a candidata; enviar `v2.2.0` pelo helper; acompanhar Actions e conferir que a release contém somente `AIOffice-Setup.exe` e digest.
-- **Rollback/monitoramento**: falha de runner não cria a release; falha ao instalar preserva a versão e os dados anteriores. Depois de publicar, conferir o estado do workflow e os assets por plataforma. Responsabilidade operacional: mantenedores do AIOffice.
-- **Publicação**: requer integrar a candidata sobre a `main` oficial atualizada, árvore limpa e sucesso do workflow tag-gated. Signing Windows é opcional; a candidata permanece sem commit, tag ou release até revisão humana.
-- **Documentação pública**: o README raiz apresenta capturas sintéticas da interface e os downloads efetivamente publicados; no estado atual, só há instalador Windows `v2.1.0`. Os quatro guias Habblaud foram atualizados para o login móvel com código de uso único.
+- **Ordem de publicação**: revisar/commit das correções em `main`, enviar para a origem, executar `npm run release -- --publish` em árvore limpa e acompanhar Actions até conferir somente `AIOffice-Setup.exe` e o digest SHA-256.
+- **Distribuição**: workflow publica Windows x64; Authenticode é opcional e instalações sem assinatura podem mostrar aviso SmartScreen. macOS/Linux não têm instaladores publicados. A versão instalada `2.1.0` precisará de uma atualização manual única.
 
 ## 18. Diagnóstico inicial da atualização automática — 2026-10-14 (estado anterior à implementação abaixo)
 - **Observado**: a aplicação instalada é `2.1.0`, a mesma versão da release estável mais recente no GitHub.

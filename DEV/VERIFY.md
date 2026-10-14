@@ -1,5 +1,18 @@
 # VERIFY — AIOffice
 
+## Windows CI falhou em cache de sessão/transcript — correção candidata v2.2.1, 2026-10-14
+
+| Verificação | Resultado |
+|---|---|
+| Primeira execução tag `v2.2.0` | Falhou em `watcher.test.ts:145`: após `busy` → `idle`, o cache baseado em mtime/tamanho manteve `working`. |
+| Segunda execução da mesma tag | Falhou em `omp/source.test.ts:330`: a varredura ignorou linhas anexadas ao JSONL porque comparava somente `mtime`. A release não foi criada; a tag permanece imutável. |
+| Causa | Alguns runners Windows podem manter o mesmo `mtime` em gravações rápidas. O registro Claude também pode mudar `busy` → `idle` com o mesmo tamanho. Ambas as otimizações de cache ignoravam conteúdo novo.
+| Correção | `RegistryReader` compara os pequenos arquivos de estado pelo conteúdo lido a cada poll, preservando a última entrada válida durante gravação parcial. `OmpSource` usa `mtime` e tamanho para detectar novos bytes. |
+| Testes de regressão | `registry.test.ts` força status de mesmo tamanho e `mtime`; `omp/source.test.ts` mantém o `mtime` constante enquanto anexa linhas. As três suítes focadas passaram: 47/47. |
+| `npm run desktop:verify` local | Aprovado após `npm ci`: 22 testes do monorepo, 105 arquivos web/1.257 aprovados/10 ignorados, 14 testes desktop, typechecks, build, i18n (2.392 por idioma) e sintaxe. |
+| Diff/versão | `git diff --check` e `npm run release -- --dry-run` devem ser repetidos após esta documentação. Versão local `2.2.1`; release pública ainda `v2.1.0`. |
+| Próxima validação | Enviar as correções e o bump `2.2.1` à `main`, taguear `v2.2.1`, aguardar o workflow e confirmar a release com o único asset Windows `AIOffice-Setup.exe` e digest SHA-256. |
+
 ## Atualizador Windows pela release oficial do GitHub — 2026-10-14
 
 | Verificação | Resultado |

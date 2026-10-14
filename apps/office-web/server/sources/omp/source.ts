@@ -268,6 +268,7 @@ interface OmpSessionTracker {
   seenActivityIds: Set<string>;
   lastProcessedLine: number;
   lastMtime: number;
+  lastSize: number;
   live: boolean;
 }
 
@@ -349,9 +350,9 @@ export class OmpSource implements AgentSource {
           if (stat.mtimeMs < cutoff) continue;
 
           const tracker = this.trackers.get(filePath);
-          if (tracker && tracker.lastMtime === stat.mtimeMs) continue;
+          if (tracker && tracker.lastMtime === stat.mtimeMs && tracker.lastSize === stat.size) continue;
 
-          this.processSessionFile(filePath, stat.mtimeMs, tracker);
+          this.processSessionFile(filePath, stat.mtimeMs, stat.size, tracker);
         }
       }
     } catch {
@@ -359,7 +360,7 @@ export class OmpSource implements AgentSource {
     }
   }
 
-  private processSessionFile(filePath: string, mtimeMs: number, existingTracker?: OmpSessionTracker): void {
+  private processSessionFile(filePath: string, mtimeMs: number, size: number, existingTracker?: OmpSessionTracker): void {
     try {
       const raw = readFileSync(filePath, 'utf-8');
       const lines = raw.trim().split(/\r?\n/).filter(Boolean);
@@ -375,6 +376,7 @@ export class OmpSource implements AgentSource {
           seenActivityIds: new Set<string>(),
           lastProcessedLine: 0,
           lastMtime: 0,
+          lastSize: 0,
           live: false,
         };
         this.trackers.set(filePath, tracker);
@@ -627,6 +629,7 @@ export class OmpSource implements AgentSource {
 
       tracker.lastProcessedLine = lines.length;
       tracker.lastMtime = mtimeMs;
+      tracker.lastSize = size;
       tracker.live = true;
     } catch {
       // Arquivo temporariamente ocupado

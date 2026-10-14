@@ -1,4 +1,4 @@
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -282,6 +282,7 @@ describe('OmpSource', () => {
       }),
     ];
     writeFileSync(sessionFile, initial.join('\n'));
+    const initialMtime = statSync(sessionFile).mtime;
 
     const { office, source } = setupOffice(sessionsDir);
     source.scan();
@@ -324,6 +325,8 @@ describe('OmpSource', () => {
     ];
 
     writeFileSync(sessionFile, [...initial, ...appended].join('\n'));
+    // Mesmo mtime: a varredura também precisa notar bytes novos no JSONL.
+    utimesSync(sessionFile, initialMtime, initialMtime);
     source.scan();
 
     feed = office.recentFeed(10);

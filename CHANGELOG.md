@@ -5,7 +5,7 @@ All notable changes to AIOffice will be documented in this file.
 ## [Não lançado]
 Nenhuma mudança registrada.
 
-## [v2.2.0] - 2026-10-14
+## [v2.2.1] - 2026-10-14
 
 ### Adicionado
 - **Acesso pelo celular com código de uso único:** Quick Tunnel da Cloudflare com ações locais para iniciar/parar, link copiável e QR gerado no navegador. O painel emite um código alfanumérico de seis caracteres, válido por cinco minutos e um login; ele não aparece no link nem no QR. O túnel não inicia automaticamente e `cloudflared` é instalado pelo operador.
@@ -25,6 +25,7 @@ Nenhuma mudança registrada.
 - O handshake do processo Electron agora libera a janela após o health check; falhas de renderer, versão divergente e conflito de porta recebem diagnóstico acionável.
 - QR do Quick Tunnel é gerado localmente, sem enviar a URL a um serviço externo. Códigos temporários e sessões são invalidados ao parar o túnel ou reiniciar o servidor.
 - **Atividades e linha do tempo do OMP (oh-my-pi):** removida a repetição excessiva de eventos genéricos ("bash", "bash terminou", "read", "read terminou"). As ferramentas do OMP (`bash`, `read`, `write`, `edit`, `glob`, `grep`, `task`, `todo`, `eval`, `web_search`, `ask`) agora são descritas detalhadamente em português com ícones próprios. Chamadas de ferramentas, tokens de entrada/saída, custos e modelo alimentam corretamente as estatísticas e a linha do tempo do agente.
+- Registros de sessão e transcripts OMP agora detectam mudanças mesmo quando o sistema de arquivos mantém o mesmo horário de modificação.
 
 ### Segurança
 - O código de acesso existe em memória somente como hash, não é persistido nem aparece em URL, QR ou logs. Listagem e revogação de sessões aceitam somente acesso local; a lista não armazena IP nem User-Agent bruto.
@@ -126,8 +127,8 @@ Nenhuma mudança registrada.
 ### Security
 - None
 
-[Não lançado]: https://github.com/IAPro-Community/AIOffice/compare/v2.2.0...HEAD
-[v2.2.0]: https://github.com/IAPro-Community/AIOffice/releases/tag/v2.2.0
+[Não lançado]: https://github.com/IAPro-Community/AIOffice/compare/v2.2.1...HEAD
+[v2.2.1]: https://github.com/IAPro-Community/AIOffice/releases/tag/v2.2.1
 [v2.1.0]: https://github.com/IAPro-Community/AIOffice/releases/tag/v2.1.0
 [v2.0.0]: https://github.com/IAPro-Community/AIOffice/releases/tag/v2.0.0
 [v1.1.0]: https://github.com/IAPro-Community/AIOffice/releases/tag/v1.1.0

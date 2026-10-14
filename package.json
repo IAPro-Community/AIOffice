@@ -3,7 +3,7 @@
   "main": "apps/office-desktop/main.mjs",
   "private": true,
   "type": "module",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "AIOffice - Virtual AI Office & Studio unindo Orquestrador-Maestro, OpenOrq, Habblaud, oh-my-pi e replica-skill",
   "license": "MIT",
   "repository": {

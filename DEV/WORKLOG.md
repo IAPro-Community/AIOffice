@@ -273,3 +273,9 @@
   - Suíte completa de testes (`npm --prefix apps/office-web test`): 105 arquivos, 1.256 testes passando (incluindo os 7 testes dedicados do OMP).
   - Validação de i18n (`npm --prefix apps/office-web run i18n:check`): 2.382/2.382 textos traduzidos (100%).
   - Build do cliente e servidor (`npm run build`): concluído com sucesso.
+
+## 2026-10-14 — Corrigir detecção de alterações em arquivos no Windows e preparar v2.2.1
+- **Causa**: duas execuções do workflow `v2.2.0` falharam em testes Windows quando registros Claude e transcripts OMP mudaram sem novo `mtime`; a segunda falha ocorreu no append OMP, antes de criar instalador/release.
+- **Correção**: `RegistryReader` compara o JSON lido, preservando o último estado válido se o arquivo estiver parcial. `OmpSource` usa tamanho junto ao mtime para detectar bytes novos. Testes de regressão mantêm o mtime fixo.
+- **Versão/publicação**: `v2.2.0` permanece como tag sem release; candidata corrigida `v2.2.1`, sem asset público ainda. `main` contém a integração base; este patch aguarda commit, push e workflow estável.
+- **Verificação**: três suítes focadas, 47/47; `npm run desktop:verify` aprovado após `npm ci`: 22 root, 1.257 web aprovados/10 ignorados, 14 desktop, typechecks, build e i18n. Restam dry-run/diff check final, envio à `main` e validação Actions de `v2.2.1`.
