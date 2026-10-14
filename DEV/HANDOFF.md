@@ -1,23 +1,22 @@
 # HANDOFF — AIOffice
 
-## Publicação AIOffice v2.2.1 — estado atual, 2026-10-14
+## Publicação AIOffice v2.2.1 — concluída, 2026-10-14
 
-- `main` já contém a integração completa em `082b435`; a release pública ainda é `v2.1.0`.
-- A tag `v2.2.0` foi enviada, mas duas execuções do workflow falharam em testes Windows que dependiam de mudanças no `mtime`; nenhuma release ou instalador foi criado. A tag permanece imutável.
-- Corrigido o cache dos registros Claude para comparar o conteúdo lido e o scanner OMP para detectar alterações por tamanho além do horário. Testes de regressão reproduzem arquivos com `mtime` fixo.
-- A candidata local agora é `2.2.1`. `npm run desktop:verify` passou: 22 testes do monorepo, 1.257 testes web (10 ignorados), 14 testes desktop, typechecks, build e i18n.
-- Próximo passo: revisar e enviar as correções à `main`, publicar `v2.2.1` pelo helper e acompanhar o workflow até validar o único asset Windows x64 `AIOffice-Setup.exe`.
-- A instalação `2.1.0` ainda exige uma atualização manual única; ela não contém o atualizador por digest. Atualizações seguintes serão verificadas em background sem recarregar a página.
+- A tag/release `v2.2.1` foi criada a partir do commit `3ac5d2e` em `main`; este commit registra a publicação em https://github.com/IAPro-Community/AIOffice/releases/tag/v2.2.1.
+- Actions `38620115438` passou em 2m46s. A release contém exatamente um asset Windows x64, `AIOffice-Setup.exe` (118.890.375 bytes), SHA-256 `ad5fbb76669fab9c0dfca69da2a98d9b6c0f10a84df53f4a549f0483f7f87ee3`. Assinatura Authenticode não configurada; o updater valida o digest oficial do GitHub.
+- A tag anterior `v2.2.0` permanece sem release após duas falhas de teste Windows; não mover nem reutilizar essa tag.
+- `npm run desktop:verify` passou localmente e o workflow repetiu as verificações com sucesso. As correções fazem o registro Claude comparar conteúdo e o scanner OMP detectar bytes novos mesmo com `mtime` fixo.
+- `2.1.0` precisa de instalação manual única; atualizações posteriores são verificadas em background pelo Electron sem atualizar toda a página.
 
 ## Atualizador Windows para a release estável — 2026-10-14
 
 - O shell desktop agora consulta `/releases/latest` da API oficial, compara versões estáveis e baixa o asset `AIOffice-Setup.exe` da tag específica, com tamanho e SHA-256 conferidos pelo digest publicado pelo GitHub. A verificação inicial ocorre após a abertura e repete-se a cada seis horas.
 - A seção **Sobre** recebe o estado via IPC e deixa de mostrar `updates.state: off` no app Electron. Download e abertura do instalador têm confirmações próprias; atualizações não recarregam o renderer. O instalador NSIS permanece interativo.
 - O workflow local agora publica somente o asset estável `AIOffice-Setup.exe` para Windows x64. A assinatura Authenticode é opcional; o digest do GitHub é obrigatório para o atualizador. SmartScreen ainda pode exibir aviso em arquivos sem assinatura.
-- A versão instalada e a release pública continuam em `2.1.0`; a candidata local é `2.2.0`. O executável `2.1.0` não contém esse código novo, então precisa de uma instalação manual única quando a release posterior for publicada. O estado não permite afirmar auto-update operacional antes dessa publicação.
-- A API GitHub atualmente informa SHA-256 para o asset público `v2.1.0/AIOffice-Setup.exe` (117.961.903 bytes; `d0eb5a9656fb7dc72bcbcdf37ef74a642768008c75303405a6dd1d4dfe113ee7`). A atualização de uma versão posterior ainda precisa de release real.
+- A instalação `2.1.0` não contém esse código e precisa de instalação manual única. A partir da `2.2.1`, o updater pode detectar releases seguintes.
+- A API do GitHub aponta agora para `v2.2.1/AIOffice-Setup.exe` (118.890.375 bytes; SHA-256 `ad5fbb76669fab9c0dfca69da2a98d9b6c0f10a84df53f4a549f0483f7f87ee3`).
 - Verificação local aprovada: typecheck root/app, build, i18n (2.392 por idioma), sintaxe desktop, ASAR, YAML do workflow e `git diff --check`. NSIS `2.2.0` está em `dist/installers-aioffice-updater-final2/AIOffice-Setup.exe` (117.969.885 bytes; SHA-256 `2927ACEFD31A08E26AE9BA4E7100E7906481960E2896C15AFF325BB70F48BA10`; `NotSigned`). Suites automatizadas não foram executadas.
-- Nenhuma mudança foi commitada, tagueada ou enviada. Próximo passo: revisão humana das mudanças locais e integração/publicação de uma tag estável nova. O instalador `2.1.0` atual precisa de atualização manual única antes de receber updates pelo novo fluxo.
+- A release estável `v2.2.1` foi publicada; o instalador `2.1.0` atual precisa de atualização manual única antes de receber updates pelo novo fluxo.
 
 ## Candidata de release AIOffice v2.2.0 — 2026-10-14
 

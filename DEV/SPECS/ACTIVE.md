@@ -184,15 +184,12 @@ AIOffice/
 - Sessões já abertas precisam de `/reload-plugins` após a primeira instalação. `HABBLAUD_MENSAGENS=0` desliga a entrega e evita a instalação automática.
 - **Aceitação**: instalação manual verificada na conta local; typecheck/build/i18n e `git diff --check` registrados em `DEV/VERIFY.md`. Testes automatizados não foram solicitados.
 
-## 17. Candidata de release AIOffice v2.2.1 — 2026-10-14
-- **Escopo**: publicar as mudanças de acesso móvel e sessões, desktop Electron, atualização do Orquestrador-Maestro, launchers e integração detalhada das atividades OMP.
-- **Versão**: `package.json`, `package-lock.json` e notas do `CHANGELOG.md` usam `2.2.1`; a release pública continua em `v2.1.0`.
-- **Falha de CI anterior**: a tag imutável `v2.2.0` permanece no GitHub, mas duas execuções do workflow falharam em testes Windows que assumiam alterações de `mtime`; nenhuma release ou asset foi criado.
-- **Correção**: registros Claude são comparados pelo conteúdo a cada poll; transcripts OMP também comparam o tamanho. Testes fixam o `mtime` para validar mudanças de status e append.
-- **Gates locais**: `npm run desktop:verify` passou após `npm ci`; 22 testes do monorepo, 1.257 aprovados/10 ignorados no app web, 14 testes desktop, typechecks, build e i18n. O dry-run da nova seção e `git diff --check` ainda devem ser repetidos antes da tag.
+## 17. Release AIOffice v2.2.1 — publicada em 2026-10-14
+- **Escopo**: publicado o conjunto completo de mudanças de acesso móvel e sessões, desktop Electron, atualização do Orquestrador-Maestro, launchers, atividades OMP e correções de detecção de arquivos no Windows.
+- **Fonte/tag**: `v2.2.1` foi criada a partir do commit `3ac5d2e` em `main`; changelog, `package.json` e lock usam `2.2.1`. A tag `v2.2.0` permanece sem release após duas falhas do workflow e não deve ser movida.
+- **Gates**: `npm run desktop:verify` passou localmente; Actions `38620115438` passou em 2m46s após repetir as verificações no runner Windows. Dry-run e `git diff --check` passaram antes da publicação.
+- **Distribuição**: [release v2.2.1](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.2.1) contém somente `AIOffice-Setup.exe`, Windows x64, 118.890.375 bytes, SHA-256 `ad5fbb76669fab9c0dfca69da2a98d9b6c0f10a84df53f4a549f0483f7f87ee3`. Authenticode não configurado; macOS/Linux sem artefatos publicados. A instalação `2.1.0` exige upgrade manual único.
 - **Compatibilidade**: não há migração de banco nesta versão. O desktop copia configurações/dados legados para `userData` somente quando o destino não existe; falhas de update mantêm a versão ativa e preservam os dados.
-- **Ordem de publicação**: revisar/commit das correções em `main`, enviar para a origem, executar `npm run release -- --publish` em árvore limpa e acompanhar Actions até conferir somente `AIOffice-Setup.exe` e o digest SHA-256.
-- **Distribuição**: workflow publica Windows x64; Authenticode é opcional e instalações sem assinatura podem mostrar aviso SmartScreen. macOS/Linux não têm instaladores publicados. A versão instalada `2.1.0` precisará de uma atualização manual única.
 
 ## 18. Diagnóstico inicial da atualização automática — 2026-10-14 (estado anterior à implementação abaixo)
 - **Observado**: a aplicação instalada é `2.1.0`, a mesma versão da release estável mais recente no GitHub.

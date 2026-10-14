@@ -81,7 +81,7 @@ Passos do mantenedor:
 4. Acompanhe **Actions → AIOffice Desktop Release**. A release aparece somente após o sucesso de todos os jobs.
 5. Confirme que a release contém apenas `AIOffice-Setup.exe`, registre o digest SHA-256 da API GitHub e teste a atualização de uma instalação anterior.
 
-O asset foi anexado à release existente `v2.1.0`; nenhuma nova tag ou release foi criada. A publicação incluiu somente o setup, não enviou o código-fonte local nem o workflow, e não produziu assinatura Authenticode.
+Histórico: o primeiro asset foi anexado à release existente `v2.1.0`; nenhuma nova tag ou release foi criada naquela etapa. A release atual foi publicada pelo workflow tag-gated documentado abaixo.
 
 ## Diagnóstico e limites de plataforma
 
@@ -103,15 +103,15 @@ O asset foi anexado à release existente `v2.1.0`; nenhuma nova tag ou release f
 - `gh secret list` e `gh variable list` no escopo do repositório não retornaram entradas de assinatura; secrets de organização não foram inspecionados. Para habilitar instalação automática segura, integre e publique o shell/workflow e uma release posterior assinada com os metadados de update necessários. Mantenha o asset estável `AIOffice-Setup.exe` como atalho de download se desejado; ele sozinho não substitui o manifesto do updater.
 - Não remova a trava do servidor web isoladamente: isso faria o painel mostrar uma ação de instalação que não suporta o desktop empacotado. A implementação atual usa o atualizador do processo Electron descrito acima.
 
-## Atualizador Windows via digest do GitHub — candidata local 2.2.1
+## Atualizador Windows via digest do GitHub — publicado em v2.2.1
 
 - `apps/office-desktop/github-release-updater.mjs` consulta a API oficial, aceita apenas releases estáveis com `AIOffice-Setup.exe`, URL/tamanho/digest válidos e SHA-256 disponível. O download usa a URL da tag específica, permite redirecionamentos HTTPS somente para hosts oficiais e confirma tamanho e digest antes de executar o NSIS.
 - O main verifica ao abrir e a cada seis horas; o menu e Configurações → Sobre permitem consulta manual. IPC comunica estados e progresso ao cliente. Nenhuma checagem ou download recarrega a página.
 - O usuário confirma o download e, depois da validação, confirma a abertura do instalador interativo. O app para seus serviços e fecha antes que o usuário complete a instalação. O cache fica no perfil AIOffice; os dados do servidor continuam separados.
 - `.github/workflows/release-desktop.yml` está preparado para publicar somente `AIOffice-Setup.exe` na tag estável Windows x64. O digest vem da API do GitHub. Authenticode é opcional; SmartScreen pode alertar em binários sem assinatura.
-- A tag `v2.2.0` foi enviada, mas duas execuções de Actions falharam nos testes de registro Claude e ingestão OMP no Windows; nenhuma release/asset foi criada. Não mover nem sobrescrever a tag.
+- A tag `v2.2.0` foi enviada, mas duas execuções de Actions falharam nos testes de registro Claude e ingestão OMP no Windows; nenhuma release/asset foi criada. Ela permanece imutável.
 - A correção compara conteúdo de registros Claude e também o tamanho dos transcripts OMP para detectar gravações quando o `mtime` se mantém igual. Há testes que fixam o timestamp e confirmam as duas situações.
 - `npm run desktop:verify` passou localmente após `npm ci`: 22 testes do monorepo, 1.257 testes web (10 ignorados), 14 testes desktop, typechecks, build, i18n e sintaxe. O bundle cliente continua acima de 500 kB.
-- A candidata `2.2.1` ainda precisa ser commitada/enviada e validada por Actions. A release pública continua `v2.1.0`; a primeira instalação posterior será manual e releases seguintes serão detectadas pelo atualizador.
+- Actions `38620115438` passou em 2m46s e publicou `v2.2.1` com um asset: `AIOffice-Setup.exe`, 118.890.375 bytes, SHA-256 `ad5fbb76669fab9c0dfca69da2a98d9b6c0f10a84df53f4a549f0483f7f87ee3`. Authenticode não está configurado. A versão `2.1.0` instalada precisa de atualização manual única; releases seguintes são detectadas pelo atualizador.
 
 Os avisos de terceiros acompanham o instalador em `resources/THIRD-PARTY-NOTICES.md`; os arquivos de licença das dependências e do Electron/Chromium acompanham o runtime empacotado.

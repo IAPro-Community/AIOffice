@@ -279,3 +279,8 @@
 - **Correção**: `RegistryReader` compara o JSON lido, preservando o último estado válido se o arquivo estiver parcial. `OmpSource` usa tamanho junto ao mtime para detectar bytes novos. Testes de regressão mantêm o mtime fixo.
 - **Versão/publicação**: `v2.2.0` permanece como tag sem release; candidata corrigida `v2.2.1`, sem asset público ainda. `main` contém a integração base; este patch aguarda commit, push e workflow estável.
 - **Verificação**: três suítes focadas, 47/47; `npm run desktop:verify` aprovado após `npm ci`: 22 root, 1.257 web aprovados/10 ignorados, 14 desktop, typechecks, build e i18n. Restam dry-run/diff check final, envio à `main` e validação Actions de `v2.2.1`.
+
+## 2026-10-14 — Publicar AIOffice v2.2.1
+- **Entrega**: commit `3ac5d2e` enviado à `main`; helper oficial publicou a tag `v2.2.1` e Actions criou a release após sucesso no Windows.
+- **Asset**: único arquivo `AIOffice-Setup.exe` (118.890.375 bytes), SHA-256 `ad5fbb76669fab9c0dfca69da2a98d9b6c0f10a84df53f4a549f0483f7f87ee3`; a API `/releases/latest` aponta para `v2.2.1`. Authenticode não configurado.
+- **Verificação**: dry-run e diff check aprovados; `npm run desktop:verify` passou localmente e run `38620115438` concluiu com sucesso em 2m46s. A instalação `2.1.0` ainda precisa de atualização manual única.
