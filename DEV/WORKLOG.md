@@ -1,5 +1,12 @@
 # WORKLOG — AIOffice
 
+## 2026-10-14 — Publicação v2.3.0 concluída
+- **Mudança**: release estável publicada no GitHub a partir de `762a500bbde264f241dabd16c2e40b107ec4c7f8`, com os nove assets Windows, macOS Intel/Apple silicon, Linux x64 e manifestos de atualização.
+- **Motivo**: distribuir as melhorias acumuladas desde a `v2.2.1`, incluindo suporte a mensagens no desktop instalado, distribuição multiplataforma e interface móvel.
+- **Verificação**: preflight `38659997554` e workflow de tag/publicação `38660712556` concluíram com sucesso. Release API confirmou os nove nomes, tamanhos e SHA-256; valores estão em `DEV/VERIFY.md`.
+- **Limites**: macOS unsigned, sem notarização e sem updater automático; CLI e autenticação do provedor continuam externas. Nenhuma mensagem foi enviada a sessões reais do usuário.
+- **Próximo contexto**: a v2.3.0 executa `codex queue` pelo serviço local e não exige a ponte npm no desktop; determinar se a próxima alteração deve oferecer instalação dos CLIs oficiais ausentes, além das pontes AIOffice que já são automatizadas.
+
 ## 2026-10-14 — Mensagens funcionais no desktop instalado
 - **Falha**: a interface orientava manter `npm run codex:bridge` ativo no host quando Habblaud rodava em Docker; no Windows, a CLI Codex também podia ficar invisível atrás dos shims NPM.
 - **Correção**: no desktop/Node local, descobrir o executável nativo do Codex nas instalações globais oficiais do NPM para Windows/macOS/Linux e executar sem shell. Instalar/atualizar no boot somente as pontes próprias do AIOffice para Claude Code e OMP em perfis existentes, preservando extensões de terceiros e criando backup ao atualizar. Melhorar erros e instruções; o auxiliar externo continua necessário só no Docker.
@@ -7,7 +14,7 @@
 - **Interface móvel**: melhorias responsivas compatíveis do workspace, login com botão para colar o código e envio automático aos seis caracteres; a página não ganhou reload integral.
 - **Verificação**: `npm run desktop:verify` passou (typechecks, build, 22 testes raiz, 1.268 testes web com 10 ignorados, 16 desktop, i18n 2.402/2.402 e sintaxe); 49 testes focados passaram e 6 foram ignorados; a CLI Codex local respondeu a `--help` e `queue --help`. A entrega real não foi disparada para não enviar mensagem a uma conversa do usuário. Nenhum reload integral/polling novo foi adicionado.
 - **Preflight atualizado**: execução 38659549147 identificou um teste de matriz que simulava PATH POSIX usando o separador do Windows; o resolvedor agora usa o delimitador do sistema que executa o servidor. Repetir CI após este commit.
-- **Release**: repetir o preflight completo de quatro plataformas na versão final após commit/push e publicar/verificar `v2.3.0`. macOS segue sem assinatura/notarização Apple.
+- **Release**: concluído em `v2.3.0`; detalhes, IDs dos workflows e assets publicados estão na seção inicial deste arquivo e em `DEV/VERIFY.md`.
 
 ## 2026-10-14 — Distribuição nativa macOS/Linux (v2.3.0)
 - **Mudança**: matriz de release adiciona macOS Intel/Apple silicon e Linux x64, manifestos para updater, downloads estáveis no README e assinatura Apple opcional.

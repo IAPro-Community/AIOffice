@@ -58,7 +58,7 @@ O setup é estático e instala a versão incluída nele. O atualizador Windows b
 
 ### Artefatos atualmente publicados
 
-Antes da publicação de `v2.3.0`, a última release era `v2.2.1`, somente Windows x64. O preflight completo de `v2.3.0` aprovou os pacotes nativos para Windows, macOS Intel/Apple silicon e Linux, além dos nove assets e manifestos. A tag ainda não existe; após publicar, os links estáveis ficam no [README público](../README.md#downloads) e na página [releases](https://github.com/IAPro-Community/AIOffice/releases/latest).
+A release oficial atual é [`v2.3.0`](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.3.0), publicada pelo workflow após aprovação dos builds Windows x64, macOS Intel/Apple silicon e Linux x64, dos manifestos e dos nove assets. Os downloads estáveis ficam no [README público](../README.md#downloads) e na página [releases](https://github.com/IAPro-Community/AIOffice/releases/latest). Os pacotes macOS desta release não estão assinados/notarizados; veja a limitação do Gatekeeper abaixo.
 
 `.deb` não usa o atualizador AppImage: **Ajuda → Verificar atualizações** orienta abrir GitHub Releases para baixar o próximo `.deb` e atualizá-lo pelo gerenciador do sistema. Isso respeita a elevação de privilégios e o banco de pacotes da distribuição. A desinstalação NSIS declara que não apaga `userData`.
 

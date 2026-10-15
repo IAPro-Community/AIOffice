@@ -27,4 +27,4 @@ Hierarquia de documentação operacional do projeto AIOffice.
 | `apps/office-web/README*.md` | Guias Habblaud em inglês, português, espanhol e francês | Ativo |
 
 ## Estado da release
-- Última release oficial: `v2.2.1`, com instalador Windows x64. A candidata `v2.3.0` prepara builds nativos para Windows, macOS Intel/Apple silicon e Linux x64, integra mensagens no desktop instalado sem scripts npm externos e inclui melhorias móveis. O preflight `38654902095` antecede essas alterações; um novo preflight é obrigatório após sincronizar o commit. Consulte `DEV/HANDOFF.md`, `DEV/DESKTOP.md` e `DEV/VERIFY.md` para o estado real.
+- Release oficial mais recente: [`v2.3.0`](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.3.0), publicada a partir do commit `762a500`. Contém nove assets para Windows, macOS Intel/Apple silicon e Linux x64. As mensagens do Codex rodam pelo serviço local instalado, sem `npm run codex:bridge`; Claude Code e OMP recebem as pontes do AIOffice na inicialização. Os CLIs e a autenticação dos provedores continuam sendo requisitos externos. Consulte `DEV/HANDOFF.md`, `DEV/DESKTOP.md` e `DEV/VERIFY.md` para limites e evidências.

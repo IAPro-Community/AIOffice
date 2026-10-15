@@ -1,21 +1,21 @@
 # HANDOFF — AIOffice
 
-## Mensagens no desktop instalado e distribuição v2.3.0 — 2026-10-14
+## Release v2.3.0 publicada — 2026-10-14
 
-- O desktop local resolve a CLI nativa oficial do Codex em Windows, macOS e Linux a partir do `PATH`/prefixo global do NPM; no Windows ignora `codex.cmd`/`.ps1` e executa o binário do pacote oficial. Não é preciso manter `npm run codex:bridge` aberto fora do Docker.
-- Na inicialização do desktop, o plugin Claude Code e a ponte OMP são instalados/atualizados com segurança nos perfis existentes. Sessões já abertas precisam ser recarregadas/reabertas. Os CLIs e logins dos provedores continuam sendo pré-requisitos do fornecedor; AIOffice não empacota tokens ou uma segunda CLI.
-- Nenhuma recarga integral ou novo polling do renderer foi adicionado. Setup OMP roda somente no boot do servidor local e a entrega de mensagens usa as rotas/estado já existentes.
-- A integração inclui o layout responsivo da barra superior/Central de trabalho e o login móvel com botão de colagem e envio automático do código completo; QA visual cobriu 320–1.440 px e o fluxo de colagem foi exercitado com clipboard/fetch simulados.
-- Testes automatizados e `npm run desktop:verify` passaram após as mudanças (22 testes raiz, 1.268 web/10 ignorados, 16 Electron, i18n 2.402/2.402); o instalador Windows foi recompilado: 118.458.638 bytes, SHA-256 1A1113C8000111FCF9770E4A113C90F38D004F228E3EFC1DC6CE52200C5904D4. Os quatro pacotes nativos e a montagem de nove assets já passaram no preflight `38654902095`, ainda anterior a estas alterações.
-- **Próximo passo obrigatório:** concluir novo gate manual após o commit/push em `main`; só então publicar `v2.3.0` por tag e verificar a release/instaladores no GitHub. Apple signing não está configurado; macOS será unsigned e exige orientação do Gatekeeper.
+- Tag `v2.3.0` aponta para o commit `762a500bbde264f241dabd16c2e40b107ec4c7f8`. A release está em https://github.com/IAPro-Community/AIOffice/releases/tag/v2.3.0.
+- Preflight `38659997554` e workflow de publicação `38660712556` concluíram com sucesso a partir do commit da tag.
+- A release contém nove assets: setup Windows x64; `.dmg` e `.zip` macOS x64/arm64; `.AppImage` e `.deb` Linux x64; `latest-mac.yml` e `latest-linux.yml`. Tamanhos e SHA-256 estão em `DEV/VERIFY.md`.
+- No desktop instalado, Codex envia pelo serviço local usando a CLI nativa instalada/autenticada do usuário, sem `npm run codex:bridge`; o auxiliar ainda é necessário no Docker. O servidor instala/verifica as pontes próprias de Claude Code e OMP. Sessões existentes podem precisar ser recarregadas/reabertas. Os CLIs oficiais e os logins dos fornecedores não estão dentro do instalador.
+- A entrega real não foi disparada para uma sessão do usuário. Testes sintéticos cobrem o caminho do Codex; `codex --help` e `codex queue --help` confirmaram a CLI local.
+- Nenhum reload integral ou polling novo do renderer foi adicionado. O setup e as integrações usam o estado/eventos existentes.
+- macOS permanece sem assinatura/notarização Apple; o Gatekeeper pode exigir abertura manual e o updater nativo macOS fica desabilitado.
+- **Próxima ação:** concluir o pedido atual sobre o funcionamento independente do modo Node. Já está coberta a instalação automática das pontes AIOffice; aguarda-se definir se o instalador também deve oferecer instalar os CLIs oficiais ausentes. Não anunciar suporte de mensagens a provedores sem adaptador implementado.
 
-## Distribuição nativa v2.3.0 — preflight concluído, publicação pendente, 2026-10-14
+## Histórico do preflight nativo v2.3.0 — 2026-10-14
 
-- A última release antes da publicação é `v2.2.1`, apenas Windows x64. A tag `v2.3.0` ainda não foi criada.
-- A primeira CI manual `38653090528` aprovou o gate completo, Windows x64 e macOS Intel/Apple silicon. Linux compilou AppImage e `.deb`, mas a etapa de validação detectou os nomes gerados com convenções `x86_64`/`amd64`.
-- Os aliases do Linux foram fixados explicitamente em x64. As matrizes `38653586066` e `38654072400` aprovaram os quatro empacotamentos. O preflight completo `38654902095` também passou: verificação, quatro runners nativos, download e montagem dos artifacts, dois manifestos, os nove assets esperados e notas da release.
-- O preflight foi disparado por `workflow_dispatch`; a etapa de publicação foi corretamente ignorada. O workflow só cria a release depois do push de uma tag estável e de todos os gates passarem. Próximo passo: `npm run release -- --publish` em `main` limpa e sincronizada.
-- Os builds macOS estão sem assinatura Apple (não há segredos configurados); o Gatekeeper pode exigir abertura manual e o updater macOS fica desabilitado até assinatura/notarização.
+- As primeiras matrizes `38653090528`, `38653586066`, `38654072400` e `38654902095` validaram progressivamente os runners e os nomes estáveis dos assets Linux; `38654902095` passou a montagem dos nove assets antes da integração final.
+- Após a integração das mensagens e o ajuste do delimitador de `PATH` do host, o preflight completo `38659997554` passou e antecedeu a publicação por tag.
+- Builds macOS foram publicados sem assinatura Apple; veja a limitação acima.
 
 ## Publicação AIOffice v2.2.1 — concluída, 2026-10-14
 

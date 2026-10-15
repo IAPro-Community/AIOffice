@@ -2,7 +2,7 @@
 
 ## 1. Identificação do Projeto
 - **Nome**: AIOffice
-- **Status**: desktop Electron implementado; candidata `v2.3.0` inclui builds nativos Windows/macOS/Linux e entrega de mensagens integrada no desktop instalado; typechecks, builds e suítes locais aprovados após a integração final; novo preflight CI e publicação da release ainda pendentes. Claude Code, Codex e OMP têm suporte a mensagens quando suas CLIs/perfis e autenticação estiverem disponíveis; não anunciar suporte universal aos demais provedores.
+- **Status**: `v2.3.0` está publicada com builds nativos Windows/macOS/Linux. No desktop instalado, Codex envia pelo serviço local e as pontes AIOffice de Claude Code/OMP são instaladas na inicialização; os CLIs e logins dos fornecedores ainda são externos. Pedido ativo do usuário: deixar as integrações de mensagens completas no app instalado, sem dependência do modo Node. Limitar a capacidade anunciada a Codex, Claude Code e OMP até que outros provedores tenham adaptadores reais. Decisão pendente: se o app também deve oferecer instalar os CLIs oficiais com confirmação.
 - **Localização**: Repositório AIOffice
 
 ## 2. Pilares de Integração

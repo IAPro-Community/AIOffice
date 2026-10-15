@@ -1,5 +1,18 @@
 # VERIFY — AIOffice
 
+## Publicação da release v2.3.0 — 2026-10-14
+
+| Verificação | Resultado |
+|---|---|
+| Tag e commit | `v2.3.0` aponta para `762a500bbde264f241dabd16c2e40b107ec4c7f8`; release publicada em [GitHub Releases](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.3.0). |
+| Preflight e publicação | Workflows `38659997554` (`workflow_dispatch`) e `38660712556` (push da tag) concluíram com `success`. |
+| `AIOffice-Setup.exe` | 118.895.748 bytes; SHA-256 `f1a372c6617b4a3f7f05209e845ebc08d0f85d65755c70850c2a9037dd175717`. |
+| `AIOffice-Setup-macOS-x64.dmg` / `.zip` | 136.525.504 bytes, SHA-256 `4cbc863c3e62a4e89d0eb73002f6b9ec8313795162525d2d0b6bcbd0f1126642`; 137.616.414 bytes, SHA-256 `775422373e775d730999a347a2e9c32cc2863a81afd36a81411809494c32328a`. |
+| `AIOffice-Setup-macOS-arm64.dmg` / `.zip` | 132.996.024 bytes, SHA-256 `327d8f1dd6e621fdedd9739f5766adc9a9db850dedc36249771760fd57dc1098`; 134.038.831 bytes, SHA-256 `9fa23eb940e533017922aff4d0308b16edab81e4cd14fb36ec02afd554ca0b90`. |
+| `AIOffice-Setup-Linux-x64.AppImage` / `.deb` | 130.487.223 bytes, SHA-256 `aaf73ae655774ed8ffe73f3e5a425e4994908eec316df8508e6873d34840bdcf`; 102.829.220 bytes, SHA-256 `a9f7396485362679f5a2ff0337621162d744971d76685dc2525204dc84fd9acb`. |
+| `latest-mac.yml` / `latest-linux.yml` | 528 bytes, SHA-256 `c967564558582da4b420f4560cfb06a22cab60dd5293c398b9908532ab1b278d`; 371 bytes, SHA-256 `6a896f562b2856b3d642774eb51bcb8fda70310a6173c8a6b2638ee914d82764`. |
+| Limite de assinatura | Windows sem Authenticode e macOS sem Developer ID/notarização; macOS exige abertura manual e não recebe atualização automática unsigned. |
+
 ## Mensagens no desktop instalado — verificação local, 2026-10-14
 
 | Verificação | Resultado |
@@ -8,13 +21,13 @@
 | Matriz do pacote Codex | Testes sintéticos passaram para Windows x64, macOS x64/arm64 e Linux x64/arm64; Windows também cobre prefixo global do NPM encontrado pelo `APPDATA`, mesmo fora do `PATH`. |
 | Testes de integração | Resolver/delivery Codex, resolução Claude, extensão OMP, composer e fluxo remoto estão cobertos pela suíte web completa: 1.268 aprovados, 10 ignorados. |
 | `npm run desktop:verify` | Aprovado: typechecks root/app, build, 22 testes raiz, 1.268 testes web (10 ignorados), i18n 2.402/2.402 por idioma, 16 testes Electron e verificações de sintaxe. |
-| `npm run desktop:package:win` | Aprovado para NSIS x64 2.3.0 em `dist/installers-v2.3.0-final2`: `AIOffice-Setup.exe`, 118.458.638 bytes, SHA-256 `1A1113C8000111FCF9770E4A113C90F38D004F228E3EFC1DC6CE52200C5904D4`, `ProductVersion=2.3.0`; sem assinatura Authenticode configurada. A saída padrão falhou ao substituir `win-unpacked` (`EPERM`), então a validação repetiu com diretório limpo. |
+| Instalador Windows local de pré-publicação | Aprovado para NSIS x64 `2.3.0` em `dist/installers-v2.3.0-final2`: 118.458.638 bytes e SHA-256 `1A1113C8000111FCF9770E4A113C90F38D004F228E3EFC1DC6CE52200C5904D4`. Este arquivo local precede o último ajuste do resolvedor e **não** é o binário publicado; consulte o hash publicado acima. |
 | Conteúdo do app empacotado | Bundle do servidor, extensão OMP, marketplace e plugin Claude Code presentes no diretório de runtime do pacote. O Codex externo não é copiado: usa instalação local autenticada do usuário. |
 | Entrega efetiva | Não enviei mensagem a uma sessão real do usuário. Entrega com binário falso está coberta pela suíte; CLI real foi consultada só com help. |
 | Interface | Nenhum reload integral ou polling novo; instalação das pontes ocorre no boot do servidor e estados continuam no fluxo SSE/fetch existente. |
 | QA responsivo e login | 320, 360, 390, 500, 700, 768, 1.280 e 1.440 px sem overflow horizontal do documento. Login em 320, 390, 768 e 1.280 px; nomes acessíveis, conversão abc123 → ABC123, envio após seis caracteres e erro acessível verificados com clipboard/fetch simulados. |
-| Preflight atualizado | A execução 38659549147 falhou em um teste de matriz que simulava PATH POSIX usando separadores Windows; corrigida para usar o delimitador do host. Reexecutar após o próximo push. |
-| Release | O preflight completo anterior (`38654902095`) passou antes desta mudança; executar novo workflow manual após sincronizar o commit. Só depois disso publicar `v2.3.0`. |
+| Preflight atualizado | A execução `38659549147` identificou teste de matriz com delimitador de `PATH` incorreto; a correção usa o delimitador do host e o preflight final `38659997554` passou. |
+| Release | Publicação `v2.3.0` verificada pelo workflow `38660712556`; os nove assets e digests foram consultados diretamente na API do GitHub. |
 
 ## Matriz nativa v2.3.0 — preflight completo, 2026-10-14
 
@@ -23,7 +36,7 @@
 | Workflow manual `38654902095` | Aprovado: gate completo, builds Windows x64/macOS Intel/macOS arm64/Linux x64, montagem dos quatro artifacts e notas da release. |
 | Manifestos | `latest-mac.yml` e `latest-linux.yml` gerados e validados contra os pacotes correspondentes. |
 | Conjunto de release | Aprovação dos nove arquivos esperados: setup Windows, quatro arquivos macOS, dois arquivos Linux e dois manifestos. |
-| Publicação | Etapa ignorada corretamente em `workflow_dispatch`. Não há tag `v2.3.0` ainda; executar `npm run release -- --publish` a partir de `main` limpa e sincronizada para publicar. |
+| Publicação | O preflight `workflow_dispatch` ignorou publicação corretamente. A tag estável foi enviada depois; veja a seção **Publicação da release v2.3.0** acima. |
 
 ## Matriz nativa v2.3.0 — primeira validação manual, 2026-10-14
 
