@@ -1,19 +1,19 @@
 # HANDOFF — AIOffice
 
-## Candidata v2.4.1 — 2026-10-14
+## Candidata v2.4.2 — 2026-10-15
 
-- Base do código: `origin/main` (`4d83db4`), com o conjunto de mudanças ainda não publicado desde a release estável `v2.3.0` (`762a500`). O trabalho de publicação fica no clone seguro `AIOfficeBeta-publish-v2.3.0`; o checkout original, que contém um merge em andamento, permanece intacto.
+- Base do código: `main` (`a1fe1cc`), que contém as mudanças ainda não publicadas desde a release estável `v2.3.0` (`762a500`), incluindo identidade visual, integrações e instalação de CLIs. O trabalho de publicação fica no clone seguro `AIOfficeBeta-publish-v2.3.0`; o checkout original, que contém um merge em andamento, permanece intacto.
 - Inclui identidade visual pendente, gestão opcional dos CLIs oficiais Codex/Claude Code/OMP no desktop instalado, integração nativa do Antigravity App/IDE/CLI, bootstrap com log para erros de carga Electron e correções de documentação.
 - A autenticação acontece pelo CLI oficial em terminal interativo, por ação explícita do usuário. O AIOffice não guarda credenciais nem altera o `PATH` global. Ativar uma CLI recém-instalada exige reiniciar o app com confirmação.
-- Smoke do diretório Windows empacotado e do executável instalado pelo setup NSIS passaram em pasta/perfil temporários; o app confirmou Maestro, serviços locais, janela Electron e hook Antigravity, com encerramento limpo. O setup foi instalado em diretório temporário e iniciou a janela normalmente.
-- `npm run desktop:verify` passou após remover finais inválidos de cinco arquivos: 22 testes raiz, 1.279 testes web (10 ignorados), 31 testes desktop, typechecks, build, i18n (2.430 textos) e sintaxe. Há apenas os avisos já conhecidos de traduções sem uso e chunk web acima de 500 kB.
-- Setup NSIS v2.4.1 em `%TEMP%\AIOffice-v2.4.1-final-brand-build\AIOffice-Setup.exe`: 122.398.571 bytes; SHA-256 `87FE4EFE4F5A82AA908192FF7B03513E22F2D8C3CB156EA88C2BFAA73816E648`; Authenticode `NotSigned`. Os ícones extraídos do setup e do executável instalado mostram a arte completa atual do AIOffice; o script de assets reproduz as variantes conferidas.
-- QA visual via CDP do painel **Sobre** e das ações dos três CLIs foi feito na candidata v2.4.0; os controles não mudaram na v2.4.1. Esta candidata atualiza a arte dos ícones; o smoke confirmou a janela Electron. Instalação/login reais dos CLIs e envio a sessões reais não foram executados.
-- A tentativa anterior v2.4.0 falhou no typecheck do GitHub Actions e não criou release; a tag foi preservada. v2.4.1 é uma tag nova para a correção.
-- Builds finais macOS/Linux e smoke serão executados pelo workflow nos runners nativos após enviar a tag v2.4.1.
+- Smokes Windows passaram localmente para o app empacotado v2.4.2 e para o executável instalado, usando perfil temporário; serviços, janela e hook Antigravity iniciaram e encerraram limpo.
+- O workflow `38673127713` validou a origem e compilou os pacotes dos três sistemas, mas falhou nos smokes: o runner Windows é Administrador e o CLI Maestro bloqueou a instalação; Linux exigiu `--no-sandbox` no runner; macOS precisava consultar o log no userData temporário e desativar GPU no smoke.
+- Correções de smoke v2.4.2: userData/log único em todos os hosts, `ORQUESTRADOR_ALLOW_ROOT_INSTALL=1` somente no perfil descartável de smoke, `--no-sandbox` no Linux e `--disable-gpu` no macOS. Esses ajustes não alteram flags da inicialização normal.
+- Setup local v2.4.2: 122.398.578 bytes, SHA-256 `0541B07D513342B70F1BB843D683AC1809AFF0D0C4F213F66D5B774D04AEACB0`, ProductVersion/FileVersion `2.4.2`, Authenticode `NotSigned`. O ícone extraído do setup coincide visualmente com a nova arte oficial em 32×32; o NSIS aponta `icon.ico` para setup, app e desinstalador.
+- `npm run desktop:verify` passou na candidata v2.4.2: 22 testes raiz, 1.279 testes web (10 ignorados), 31 testes desktop, typechecks, build, i18n (2.430 textos em en/es/fr) e sintaxe. Instalação/login reais dos CLIs e envio a sessões reais não foram executados.
+- QA visual via CDP do painel **Sobre** e das ações dos três CLIs ocorreu na candidata anterior; esta versão atualiza a arte dos ícones. A publicação v2.4.1 falhou antes da montagem da release; as tags v2.4.0 e v2.4.1 permanecem sem assets e não serão movidas.
 - O workflow usa runners Windows x64, macOS Intel/Apple silicon e Linux x64 para produzir os nove assets e só publica depois de validar nomes, tamanhos e SHA-256.
 - Atualização em background continua por IPC. Não há recarga automática da página; o botão de recarga após atualização do servidor Node é manual.
-- **Próximo passo:** revisar os diffs da candidata, enviar `main` e a tag `v2.4.1`, acompanhar os jobs nativos e confirmar os nove assets publicados com seus digests.
+- **Próximo passo:** registrar o smoke corrigido e o setup local, commitar/enviar a candidata, publicar a nova tag `v2.4.2` e confirmar que os quatro smokes, a montagem e os nove assets passam nos runners nativos.
 
 ## Release v2.3.0 publicada — 2026-10-14
 

@@ -5,7 +5,7 @@ All notable changes to AIOffice will be documented in this file.
 ## [Não lançado]
 Nenhuma mudança registrada.
 
-## [v2.4.1] - 2026-10-14
+## [v2.4.2] - 2026-10-15
 
 ### Adicionado
 - Gestão opcional dos CLIs oficiais Codex, Claude Code e OMP pelo app desktop: instalação/atualização no perfil privado do AIOffice, progresso e cancelamento, confirmação explícita e abertura do CLI oficial em terminal interativo para autenticação.
@@ -18,6 +18,7 @@ Nenhuma mudança registrada.
 - Falhas ocorridas durante a carga inicial do processo Electron agora são registradas em `aioffice.log`, antes da criação da janela principal, com uma mensagem de diagnóstico acionável.
 - O workflow agora inicia o aplicativo empacotado em cada runner de Windows, macOS e Linux, mantém a release como rascunho durante os uploads, verifica nomes/tamanhos/SHA-256 dos nove assets e só então publica.
 - README e documentação explicam downloads por arquitetura, autenticação dos provedores, assinatura dos pacotes e limites de atualização de cada sistema.
+- O smoke multiplataforma usa o perfil temporário correto em todos os sistemas e adapta os sinalizadores de sandbox/gráficos do runner; a inicialização normal do app não recebe esses sinalizadores.
 
 ## [v2.3.0] - 2026-10-14
 

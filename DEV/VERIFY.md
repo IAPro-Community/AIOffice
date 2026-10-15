@@ -1,19 +1,20 @@
 # VERIFY — AIOffice
 
-## Candidata v2.4.1 — 2026-10-14
+## Candidata v2.4.2 — 2026-10-15
 
 | Verificação | Resultado |
 |---|---|
 | Clone de trabalho / checkout original | Candidato revisado em `AIOfficeBeta-publish-v2.3.0`; checkout original com merge preservado sem escrita. |
 | CLIs oficiais instaláveis | 15 testes de `provider-tools` aprovados antes desta rodada; instalação/login real não executados. |
 | Antigravity | 9 testes focados, `node --check` do hook e runner Windows em modo Node aprovados; `desktop:verify` também valida a sintaxe do hook. |
-| Smoke do aplicativo empacotado e instalado Windows | `node scripts/desktop-smoke.mjs windows` passou tanto para `win-unpacked` quanto para o executável instalado pelo NSIS, com perfil temporário; serviços, janela Electron e hook Antigravity ficaram prontos e o processo encerrou limpo. |
-| `npm run desktop:verify` | Aprovado: typechecks e build raiz/web; 22 testes raiz, 1.279 testes web (10 ignorados), 31 desktop; i18n 2.430 textos; verificações de sintaxe. Avisos: traduções antigas sem uso e chunk cliente acima de 500 kB. |
-| Instalação do setup NSIS Windows x64 | Setup instalado em diretório temporário e abriu o app; o log confirmou Maestro, API local, janela e hook Antigravity. O smoke isolado do executável instalado encerrou com sucesso. ProductVersion 2.4.1.0. |
-| Ícone do setup Windows | Ícones associados extraídos do setup e do executável instalado mostram a arte oficial completa atual; ambos conferem visualmente com `icon.ico`. NSIS declara ícones do setup e desinstalador. |
-| `AIOffice-Setup.exe` local | 122.398.571 bytes; SHA-256 `87FE4EFE4F5A82AA908192FF7B03513E22F2D8C3CB156EA88C2BFAA73816E648`; Authenticode `NotSigned`. |
+| Correção local do smoke Windows | `node --check scripts/desktop-smoke.mjs` e `node scripts/desktop-smoke.mjs windows` passaram após permitir bootstrap Maestro somente no perfil de smoke. |
+| `npm run desktop:verify` | Aprovado: typechecks, build, 22 testes raiz, 1.279 testes web (10 ignorados), 31 testes desktop, i18n 2.430/2.430 em en/es/fr e verificações de sintaxe. |
+| `AIOffice-Setup.exe` local v2.4.2 | 122.398.578 bytes; SHA-256 `0541B07D513342B70F1BB843D683AC1809AFF0D0C4F213F66D5B774D04AEACB0`; ProductVersion/FileVersion `2.4.2`; Authenticode `NotSigned`. |
+| Smoke local Windows v2.4.2 | `node scripts/desktop-smoke.mjs windows` passou: serviços locais, janela e hook Antigravity iniciados com perfil temporário. |
+| Ícone do setup Windows | Ícone associado extraído de `AIOffice-Setup.exe` em 32×32 corresponde visualmente à arte de `icon-512.png`; configuração NSIS define `icon.ico` para setup e desinstalador, e `win.icon` define o ícone do app. |
 | QA visual dos CLIs | App instalado exibiu AIOffice v2.4.0 e três cartões (Codex CLI, Claude Code, OMP), com status e ações dentro da coluna rolável; API de CLI do preload presente. Os controles permanecem iguais na v2.4.1, que atualiza a arte dos ícones. |
-| Builds nativos macOS/Linux e smoke | Aguardam o workflow GitHub v2.4.1 nos runners correspondentes; ainda não publicados. |
+| Workflow tag v2.4.1 (`38673127713`) | Verificação de origem e builds Windows, macOS Intel/Apple silicon e Linux passaram; os quatro smokes falharam por configuração da validação. Nenhum asset/release foi publicado. |
+| Workflow v2.4.2 | Correções e verificações locais prontas; ainda não disparado. Publicação depende do commit/tag e da aprovação de todos os runners nativos. |
 | Refresh da página | Nenhum reload automático periódico novo encontrado. Atualização do desktop chega por IPC; atualizações do servidor oferecem botão manual e trocar idioma recarrega apenas após ação explícita. |
 
 ## Publicação da release v2.3.0 — 2026-10-14

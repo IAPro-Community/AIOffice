@@ -68,11 +68,15 @@ const env = {
   XDG_CONFIG_HOME: xdgConfig,
   AIOFFICE_DESKTOP_SMOKE: '1',
   AIOFFICE_DESKTOP_SMOKE_USERDATA: userData,
+  ORQUESTRADOR_ALLOW_ROOT_INSTALL: '1',
   HABBLAUD_PORT: String(await freePort()),
   HABBLAUD_UPDATE_CHECK: '0',
   ELECTRON_NO_UPDATER: '1',
 };
-const child = spawn(app, ['--enable-logging=stderr'], { cwd: home, env, shell: false, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+const args = ['--enable-logging=stderr'];
+if (target === 'linux') args.push('--no-sandbox');
+if (target === 'darwin' || target === 'macos') args.push('--disable-gpu');
+const child = spawn(app, args, { cwd: home, env, shell: false, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
 let output = '';
 const append = (chunk, stream) => {
   const text = chunk.toString('utf8');
@@ -88,11 +92,7 @@ const code = await new Promise((resolve, reject) => {
   child.once('error', (error) => { clearTimeout(timer); reject(error); });
   child.once('close', (exitCode) => { clearTimeout(timer); resolve(exitCode); });
 });
-const logFile = target === 'win32' || target === 'windows'
-  ? join(appData, 'AIOffice', 'aioffice.log')
-  : target === 'darwin' || target === 'macos'
-    ? join(home, 'Library', 'Application Support', 'AIOffice', 'aioffice.log')
-    : join(xdgConfig, 'AIOffice', 'aioffice.log');
+const logFile = join(userData, 'aioffice.log');
 const log = existsSync(logFile) ? readFileSync(logFile, 'utf8') : '';
 if (code !== 0 || !log.includes('Local AIOffice services are ready') || !log.includes('Desktop window is ready to show.')
   || !log.includes('Hook de mensagens do Antigravity instalado/atualizado')) {
