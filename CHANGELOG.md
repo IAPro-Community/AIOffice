@@ -15,6 +15,7 @@ Nenhuma mudança registrada.
 
 ### Alterado
 - A instalação de CLIs não altera o `PATH` global nem coleta credenciais. Reiniciar o AIOffice para ativar uma instalação é uma ação explícita; consultas e progresso chegam à interface sem recarregar a página.
+- O painel **Ferramentas de IA** organiza status, progresso e ações de cada CLI em uma lista responsiva; a tela de conexão preserva a identidade visual mesmo se a imagem da marca falhar.
 - Falhas ocorridas durante a carga inicial do processo Electron agora são registradas em `aioffice.log`, antes da criação da janela principal, com uma mensagem de diagnóstico acionável.
 - O workflow agora inicia o aplicativo empacotado em cada runner de Windows, macOS e Linux, mantém a release como rascunho durante os uploads, verifica nomes/tamanhos/SHA-256 dos nove assets e só então publica.
 - README e documentação explicam downloads por arquitetura, autenticação dos provedores, assinatura dos pacotes e limites de atualização de cada sistema.
