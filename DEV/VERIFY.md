@@ -6,18 +6,29 @@
 |---|---|
 | Estado antes do refresh | `main` limpo e sincronizado; latest pública `v2.4.3`; release sem assets macOS e com setup Windows, AppImage/deb Linux e manifesto Linux. Fontes empacotadas não diferem da tag. |
 | Atualizador | Reenviar os mesmos pacotes sob `v2.4.3` mantém o semver; o atualizador instalado não apresenta a mesma versão como upgrade. Este fluxo atualiza links diretos/downloads. |
-| Workflow | `refresh-windows-linux.yml` preparado para dispatch somente em `main`, fixa SHA da origem e tag publicada, executa verificação e builds/smokes Windows/Linux, substitui assets do mesmo release e valida conjunto remoto/tamanho/SHA-256. Nenhum job cria/move tag. |
+| Workflow | `refresh-windows-linux.yml` executado com sucesso no [run 38772157012](https://github.com/IAPro-Community/AIOffice/actions/runs/38772157012): verificação, builds/smokes Windows/Linux, substituição dos assets e validação remota de nomes/tamanhos/SHA-256. Nenhum job cria/move tag. |
 | Teste do manifesto | `node --test apps/office-desktop/test/update-manifests.test.mjs`: 3/3 aprovados, inclusive geração Linux-only sem pacotes Mac. |
 | Verificação desktop local | `npm run desktop:verify`: aprovado; 22 testes raiz, 1.279 web (10 ignorados), 32 desktop, typechecks/build/i18n/sintaxe. |
 | YAML e diff local | YAML do workflow interpretado; `git diff --check` e `node --check` dos arquivos alterados passaram. |
-| Publicação GitHub | Pendente: executar workflow manual, verificar exatamente quatro assets e registrar tamanhos/digests abaixo. |
+| Publicação GitHub | Concluída. `v2.4.3` continua apontando para `8393eaeb88c9fa658231499695e407ac4d575bb2`; a release continua estável/latest, sem tag nova. O run preliminar `38772030092` parou no guard de origem antes de tocar nos assets; a execução seguinte passou. |
+
+Assets atuais da release [v2.4.3](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.4.3), conferidos pela API do GitHub:
+
+| Asset | Bytes | SHA-256 |
+|---|---:|---|
+| `AIOffice-Setup.exe` | 122.835.705 | `7eae0c47d74e0bc934e3936c9c33d6876deba70ebf7f5126f1dda473e63c60c6` |
+| `AIOffice-Setup-Linux-x64.AppImage` | 133.771.511 | `e5f69e33d3a99ac7f10e4f9767972d41985414d13a94e7d529284e1456166dec` |
+| `AIOffice-Setup-Linux-x64.deb` | 106.569.168 | `3b0bc83fc9e228e5b275fd242a66c20e7ef075af85bf1cbdf3a2f1d09cab9f4d` |
+| `latest-linux.yml` | 371 | `015365dc91e2c853711dc88b830c398c7fe53c41cc5c880a253fca5473547506` |
+
+Os cinco assets macOS (`.dmg`, `.zip` e `latest-mac.yml`) estão ausentes. A descrição da release informa que foram removidos temporariamente e que a versão mantida não será oferecida como atualização pelo updater interno.
 
 ## Diagnóstico e bloqueio macOS pós-release — 2026-10-15
 
 | Verificação | Resultado |
 |---|---|
 | Log do job macOS Intel na execução `38676380641` | Confirmou `provided=0` para as credenciais Apple; Electron Builder registrou `0 identities found` e `skipped macOS application code signing`. Os `.dmg` e `.zip` foram mesmo assim publicados sem assinatura/notarização. |
-| API do GitHub | A release `v2.4.3` ainda contém os quatro assets macOS com nomes, tamanhos e digests registrados abaixo. Não editei os assets remotos nem reutilizei a tag. |
+| API do GitHub | Na inspeção original, antes do refresh documentado acima, a release `v2.4.3` ainda continha os quatro assets macOS listados no registro histórico abaixo. Eles foram removidos pelo run `38772157012`; a tag não foi reutilizada nem movida. |
 | Aviso de segurança na release | Notas públicas da `v2.4.3` atualizadas para alertar que os pacotes macOS não devem ser instalados até a publicação de uma compilação assinada/notarizada. |
 | Secrets | Nenhum secret de repositório apareceu em `gh secret list`; a API de secrets da organização retornou HTTP 403 por falta de permissão de admin. O log do runner confirma que nenhuma credencial Apple foi disponibilizada no job. |
 | Proteção no pipeline | Publicada em `main` no commit `944b831`: jobs macOS falham se os cinco secrets estiverem ausentes/parciais e invocam `scripts/verify-macos-release.sh` para conferir assinatura Developer ID, avaliação `spctl` e ticket `stapler` tanto no `.dmg` como no `.zip`. |
@@ -41,11 +52,11 @@
 | Workflow tag v2.4.2 (`38675243193`) | Origem, quatro builds e quatro smokes passaram. Montagem produziu os nove assets no draft; verificação final falhou porque `GET /releases/tags/{tag}` retorna 404 para drafts. Nada foi publicado. |
 | Correção v2.4.3 do lookup | Workflow usa a lista de releases autenticada (`releases?per_page=100`) e filtra o draft pelo `tag_name`; a lista foi confirmada localmente com o draft e seus nove assets. |
 | Workflow v2.4.3 (`38676380641`) | `success`: gate de origem, Windows, macOS Intel/Apple silicon, Linux, smokes, montagem, lookup do draft, nove nomes/tamanhos/digests e publicação passaram. |
-| Release v2.4.3 | A API do GitHub e `/releases/latest` confirmam a tag `v2.4.3`, não draft/não prerelease, como latest; exatamente nove assets. Link: [GitHub Releases](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.4.3). |
+| Release v2.4.3 no lançamento original | A API do GitHub e `/releases/latest` confirmaram a tag `v2.4.3`, não draft/não prerelease, como latest; naquele momento havia nove assets. O refresh registrado no topo substituiu esse conjunto por quatro assets Windows/Linux. Link: [GitHub Releases](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.4.3). |
 | Setup público baixado | 122.835.769 bytes; SHA-256 `50a3f5337c92b82f13df94c374a87cbd1bd2112c3239de2e5aef1e749f2d90eb`; ProductVersion/FileVersion `2.4.3`; Authenticode `NotSigned`. O arquivo foi baixado da release e o ícone foi extraído para conferência. |
 | Refresh da página | Nenhum reload automático periódico novo encontrado. Atualização do desktop chega por IPC; atualizações do servidor oferecem botão manual e trocar idioma recarrega apenas após ação explícita. |
 
-### Assets públicos v2.4.3
+### Assets públicos v2.4.3 no lançamento original (histórico; substituídos no refresh acima)
 
 | Asset | Tamanho (bytes) | SHA-256 GitHub |
 |---|---:|---|

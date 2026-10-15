@@ -77,7 +77,7 @@ O cliente mantém o estado do escritório atualizado pelo stream SSE; em Quick T
 
 ## Releases e assinatura
 
-O workflow `.github/workflows/release-desktop.yml` tem uma validação manual prévia e roda em tags estáveis `vX.Y.Z`. Ele verifica a aplicação, empacota Windows x64, macOS Intel, macOS Apple silicon e Linux x64 em runners nativos e publica somente se todos os builds e a checagem do conjunto final passarem. Os assets da publicação normal incluem setup Windows, `.dmg`/`.zip` macOS, `.AppImage`/`.deb` Linux e manifestos `latest-mac.yml`/`latest-linux.yml`. Até configurar assinatura/notarização Apple, os builds macOS falham fechados. Para atualizar a release estável atual sem nova tag, use `.github/workflows/refresh-windows-linux.yml`; esse fluxo só aceita a release mais recente quando o código empacotado continua idêntico ao da tag e publica apenas Windows/Linux.
+O workflow `.github/workflows/release-desktop.yml` tem uma validação manual prévia e roda em tags estáveis `vX.Y.Z`. Ele verifica a aplicação, empacota Windows x64, macOS Intel, macOS Apple silicon e Linux x64 em runners nativos e publica somente se todos os builds e a checagem do conjunto final passarem. Os assets da publicação normal incluem setup Windows, `.dmg`/`.zip` macOS, `.AppImage`/`.deb` Linux e manifestos `latest-mac.yml`/`latest-linux.yml`. Até configurar assinatura/notarização Apple, os builds macOS falham fechados. O refresh manual `.github/workflows/refresh-windows-linux.yml` foi executado com sucesso no run `38772157012` para substituir os downloads Windows/Linux da release existente `v2.4.3` e remover os assets macOS. Ele não cria/move tag e só aceita a release mais recente quando o código empacotado continua idêntico ao da tag. Como mantém a versão `2.4.3`, os clientes instalados não recebem isso como uma versão nova pelo updater.
 
 Configure estes valores nas configurações do repositório **antes** de enviar uma tag de release:
 
@@ -100,7 +100,7 @@ Passos do mantenedor:
 2. Execute `npm run desktop:verify`, confirme que os cinco segredos Apple estão configurados e acione manualmente **Actions → AIOffice Desktop Release** na `main` para validar os quatro runners sem publicar uma versão. Os jobs macOS também têm que passar por `codesign`, `spctl` e `stapler`.
 3. Depois que todos os jobs nativos passarem, envie a tag correspondente (`vX.Y.Z`) pela rotina `npm run release -- --publish`.
 4. Acompanhe **Actions → AIOffice Desktop Release**; a publicação depende do sucesso de todos os builds e manifestos.
-5. Confirme os nove assets, checksums e URLs da release; teste atualização Windows e AppImage, além da instalação manual `.dmg`/`.deb`.
+5. Numa publicação completa, confirme os nove assets, checksums e URLs. No estado temporário atual, confirme os quatro assets Windows/Linux registrados em `DEV/VERIFY.md`; teste atualização Windows/AppImage e instalação manual `.deb`. macOS só volta após assinatura/notarização Apple.
 
 Histórico: o primeiro asset foi anexado à release existente `v2.1.0`; nenhuma nova tag ou release foi criada naquela etapa. A release atual foi publicada pelo workflow tag-gated documentado abaixo.
 

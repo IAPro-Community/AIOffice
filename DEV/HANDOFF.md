@@ -5,8 +5,10 @@
 - Pedido: tirar os arquivos macOS da distribuição e subir atualização na release existente sem criar versão/tag.
 - Evidência inicial: `main` estava limpo e sincronizado com `origin/main`; `v2.4.3` é a release estável mais recente e já só continha setup Windows, dois pacotes Linux e `latest-linux.yml`. Nenhum código empacotado mudou depois do commit/tag `8393eae`; os deltas posteriores são documentação e workflow.
 - Solução: workflow manual `.github/workflows/refresh-windows-linux.yml` valida que a release continua sendo `v2.4.3`, que o código empacotado não divergiu da tag, compila/testa Windows e Linux, faz backup dos quatro assets atuais, substitui apenas os assets desses sistemas e remove `.dmg`, `.zip` e `latest-mac.yml`. Se a publicação falhar, restaura os binários anteriores. Não cria nem move tag.
-- Compatibilidade: a publicação mantém a versão `2.4.3`; links públicos serão atualizados, mas o updater interno não oferece a mesma versão como update. Para ser detectada pelo updater seria necessária uma versão superior e nova tag.
-- **Estado:** implementação local em revisão; após verificação, commit/push e workflow GitHub, registrar aqui o run, hashes, tamanhos e URL final.
+- **Publicação concluída:** workflow [38772157012](https://github.com/IAPro-Community/AIOffice/actions/runs/38772157012) passou em `main` (`4a8de6dfccca786fedf561d28ec26e6bc2b7d54f`). A release [v2.4.3](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.4.3) continua latest/estável e sua tag segue no commit `8393eaeb88c9fa658231499695e407ac4d575bb2`; não foi criada nem movida tag.
+- Assets publicados e verificados: Windows setup (122.835.705 bytes, SHA-256 `7eae0c47d74e0bc934e3936c9c33d6876deba70ebf7f5126f1dda473e63c60c6`), Linux AppImage (133.771.511 bytes, `e5f69e33d3a99ac7f10e4f9767972d41985414d13a94e7d529284e1456166dec`), Linux `.deb` (106.569.168 bytes, `3b0bc83fc9e228e5b275fd242a66c20e7ef075af85bf1cbdf3a2f1d09cab9f4d`) e `latest-linux.yml` (371 bytes, `015365dc91e2c853711dc88b830c398c7fe53c41cc5c880a253fca5473547506`). Os cinco assets macOS estão ausentes.
+- Compatibilidade: a versão continua `2.4.3`; os links de download foram atualizados, mas o updater interno não oferece a mesma versão como update. Uma versão superior e tag nova serão necessárias para o update no app.
+- **Estado:** concluído. O run preliminar `38772030092` falhou apenas no guard de origem antes de qualquer alteração na release; o guard foi corrigido antes do run bem-sucedido. Próximo contexto: novos ajustes de produto exigem bump/changelog/tag; reintroduzir macOS exige credenciais Apple e compilação assinada/notarizada.
 
 ## Bloqueio macOS da release v2.4.3 — 2026-10-15
 
@@ -19,13 +21,13 @@
 ## Release v2.4.3 publicada — 2026-10-15
 
 - Tag `v2.4.3` aponta para `8393eaeb88c9fa658231499695e407ac4d575bb2`; release estável latest: https://github.com/IAPro-Community/AIOffice/releases/tag/v2.4.3.
-- Workflow `38676380641` concluiu com `success`: gate de origem, builds e smokes Windows x64, macOS Intel/Apple silicon e Linux x64, montagem, validação do draft e dos nove digests.
-- A release inclui todas as mudanças acumuladas desde a `v2.3.0`: layout e identidade visual, CLIs oficiais opcionais no app instalado, integração Antigravity, diagnóstico desktop, atualizador sem refresh integral, documentação e instaladores multiplataforma. Os nove tamanhos e digests estão em `DEV/VERIFY.md`.
+- No lançamento original, workflow `38676380641` concluiu com `success`: gate de origem, builds e smokes Windows x64, macOS Intel/Apple silicon e Linux x64, montagem, validação do draft e dos nove digests. O refresh posterior removeu os assets macOS e substituiu os binários Windows/Linux; estado atual acima.
+- A release inclui todas as mudanças acumuladas desde a `v2.3.0`: layout e identidade visual, CLIs oficiais opcionais no app instalado, integração Antigravity, diagnóstico desktop, atualizador sem refresh integral, documentação e instaladores multiplataforma. Os nove tamanhos/digests do lançamento original estão preservados como histórico em `DEV/VERIFY.md`; os ativos atuais constam na seção do refresh.
 - O setup Windows público foi baixado e conferido: 122.835.769 bytes, SHA-256 `50a3f5337c92b82f13df94c374a87cbd1bd2112c3239de2e5aef1e749f2d90eb`, versão `2.4.3`, `NotSigned`; o ícone extraído mostra a nova arte oficial. Build e smoke local também passaram.
 - `npm run desktop:verify` passou para o código da candidata `v2.4.2` (mesmo código-fonte da `v2.4.3`, que altera versão e pipeline): 22 testes raiz, 1.279 testes web (10 ignorados), 31 desktop, typechecks, build, i18n 2.430/2.430 em en/es/fr e sintaxe.
 - A tentativa `v2.4.2` deixou um draft oculto com nove assets; a API de busca por tag falhou ao retornar drafts. O workflow v2.4.3 consulta a lista de releases, verificou o conjunto e publicou corretamente. Os tags `v2.4.0`/`v2.4.1` continuam sem release e não foram movidos.
 - Atualização em background continua por IPC. Não há refresh automático da página; a recarga após atualização do servidor Node é manual.
-- **Próximo contexto:** partir da release estável `v2.4.3`; novos ajustes devem atualizar versão, changelog e os nove assets por uma nova tag.
+- **Próximo contexto:** partir da release estável `v2.4.3`. Para distribuir mudanças de produto, incrementar versão, atualizar changelog, validar os sistemas disponíveis e publicar uma tag nova; o refresh sem tag serve somente para substituir downloads da mesma versão.
 
 ## Release v2.3.0 publicada — 2026-10-14
 

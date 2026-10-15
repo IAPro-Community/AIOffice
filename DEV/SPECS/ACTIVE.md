@@ -2,7 +2,7 @@
 
 ## 1. Identificação do Projeto
 - **Nome**: AIOffice
-- **Status**: release estável v2.4.3 publicada com os deltas desde v2.3.0. Diagnóstico posterior confirmou que os builds macOS foram publicados sem assinatura Apple (CI não encontrou identidade Developer ID), e o Gatekeeper os rejeita como danificados/modificados. Commit `944b831` em `main` exige as cinco credenciais Apple e valida assinatura, Gatekeeper e notarização antes de aceitar pacotes. Os assets macOS foram removidos temporariamente; um fluxo manual limitado a Windows/Linux pode substituir os assets na release v2.4.3 sem criar ou mover tag. Isso não incrementa a versão nem aciona o atualizador interno. Não orientar a contornar o Gatekeeper.
+- **Status**: release estável `v2.4.3` publicada com os deltas desde `v2.3.0`; refresh Windows/Linux concluído no run `38772157012`, sem tag nova e sem assets macOS. A tag continua no commit `8393eaeb88c9fa658231499695e407ac4d575bb2`. O Gatekeeper rejeitou os builds macOS originais, publicados sem Developer ID; commit `944b831` exige as cinco credenciais Apple e valida assinatura, Gatekeeper e notarização antes de aceitar futuros pacotes. O mesmo-tag refresh atualiza downloads, não aciona o atualizador interno. Novas mudanças de produto exigem versão/tag superior. Não orientar a contornar o Gatekeeper.
 - **Localização**: Repositório AIOffice
 
 ## 2. Pilares de Integração

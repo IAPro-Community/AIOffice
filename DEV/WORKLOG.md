@@ -5,7 +5,8 @@
 - **Limites**: manter `v2.4.3` intocada; confirmar que fontes empacotadas seguem idênticas à tag; publicar somente `.exe`, `.AppImage`, `.deb` e `latest-linux.yml`; sem assets/macOS ou manifesto Mac.
 - **Implementação**: workflow manual `refresh-windows-linux.yml`, manifesto Linux-only, teste focado e notas/documentação atualizadas. Recompila nos runners nativos e valida o conjunto remoto por nomes, tamanho e SHA-256.
 - **Risco comunicado**: manter `2.4.3` atualiza os downloads da release, mas não dispara o updater interno, que só oferece versão superior.
-- **Estado**: em execução; preencher run do Actions, assets e hashes após publicação.
+- **Publicação concluída**: Actions [run 38772157012](https://github.com/IAPro-Community/AIOffice/actions/runs/38772157012) passou. `v2.4.3` continua apontando para `8393eaeb88c9fa658231499695e407ac4d575bb2`; não houve tag nova. API confirmou os quatro assets Windows/Linux e seus tamanhos/digests em `DEV/VERIFY.md`; os cinco assets macOS estão ausentes. O run preliminar `38772030092` parou no guard de origem antes de alterar a release e foi corrigido antes da publicação bem-sucedida.
+- **Próximo contexto**: uma mudança de produto requer nova versão/tag para o updater reconhecer; para voltar a oferecer macOS, configurar assinatura Developer ID/notarização e publicar builds validados.
 
 ## 2026-10-15 — Gatekeeper rejeita os pacotes macOS v2.4.3
 - **Causa:** job `38676380641` não recebeu credenciais Apple; o Electron Builder reportou zero identidades e pulou assinatura. Os assets foram publicados unsigned, e o Gatekeeper os apresenta como danificados/modificados.
