@@ -1,5 +1,12 @@
 # WORKLOG — AIOffice
 
+## 2026-10-15 — Refresh temporário Windows/Linux sem tag
+- **Pedido**: retirar os downloads macOS enquanto a conta Apple não permite emitir Developer ID e atualizar a distribuição sem criar tag/versão.
+- **Limites**: manter `v2.4.3` intocada; confirmar que fontes empacotadas seguem idênticas à tag; publicar somente `.exe`, `.AppImage`, `.deb` e `latest-linux.yml`; sem assets/macOS ou manifesto Mac.
+- **Implementação**: workflow manual `refresh-windows-linux.yml`, manifesto Linux-only, teste focado e notas/documentação atualizadas. Recompila nos runners nativos e valida o conjunto remoto por nomes, tamanho e SHA-256.
+- **Risco comunicado**: manter `2.4.3` atualiza os downloads da release, mas não dispara o updater interno, que só oferece versão superior.
+- **Estado**: em execução; preencher run do Actions, assets e hashes após publicação.
+
 ## 2026-10-15 — Gatekeeper rejeita os pacotes macOS v2.4.3
 - **Causa:** job `38676380641` não recebeu credenciais Apple; o Electron Builder reportou zero identidades e pulou assinatura. Os assets foram publicados unsigned, e o Gatekeeper os apresenta como danificados/modificados.
 - **Proteção publicada:** commit `944b831` em `main` exige os cinco secrets e valida `codesign`, `spctl` e `stapler` em ambos `.dmg`/`.zip`; README público deixa de oferecer os links macOS até haver uma build assinada.

@@ -25,7 +25,7 @@
 
 ## Downloads
 
-Estes links sempre apontam para a **última release publicada**. Uma mudança no código só aparece aqui depois que os builds de todos os sistemas passam e a release é publicada. Consulte também a página de [releases](https://github.com/IAPro-Community/AIOffice/releases/latest) para notas, checksums e arquivos da versão.
+Estes links sempre apontam para a **última release publicada**. Uma mudança no código só aparece aqui depois que os builds correspondentes passam e os arquivos são publicados. Consulte também a página de [releases](https://github.com/IAPro-Community/AIOffice/releases/latest) para notas, checksums e arquivos da versão.
 
 | Sistema | Pacote | Download |
 |---|---|---|
@@ -35,7 +35,7 @@ Estes links sempre apontam para a **última release publicada**. Uma mudança no
 | Linux x64 | AppImage portátil | [Baixar AIOffice-Setup-Linux-x64.AppImage](https://github.com/IAPro-Community/AIOffice/releases/latest/download/AIOffice-Setup-Linux-x64.AppImage) |
 | Linux x64 | Pacote Debian/Ubuntu `.deb` | [Baixar AIOffice-Setup-Linux-x64.deb](https://github.com/IAPro-Community/AIOffice/releases/latest/download/AIOffice-Setup-Linux-x64.deb) |
 
-Os arquivos macOS da release `v2.4.3` foram publicados sem assinatura Developer ID nem notarização. Eles podem ser rejeitados pelo Gatekeeper com a mensagem de app danificado ou modificado; **não tente contornar esse bloqueio**. O download macOS ficará indisponível aqui até uma nova compilação assinada e notarizada passar pela validação de assinatura, Gatekeeper e ticket da Apple. O atualizador automático do macOS só é habilitado em builds assinadas e notarizadas. No Linux, a atualização em segundo plano é compatível com o AppImage; o `.deb` é atualizado pelo gerenciador de pacotes. No Windows, o app consulta releases em background, sem recarregar a página, e valida o instalador pelo SHA-256 publicado pelo GitHub antes de pedir confirmação para instalá-lo. O instalador Windows ainda pode exibir SmartScreen enquanto não houver certificado Authenticode.
+Os arquivos macOS da release `v2.4.3` foram publicados sem assinatura Developer ID nem notarização e foram removidos temporariamente. Eles podem ser rejeitados pelo Gatekeeper como danificados ou modificados; **não tente contornar esse bloqueio**. O download macOS só volta depois que uma compilação assinada e notarizada passar pela validação de assinatura, Gatekeeper e ticket da Apple. O atualizador automático do macOS só é habilitado em builds assinadas e notarizadas. No Linux, a atualização em segundo plano é compatível com o AppImage; o `.deb` é atualizado pelo gerenciador de pacotes. No Windows, o app consulta releases em background, sem recarregar a página, e valida o instalador pelo SHA-256 publicado pelo GitHub antes de pedir confirmação para instalá-lo. Reenviar instaladores à mesma tag mantém o número da versão e não aciona o atualizador interno; ele só oferece uma versão superior. O instalador Windows ainda pode exibir SmartScreen enquanto não houver certificado Authenticode.
 
 O desktop inclui o runtime Node e inicia o servidor e a interface local. Em **Sobre → Ferramentas de IA**, você pode instalar ou atualizar Codex, Claude Code e OMP dentro do perfil privado do AIOffice; isso não muda o `PATH` global. A autenticação abre o CLI oficial em um terminal interativo, e você entra na conta diretamente com o fornecedor. O AIOffice não recebe nem armazena essas credenciais. Uma confirmação permite reiniciar o aplicativo para ativar um CLI recém-instalado. Ao abrir o desktop, o AIOffice instala ou atualiza automaticamente suas pontes de mensagens do Claude Code e OMP; Codex usa a CLI instalada ou uma cópia oficial já encontrada. Não é preciso manter comandos `npm run` abertos no desktop. Sessões Claude/OMP já abertas podem precisar ser recarregadas ou reabertas. No Docker, o envio ao Codex ainda exige o auxiliar executado no host.
 
@@ -60,7 +60,7 @@ Escolha paleta, cenário, calendário de datas comemorativas, horários e idioma
 
 ### Usar o aplicativo desktop
 
-Baixe o pacote correspondente ao seu sistema na tabela acima e abra **AIOffice**. O aplicativo sobe a interface local em `http://127.0.0.1:4747` automaticamente. O instalador inclui o runtime necessário; não precisa instalar Node.js para executar o desktop. No macOS, escolha `arm64` para Apple silicon e `x64` para Intel; abra o `.dmg` e arraste o app para **Aplicativos**. No Linux, marque o AppImage como executável (`chmod +x AIOffice-Setup-Linux-x64.AppImage`) e abra-o; o `.deb` pode ser instalado por um gerenciador de pacotes Debian/Ubuntu.
+Baixe o pacote correspondente ao seu sistema na tabela acima e abra **AIOffice**. O aplicativo sobe a interface local em `http://127.0.0.1:4747` automaticamente. O instalador inclui o runtime necessário; não precisa instalar Node.js para executar o desktop. Os instaladores macOS estão temporariamente indisponíveis. No Linux, marque o AppImage como executável (`chmod +x AIOffice-Setup-Linux-x64.AppImage`) e abra-o; o `.deb` pode ser instalado por um gerenciador de pacotes Debian/Ubuntu.
 
 ### Executar pelo código-fonte
 
@@ -103,7 +103,7 @@ npm run desktop:package:linux
 npm run desktop:verify
 ```
 
-Cada instalador deve ser criado no sistema operacional correspondente. O workflow oficial testa Windows x64, macOS Intel, macOS Apple silicon e Linux x64 em runners nativos; uma etapa final valida os arquivos e manifestos de atualização e só então publica a release. Authenticode e assinatura/notarização Apple são opcionais no workflow, mas sem elas os sistemas podem mostrar avisos e o macOS mantém atualização manual. Consulte [DEV/DESKTOP.md](DEV/DESKTOP.md) para detalhes, requisitos e limites atuais.
+Cada instalador deve ser criado no sistema operacional correspondente. O workflow de release testa Windows x64, macOS Intel, macOS Apple silicon e Linux x64 em runners nativos; o fluxo temporário de atualização da release atual cobre somente Windows/Linux e nunca cria nem move tag. A publicação normal valida arquivos e manifestos antes de publicar. Authenticode é opcional; assinatura/notarização Apple é obrigatória para reativar os downloads macOS. Consulte [DEV/DESKTOP.md](DEV/DESKTOP.md) para detalhes, requisitos e limites atuais.
 
 ## Integrações
 

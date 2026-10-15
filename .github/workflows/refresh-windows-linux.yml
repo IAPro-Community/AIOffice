@@ -1,0 +1,292 @@
+name: Refresh AIOffice Windows and Linux assets
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aioffice-windows-linux-release-refresh
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Verify source and current release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    outputs:
+      release_tag: ${{ steps.target.outputs.release_tag }}
+      release_sha: ${{ steps.target.outputs.release_sha }}
+      source_sha: ${{ steps.target.outputs.source_sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - name: Ensure this refresh targets the current published version without changing a tag
+        id: target
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          [[ "$GITHUB_REF" == 'refs/heads/main' ]] || { echo 'Dispatch this refresh from main.' >&2; exit 1; }
+          release_tag=$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq '.tag_name')
+          version=$(node -p "require('./package.json').version")
+          if [[ "$release_tag" != "v$version" || ! "$release_tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Latest release $release_tag must match package version v$version." >&2
+            exit 1
+          fi
+          git fetch origin --tags --force
+          git merge-base --is-ancestor "$release_tag" HEAD || {
+            echo "The current release tag $release_tag is not an ancestor of main." >&2
+            exit 1
+          }
+          if ! git diff --quiet "$release_tag" HEAD -- package.json package-lock.json apps packages; then
+            echo 'Packaged application sources changed after the current release. Refusing to replace its assets without a version/tag bump.' >&2
+            exit 1
+          fi
+          release_sha=$(git rev-parse "${release_tag}^{commit}")
+          source_sha=$(git rev-parse HEAD)
+          printf 'release_sha=%s\n' "$release_sha" >> "$GITHUB_OUTPUT"
+          printf 'source_sha=%s\n' "$source_sha" >> "$GITHUB_OUTPUT"
+          printf 'release_tag=%s\n' "$release_tag" >> "$GITHUB_OUTPUT"
+
+  verify:
+    name: Verify source and desktop package
+    needs: prepare
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.prepare.outputs.release_sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Verify application and desktop shell
+        run: npm run desktop:verify
+
+  package-windows:
+    name: Package Windows x64
+    needs: [prepare, verify]
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.prepare.outputs.release_sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Build Windows x64 installer
+        run: npm run desktop:package:win
+      - name: Validate and stage Windows installer
+        shell: pwsh
+        run: |
+          $installer = Join-Path $env:GITHUB_WORKSPACE 'dist/installers/AIOffice-Setup.exe'
+          if (-not (Test-Path -LiteralPath $installer -PathType Leaf)) { throw "Windows installer is missing: $installer" }
+          New-Item -ItemType Directory -Path 'dist/release-assets' -Force | Out-Null
+          Copy-Item -LiteralPath $installer -Destination 'dist/release-assets/AIOffice-Setup.exe'
+      - name: Build unpacked app and smoke test
+        run: |
+          npm run desktop:build
+          node scripts/desktop-smoke.mjs windows
+      - uses: actions/upload-artifact@v7
+        with:
+          name: aioffice-refresh-windows-x64
+          path: dist/release-assets/AIOffice-Setup.exe
+          if-no-files-found: error
+
+  package-linux:
+    name: Package Linux x64
+    needs: [prepare, verify]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.prepare.outputs.release_sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Build Linux x64 packages
+        run: npm run desktop:package:linux
+      - name: Validate and stage Linux packages
+        run: |
+          test -s dist/installers/AIOffice-Setup-Linux-x64.AppImage
+          test -s dist/installers/AIOffice-Setup-Linux-x64.deb
+          mkdir -p dist/release-assets
+          cp dist/installers/AIOffice-Setup-Linux-x64.AppImage dist/installers/AIOffice-Setup-Linux-x64.deb dist/release-assets/
+      - name: Build unpacked app and smoke test
+        run: |
+          npm run desktop:build
+          xvfb-run -a node scripts/desktop-smoke.mjs linux
+      - uses: actions/upload-artifact@v7
+        with:
+          name: aioffice-refresh-linux-x64
+          path: |
+            dist/release-assets/AIOffice-Setup-Linux-x64.AppImage
+            dist/release-assets/AIOffice-Setup-Linux-x64.deb
+          if-no-files-found: error
+
+  publish:
+    name: Replace Windows and Linux assets on the existing release
+    needs: [prepare, package-windows, package-linux]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.prepare.outputs.source_sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: aioffice-refresh-*
+          path: dist/release-assets
+          merge-multiple: true
+      - name: Generate Linux update manifest only
+        run: node scripts/create-desktop-update-manifests.mjs dist/release-assets --linux-only
+      - name: Validate the complete temporary Windows/Linux asset set
+        shell: bash
+        run: |
+          expected_names=$(printf '%s\n' AIOffice-Setup.exe AIOffice-Setup-Linux-x64.AppImage AIOffice-Setup-Linux-x64.deb latest-linux.yml | sort)
+          actual_names=$(find dist/release-assets -maxdepth 1 -type f -printf '%f\n' | sort)
+          if [[ "$actual_names" != "$expected_names" ]]; then
+            echo 'The Windows/Linux refresh asset set is incomplete or contains unexpected files.' >&2
+            diff -u <(printf '%s\n' "$expected_names") <(printf '%s\n' "$actual_names") || true
+            exit 1
+          fi
+          while IFS= read -r file; do test -s "$file" || exit 1; done < <(find dist/release-assets -maxdepth 1 -type f)
+      - name: Confirm target is still the latest published release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+        run: |
+          current_tag=$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq '.tag_name')
+          [[ "$current_tag" == "$RELEASE_TAG" ]] || { echo "Latest release changed to $current_tag; refusing to overwrite $RELEASE_TAG." >&2; exit 1; }
+          release_flags=$(gh release view "$RELEASE_TAG" --json isDraft,isPrerelease --jq '[.isDraft,.isPrerelease] | @tsv')
+          [[ "$release_flags" == $'false\tfalse' ]] || { echo "Target $RELEASE_TAG is not a published stable release." >&2; exit 1; }
+      - name: Back up and verify current Windows/Linux assets
+        id: backup
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+        shell: bash
+        run: |
+          mkdir -p dist/release-backup
+          gh release download "$RELEASE_TAG" --dir dist/release-backup \
+            --pattern AIOffice-Setup.exe \
+            --pattern AIOffice-Setup-Linux-x64.AppImage \
+            --pattern AIOffice-Setup-Linux-x64.deb \
+            --pattern latest-linux.yml
+          expected_names=$(printf '%s\n' AIOffice-Setup.exe AIOffice-Setup-Linux-x64.AppImage AIOffice-Setup-Linux-x64.deb latest-linux.yml | sort)
+          backup_names=$(find dist/release-backup -maxdepth 1 -type f -printf '%f\n' | sort)
+          [[ "$backup_names" == "$expected_names" ]] || { echo 'Could not back up the complete current Windows/Linux release asset set.' >&2; exit 1; }
+          release_json=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG")
+          while IFS= read -r file; do
+            name=${file##*/}
+            local_size=$(stat -c '%s' "$file")
+            local_sha=$(sha256sum "$file" | cut -d ' ' -f 1)
+            remote_size=$(jq -r --arg name "$name" '.assets[] | select(.name == $name) | .size' <<<"$release_json")
+            remote_digest=$(jq -r --arg name "$name" '.assets[] | select(.name == $name) | .digest // empty' <<<"$release_json")
+            [[ "$local_size" == "$remote_size" && "$remote_digest" == "sha256:$local_sha" ]] || {
+              echo "Existing GitHub asset $name did not match its published size/digest; refusing to replace it." >&2
+              exit 1
+            }
+          done < <(find dist/release-backup -maxdepth 1 -type f | sort)
+          echo 'verified=true' >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: aioffice-${{ needs.prepare.outputs.release_tag }}-windows-linux-backup
+          path: dist/release-backup/*
+          if-no-files-found: error
+          retention-days: 7
+      - name: Reconfirm the target is still the latest release before replacement
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+        run: |
+          current_tag=$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq '.tag_name')
+          [[ "$current_tag" == "$RELEASE_TAG" ]] || { echo "Latest release changed to $current_tag; refusing to overwrite $RELEASE_TAG." >&2; exit 1; }
+      - name: Replace Windows and Linux assets on the existing release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+        run: gh release upload "$RELEASE_TAG" dist/release-assets/* --clobber
+      - name: Remove unsigned macOS packages and manifest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+        shell: bash
+        run: |
+          for asset in \
+            AIOffice-Setup-macOS-arm64.dmg AIOffice-Setup-macOS-arm64.zip \
+            AIOffice-Setup-macOS-x64.dmg AIOffice-Setup-macOS-x64.zip latest-mac.yml; do
+            if gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' | grep -Fxq "$asset"; then
+              gh release delete-asset "$RELEASE_TAG" "$asset" --yes
+            fi
+          done
+      - name: Verify remote names, sizes, and SHA-256 digests
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+        shell: bash
+        run: |
+          expected_names=$(printf '%s\n' AIOffice-Setup.exe AIOffice-Setup-Linux-x64.AppImage AIOffice-Setup-Linux-x64.deb latest-linux.yml | sort)
+          actual_names=$(find dist/release-assets -maxdepth 1 -type f -printf '%f\n' | sort)
+          [[ "$actual_names" == "$expected_names" ]] || exit 1
+          release_json=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG")
+          remote_names=$(jq -r '.assets[].name' <<<"$release_json" | sort)
+          if [[ "$remote_names" != "$expected_names" ]]; then
+            echo 'GitHub release assets do not match the Windows/Linux-only contract.' >&2
+            diff -u <(printf '%s\n' "$expected_names") <(printf '%s\n' "$remote_names") || true
+            exit 1
+          fi
+          while IFS= read -r file; do
+            name=${file##*/}
+            local_size=$(stat -c '%s' "$file")
+            local_sha=$(sha256sum "$file" | cut -d ' ' -f 1)
+            remote_size=$(jq -r --arg name "$name" '.assets[] | select(.name == $name) | .size' <<<"$release_json")
+            remote_digest=$(jq -r --arg name "$name" '.assets[] | select(.name == $name) | .digest // empty' <<<"$release_json")
+            if [[ "$local_size" != "$remote_size" || "$remote_digest" != "sha256:$local_sha" ]]; then
+              echo "GitHub size or SHA-256 does not match local asset $name" >&2
+              exit 1
+            fi
+          done < <(find dist/release-assets -maxdepth 1 -type f | sort)
+      - name: Record temporary platform availability in release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+        shell: bash
+        run: |
+          marker='### Disponibilidade temporária'
+          body=$(gh release view "$RELEASE_TAG" --json body --jq '.body')
+          if [[ "$body" != *"$marker"* ]]; then
+            {
+              printf '%s\n\n' "$body"
+              printf '%s\n' "$marker"
+              printf 'Os instaladores Windows e Linux foram recompilados e substituídos nesta release sem criar uma tag nova. Os downloads macOS (DMG, ZIP e manifesto) foram removidos temporariamente até haver assinatura Developer ID e notarização Apple. Esta atualização mantém a versão %s; o atualizador interno não a oferece como uma versão nova.\n' "$RELEASE_TAG"
+            } > "$RUNNER_TEMP/release-notes.md"
+            gh release edit "$RELEASE_TAG" --notes-file "$RUNNER_TEMP/release-notes.md"
+          fi
+      - name: Restore previous Windows/Linux assets if the refresh fails
+        if: ${{ failure() && steps.backup.outputs.verified == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+        run: gh release upload "$RELEASE_TAG" dist/release-backup/* --clobber

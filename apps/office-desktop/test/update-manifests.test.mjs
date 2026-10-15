@@ -45,3 +45,21 @@ test('fails closed when a required native update package is missing', async () =
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test('creates a Linux-only update manifest while macOS packages are unavailable', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'aioffice-update-manifests-'));
+  try {
+    await writeFile(join(directory, 'AIOffice-Setup-Linux-x64.AppImage'), 'linux-appimage');
+    assert.deepEqual(await createDesktopUpdateManifests({
+      assetsDirectory: directory,
+      version: '2.4.3',
+      releaseDate: '2026-10-15T12:00:00.000Z',
+      includeMac: false,
+    }), ['latest-linux.yml']);
+    const linux = await readFile(join(directory, 'latest-linux.yml'), 'utf8');
+    assert.match(linux, /version: 2\.4\.3/);
+    assert.match(linux, /AIOffice-Setup-Linux-x64\.AppImage/);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});

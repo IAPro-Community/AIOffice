@@ -1,5 +1,17 @@
 # VERIFY — AIOffice
 
+## Refresh Windows/Linux na release existente — 2026-10-15
+
+| Verificação | Resultado |
+|---|---|
+| Estado antes do refresh | `main` limpo e sincronizado; latest pública `v2.4.3`; release sem assets macOS e com setup Windows, AppImage/deb Linux e manifesto Linux. Fontes empacotadas não diferem da tag. |
+| Atualizador | Reenviar os mesmos pacotes sob `v2.4.3` mantém o semver; o atualizador instalado não apresenta a mesma versão como upgrade. Este fluxo atualiza links diretos/downloads. |
+| Workflow | `refresh-windows-linux.yml` preparado para dispatch somente em `main`, fixa SHA da origem e tag publicada, executa verificação e builds/smokes Windows/Linux, substitui assets do mesmo release e valida conjunto remoto/tamanho/SHA-256. Nenhum job cria/move tag. |
+| Teste do manifesto | `node --test apps/office-desktop/test/update-manifests.test.mjs`: 3/3 aprovados, inclusive geração Linux-only sem pacotes Mac. |
+| Verificação desktop local | `npm run desktop:verify`: aprovado; 22 testes raiz, 1.279 web (10 ignorados), 32 desktop, typechecks/build/i18n/sintaxe. |
+| YAML e diff local | YAML do workflow interpretado; `git diff --check` e `node --check` dos arquivos alterados passaram. |
+| Publicação GitHub | Pendente: executar workflow manual, verificar exatamente quatro assets e registrar tamanhos/digests abaixo. |
+
 ## Diagnóstico e bloqueio macOS pós-release — 2026-10-15
 
 | Verificação | Resultado |

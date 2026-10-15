@@ -65,7 +65,7 @@ O setup é estático e instala a versão incluída nele. O atualizador Windows b
 
 ### Artefatos atualmente publicados
 
-A release oficial atual é [`v2.4.3`](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.4.3), publicada pelo workflow após aprovação dos builds Windows x64, macOS Intel/Apple silicon e Linux x64, dos manifestos e dos nove assets. Os quatro pacotes macOS dessa release foram publicados sem assinatura/notarização e o Gatekeeper os rejeita como danificados ou modificados. Os downloads macOS estão temporariamente indisponíveis no [README público](../README.md#downloads) até a próxima release assinada.
+A release oficial atual é [`v2.4.3`](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.4.3), publicada originalmente após aprovação dos builds Windows x64, macOS Intel/Apple silicon e Linux x64. Os quatro pacotes macOS foram publicados sem assinatura/notarização e o Gatekeeper os rejeita como danificados ou modificados; foram removidos temporariamente. O workflow manual `.github/workflows/refresh-windows-linux.yml` recompila e substitui somente os assets Windows/Linux na release existente, faz backup verificável dos arquivos atuais, valida os novos tamanhos/hashes e remove qualquer asset macOS remanescente. Se a publicação falhar após a troca, restaura os assets Windows/Linux anteriores; o backup também fica no Actions por sete dias. Não cria nem move tag. Como a versão continua `2.4.3`, esse refresh não é oferecido pelo atualizador interno como uma versão superior.
 
 `.deb` não usa o atualizador AppImage: **Ajuda → Verificar atualizações** orienta abrir GitHub Releases para baixar o próximo `.deb` e atualizá-lo pelo gerenciador do sistema. Isso respeita a elevação de privilégios e o banco de pacotes da distribuição. A desinstalação NSIS declara que não apaga `userData`.
 
@@ -77,7 +77,7 @@ O cliente mantém o estado do escritório atualizado pelo stream SSE; em Quick T
 
 ## Releases e assinatura
 
-O workflow `.github/workflows/release-desktop.yml` tem uma validação manual prévia e roda em tags estáveis `vX.Y.Z`. Ele verifica a aplicação, empacota Windows x64, macOS Intel, macOS Apple silicon e Linux x64 em runners nativos e publica somente se todos os builds e a checagem do conjunto final passarem. Os assets incluem setup Windows, `.dmg`/`.zip` macOS, `.AppImage`/`.deb` Linux e manifestos `latest-mac.yml`/`latest-linux.yml`. `npm run release -- --publish` envia a tag verificada depois da validação dos builds.
+O workflow `.github/workflows/release-desktop.yml` tem uma validação manual prévia e roda em tags estáveis `vX.Y.Z`. Ele verifica a aplicação, empacota Windows x64, macOS Intel, macOS Apple silicon e Linux x64 em runners nativos e publica somente se todos os builds e a checagem do conjunto final passarem. Os assets da publicação normal incluem setup Windows, `.dmg`/`.zip` macOS, `.AppImage`/`.deb` Linux e manifestos `latest-mac.yml`/`latest-linux.yml`. Até configurar assinatura/notarização Apple, os builds macOS falham fechados. Para atualizar a release estável atual sem nova tag, use `.github/workflows/refresh-windows-linux.yml`; esse fluxo só aceita a release mais recente quando o código empacotado continua idêntico ao da tag e publica apenas Windows/Linux.
 
 Configure estes valores nas configurações do repositório **antes** de enviar uma tag de release:
 

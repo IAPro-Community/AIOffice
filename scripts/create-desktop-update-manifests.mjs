@@ -42,22 +42,32 @@ function manifest(version, assets, releaseDate) {
   ].join('\n');
 }
 
-export async function createDesktopUpdateManifests({ assetsDirectory, version, releaseDate = new Date().toISOString() }) {
+export async function createDesktopUpdateManifests({
+  assetsDirectory,
+  version,
+  releaseDate = new Date().toISOString(),
+  includeMac = true,
+}) {
   if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error(`Versão estável inválida: ${version}`);
-  const macAssets = await Promise.all(MAC_ASSETS.map((name) => describeAsset(assetsDirectory, name)));
   const linuxAssets = [await describeAsset(assetsDirectory, LINUX_ASSET)];
-  await Promise.all([
-    writeFile(join(assetsDirectory, 'latest-mac.yml'), manifest(version, macAssets, releaseDate), 'utf8'),
-    writeFile(join(assetsDirectory, 'latest-linux.yml'), manifest(version, linuxAssets, releaseDate), 'utf8'),
-  ]);
-  return ['latest-mac.yml', 'latest-linux.yml'];
+  const macAssets = includeMac ? await Promise.all(MAC_ASSETS.map((name) => describeAsset(assetsDirectory, name))) : null;
+  const files = ['latest-linux.yml'];
+  const writes = [writeFile(join(assetsDirectory, 'latest-linux.yml'), manifest(version, linuxAssets, releaseDate), 'utf8')];
+  if (includeMac) {
+    files.unshift('latest-mac.yml');
+    writes.unshift(writeFile(join(assetsDirectory, 'latest-mac.yml'), manifest(version, macAssets, releaseDate), 'utf8'));
+  }
+  await Promise.all(writes);
+  return files;
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
   try {
     const packageJson = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
-    const assetsDirectory = process.argv[2] || 'dist/release-assets';
-    const files = await createDesktopUpdateManifests({ assetsDirectory, version: packageJson.version });
+    const args = process.argv.slice(2);
+    const includeMac = !args.includes('--linux-only');
+    const assetsDirectory = args.find((arg) => arg !== '--linux-only') || 'dist/release-assets';
+    const files = await createDesktopUpdateManifests({ assetsDirectory, version: packageJson.version, includeMac });
     console.log(`Manifestos de atualização criados: ${files.join(', ')}`);
   } catch (error) {
     console.error(`[AIOffice] ${error instanceof Error ? error.message : String(error)}`);
