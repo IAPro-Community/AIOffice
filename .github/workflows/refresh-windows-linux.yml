@@ -46,7 +46,7 @@ jobs:
             echo "The current release tag $release_tag is not an ancestor of main." >&2
             exit 1
           }
-          if ! git diff --quiet "$release_tag" HEAD -- package.json package-lock.json apps packages; then
+          if ! git diff --quiet "$release_tag" HEAD -- package.json package-lock.json apps packages ':(exclude)apps/office-desktop/test/**'; then
             echo 'Packaged application sources changed after the current release. Refusing to replace its assets without a version/tag bump.' >&2
             exit 1
           fi
