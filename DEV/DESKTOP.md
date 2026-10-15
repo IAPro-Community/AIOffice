@@ -75,7 +75,7 @@ O setup é estático e instala a versão incluída nele. O atualizador Windows b
 
 ### Artefatos atualmente publicados
 
-A release oficial anterior é [`v2.4.3`](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.4.3). Seus pacotes macOS sem assinatura/notarização foram removidos temporariamente. O refresh manual `.github/workflows/refresh-windows-linux.yml` recompila e substitui somente os assets Windows/Linux na release existente, faz backup verificável dos arquivos atuais, valida tamanhos/hashes e remove qualquer asset macOS remanescente. Não cria nem move tag, então o mesmo-tag refresh não é oferecido pelo updater interno como uma versão superior. A v2.4.4 acrescenta o ZIP da extensão e continua sem pacotes macOS.
+A release oficial atual é [`v2.4.4`](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.4.4), publicada após validar cinco assets: setup Windows, ZIP da extensão, AppImage/deb Linux e `latest-linux.yml`. A v2.4.3 anterior continua documentada como histórico; os pacotes macOS sem assinatura/notarização foram removidos e não devem ser usados. Reativar macOS exige builds assinadas e notarizadas, verificadas antes da publicação. O refresh manual sem tag continua atualizando somente Windows/Linux e não aciona o updater interno como versão superior.
 
 `.deb` não usa o atualizador AppImage: **Ajuda → Verificar atualizações** orienta abrir GitHub Releases para baixar o próximo `.deb` e atualizá-lo pelo gerenciador do sistema. Isso respeita a elevação de privilégios e o banco de pacotes da distribuição. A desinstalação NSIS declara que não apaga `userData`.
 

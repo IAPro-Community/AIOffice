@@ -2,7 +2,7 @@
 
 ## 1. Identificação do Projeto
 - **Nome**: AIOffice
-- **Status**: release estável `v2.4.3` continua sendo a publicada; candidata `v2.4.4` adiciona a extensão Chrome, Native Messaging host e tutorial. Esta atualização ainda está em validação e não deve ser tratada como publicada até o workflow de release confirmar os cinco assets. A tag `v2.4.3` permanece no commit `8393eaeb88c9fa658231499695e407ac4d575bb2`. Pacotes macOS unsigned foram rejeitados pelo Gatekeeper; não orientar a contorná-lo. Releases futuras só reativam macOS com assinatura/notarização Apple verificadas.
+- **Status**: release estável latest [`v2.4.4`](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.4.4), publicada a partir do commit `6720cc69a7ab34b5b53369e1949bc5c4e4201433`; workflow `38818251334` aprovou verificação, builds Windows/Linux, smokes, cinco assets e digests. A extensão Chrome, Native Messaging host e tutorial foram publicados. macOS permanece sem pacote até assinatura/notarização Apple verificadas; não orientar a contornar o Gatekeeper.
 - **Localização**: Repositório AIOffice
 
 ## 2. Pilares de Integração
@@ -12,11 +12,11 @@
 4. **Harness de Ferramentas**: oh-my-pi / Pi (Runtime e Subagentes)
 5. **Metodologia de Engenharia**: replica-skill (11 Skills Especializadas)
 
-## Candidata v2.4.4 — extensão Chrome
+## Release v2.4.4 — extensão Chrome publicada
 - A extensão Manifest V3 é instalada separadamente do AIOffice Desktop e, nesta versão, distribuída como ZIP para carregar no Chrome em modo desenvolvedor.
 - O instalador Windows registra no HKCU o host `com.iapro.aioffice`, que conecta ao serviço existente ou inicia o Desktop em segundo plano. A extensão comunica ações tipadas; não oferece shell arbitrário.
 - Feed por projeto, filtros de projeto/tipo, avatares do AIOffice, terminal da sessão e envio de instruções à fila local. Notificações de todos os tipos vêm habilitadas inicialmente e podem ser configuradas individualmente.
-- Critérios de release: `npm run desktop:verify`, empacotamento ZIP validado, smoke do app Windows/Linux e verificação remota de exatamente cinco assets/digests antes de publicar. Estado/evidência final em `DEV/HANDOFF.md` e `DEV/VERIFY.md`.
+- Critérios aprovados: `npm run desktop:verify`, ZIP validado, smoke Windows/Linux e verificação remota de exatamente cinco assets/digests. Evidências e hashes em `DEV/HANDOFF.md` e `DEV/VERIFY.md`.
 
 ## 3. Arquitetura do Workspace
 ```

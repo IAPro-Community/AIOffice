@@ -1,14 +1,15 @@
 # HANDOFF — AIOffice
 
-## Candidata de atualização v2.4.4 — extensão Chrome — 2026-10-15
+## Release v2.4.4 publicada — extensão Chrome — 2026-10-15
 
 - **Pedido:** documentar a extensão, incluir a imagem no README, criar uma atualização versionada e publicar no GitHub.
 - **Implementação:** extensão Manifest V3 com ícone oficial, painel por projeto, filtros, personagens, feed/notificações configuráveis, terminal e envio de instrução ao agente; host Native Messaging e inicialização em segundo plano no Desktop Windows; tutorial nas configurações e ZIP de distribuição.
 - **Imagem do README:** `apps/office-chrome-extension/docs/readme-preview.svg` é uma ilustração demonstrativa identificada como tal, com projetos e agentes fictícios; não representa uma captura real do app.
 - **Gates locais:** `npm run desktop:verify` passou: typechecks, build, 22 testes raiz, 1.279 testes web (10 ignorados), 36 desktop, 23 da extensão, validação das 23 categorias/5 permissões e testes Go do host. `npm run release -- --dry-run` gerou as notas v2.4.4; `git diff --check` passou.
 - **Pacotes locais:** setup Windows x64 (124.432.231 bytes; SHA-256 `96bb11316e6325a22bbf2802b8633f13ee153d429d8e070541af240037869563`) compilou e passou framing smoke do host; `node scripts/desktop-smoke.mjs windows` confirmou serviço e interface. ZIP (98.184 bytes; SHA-256 `a73a7191ee6b0b7f5c19aa4dc90501bb54ee32f197abaf092ed148d03f56d65a`) contém 18 arquivos e passou o validador. Esses hashes são dos pacotes locais, não substituem os digests publicados.
-- **Release:** candidata `2.4.4`; contrato de cinco assets: setup Windows + extensão ZIP + AppImage/deb Linux + manifesto Linux. Mac permanece indisponível até assinatura/notarização Apple verificadas. Commit, push, workflow e tag ainda pendentes.
-- **Continuação:** revisar e enviar o commit a `main`; aguardar o workflow GitHub; registrar ID do run, URL da release e tamanhos/hashes remotos dos cinco assets após publicar.
+- **Publicação:** commit `6720cc69a7ab34b5b53369e1949bc5c4e4201433` em `main`, tag `v2.4.4` e [release latest](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.4.4). Workflow [38818251334](https://github.com/IAPro-Community/AIOffice/actions/runs/38818251334) passou em 6m25s; verificação, pacotes, smokes e conferência de nomes/tamanhos/SHA-256 aprovados.
+- **Assets:** setup Windows (124.580.761 bytes, `95bf5d47728721b874389c80a0ee91c58cf713785824caf545f11ae426fb24c1`); ZIP extensão (98.335 bytes, `49744e4d0cdb0f46a66c82cb210600f5eb533f97df78506558fec121b0f634bd`); AppImage (133.775.728 bytes, `1df155eaa085522f1628616a7b9f457ce3bb772157722f70ad8fa1025e140dcb`); `.deb` (106.572.904 bytes, `fd53e0ee8733b6f332e9575756b3d39acdebd8ead3c59a1b335b9331a301f9a1`); `latest-linux.yml` (371 bytes, `fc23033040107867962d145736a881c7c89d6ef74e84f3d8b0440f1a6d2b6e6e`). Mac continua indisponível até assinatura/notarização Apple verificadas.
+- **Continuação:** downloads da extensão e do Desktop estão nas URLs da release; instalação do companion é separada e segue o tutorial de `README.md` e Configurações.
 
 ## Atualização temporária Windows/Linux sem tag — 2026-10-15
 

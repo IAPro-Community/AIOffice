@@ -1,13 +1,13 @@
 # WORKLOG — AIOffice
 
-## 2026-10-15 — Candidata v2.4.4: extensão Chrome
+## 2026-10-15 — Release v2.4.4 publicada: extensão Chrome
 - **Pedido:** melhorar a extensão instalada para refletir o escritório AIOffice, separar agentes por projeto, habilitar filtros, personagens 2D, terminal e envio de comandos/instruções; documentar e entregar ZIP pelo GitHub.
 - **Produto:** painel lateral com agrupamento por projeto, filtros por projeto/tipo, avatares sem imagens quebradas, feed de atividades, preferências por tipo de notificação, visualização de terminal e envio à fila local do agente.
 - **Integração:** Native Messaging host Go incluído pelo instalador Windows, registro por usuário, conexão ao serviço ativo ou inicialização em segundo plano do Desktop. A extensão é distribuída separadamente e requer Chrome aberto para notificações.
-- **Documentação/distribuição:** tutorial no AIOffice Configurações; README e `DEV/DESKTOP.md` descrevem instalação, privacidade e limites. Prévia SVG fictícia está rotulada como ilustrativa. ZIP planejado como asset de release; Chrome Web Store não incluída.
-- **Versão:** candidata `2.4.4`; `CHANGELOG.md` registra as mudanças. Release v2.4.3 permanece intacta.
+- **Documentação/distribuição:** tutorial no AIOffice Configurações; README e `DEV/DESKTOP.md` descrevem instalação, privacidade e limites. Prévia SVG fictícia está rotulada como ilustrativa. ZIP publicado na release; Chrome Web Store não incluída.
+- **Versão:** `2.4.4`; `CHANGELOG.md` registra as mudanças. Release v2.4.3 permanece intacta.
 - **Verificação local:** `npm run desktop:verify` passou (22 testes raiz, 1.279 web/10 ignorados, 36 desktop, 23 extensão, Go host, typechecks, build e i18n). Empacotamento Windows e smoke do app passaram; ZIP validado com 18 arquivos. Evidências e hashes locais em `DEV/VERIFY.md`.
-- **Estado:** push/tag e builds Linux no GitHub ainda pendentes; não registrar a candidata como release publicada antes de validar os cinco assets remotos.
+- **Publicação:** commit `6720cc69` enviado a `main`; tag/release `v2.4.4` publicada como latest. Actions [38818251334](https://github.com/IAPro-Community/AIOffice/actions/runs/38818251334) passou em verificação, builds e smokes nativos, e comparação de nomes/tamanhos/SHA-256 dos cinco assets. Hashes remotos em `DEV/VERIFY.md`.
 
 ## 2026-10-15 — Refresh temporário Windows/Linux sem tag
 - **Pedido**: retirar os downloads macOS enquanto a conta Apple não permite emitir Developer ID e atualizar a distribuição sem criar tag/versão.

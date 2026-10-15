@@ -1,18 +1,28 @@
 # VERIFY — AIOffice
 
-## Candidata v2.4.4 — extensão Chrome — verificação local concluída
+## Release v2.4.4 — extensão Chrome — publicada e conferida
 
-| Verificação | Resultado local |
+| Verificação | Evidência |
 |---|---|
 | `npm run desktop:verify` | Aprovado: typechecks e build, 22 testes raiz, 1.279 testes web (10 ignorados), 36 desktop, i18n, 23 testes da extensão, validador (23 categorias e 5 permissões), Go host e sintaxe. |
 | ZIP da extensão | `package-extension.ps1` aprovado; 18 arquivos na raiz, 98.184 bytes, SHA-256 local `a73a7191ee6b0b7f5c19aa4dc90501bb54ee32f197abaf092ed148d03f56d65a`. Validado após empacotar. |
 | Setup Windows | Gerado com Native Messaging host Go de 6.479.360 bytes; framing smoke passou. Instalador `AIOffice-Setup.exe`: 124.432.231 bytes, SHA-256 local `96bb11316e6325a22bbf2802b8633f13ee153d429d8e070541af240037869563`. |
 | Smoke do desktop | `node scripts/desktop-smoke.mjs windows` passou: serviços locais iniciaram e interface carregou no app empacotado. |
 | Dry run e diff | `npm run release -- --dry-run` gerou as notas `v2.4.4`; `git diff --check` passou. |
-| GitHub Actions | Ainda pendente: executar após push/tag. Exige exatamente cinco assets com nomes, tamanhos e SHA-256 remotos verificados. Mac e `latest-mac.yml` ausentes intencionalmente. |
+| GitHub Actions | Aprovado no [run 38818251334](https://github.com/IAPro-Community/AIOffice/actions/runs/38818251334): verificação, builds/smokes Windows/Linux, draft e igualdade de nomes, tamanhos e SHA-256 remotos. Release publicada como latest; Mac e `latest-mac.yml` ausentes intencionalmente. |
 | README | Referência SVG existe; a imagem é identificada como prévia ilustrativa, com dados sintéticos, e as instruções explicam baixar, extrair e carregar a extensão unpacked. |
 
-Os hashes acima são dos pacotes produzidos localmente no Windows; os digests dos assets de release serão registrados após o workflow do GitHub.
+Release pública: [AIOffice v2.4.4](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.4.4), commit/tag `6720cc69a7ab34b5b53369e1949bc5c4e4201433`.
+
+| Asset público | Bytes | SHA-256 GitHub |
+|---|---:|---|
+| `AIOffice-Setup.exe` | 124.580.761 | `95bf5d47728721b874389c80a0ee91c58cf713785824caf545f11ae426fb24c1` |
+| `AIOffice-Chrome-Extension.zip` | 98.335 | `49744e4d0cdb0f46a66c82cb210600f5eb533f97df78506558fec121b0f634bd` |
+| `AIOffice-Setup-Linux-x64.AppImage` | 133.775.728 | `1df155eaa085522f1628616a7b9f457ce3bb772157722f70ad8fa1025e140dcb` |
+| `AIOffice-Setup-Linux-x64.deb` | 106.572.904 | `fd53e0ee8733b6f332e9575756b3d39acdebd8ead3c59a1b335b9331a301f9a1` |
+| `latest-linux.yml` | 371 | `fc23033040107867962d145736a881c7c89d6ef74e84f3d8b0440f1a6d2b6e6e` |
+
+Os hashes locais documentados acima são apenas evidência do empacotamento Windows; a tabela registra os arquivos finais publicados e verificados pela API do GitHub.
 
 ## Refresh Windows/Linux na release existente — 2026-10-15
 
