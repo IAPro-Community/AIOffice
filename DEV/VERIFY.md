@@ -7,8 +7,8 @@
 | Log do job macOS Intel na execução `38676380641` | Confirmou `provided=0` para as credenciais Apple; Electron Builder registrou `0 identities found` e `skipped macOS application code signing`. Os `.dmg` e `.zip` foram mesmo assim publicados sem assinatura/notarização. |
 | API do GitHub | A release `v2.4.3` ainda contém os quatro assets macOS com nomes, tamanhos e digests registrados abaixo. Não editei os assets remotos nem reutilizei a tag. |
 | Secrets | Nenhum secret de repositório apareceu em `gh secret list`; a API de secrets da organização retornou HTTP 403 por falta de permissão de admin. O log do runner confirma que nenhuma credencial Apple foi disponibilizada no job. |
-| Proteção no pipeline | Alterado localmente: jobs macOS agora falham se os cinco secrets estiverem ausentes/parciais e invocam `scripts/verify-macos-release.sh` para conferir assinatura Developer ID, avaliação `spctl` e ticket `stapler` tanto no `.dmg` como no `.zip`. |
-| README | Alterado localmente para marcar os downloads macOS indisponíveis e não orientar “Abrir Mesmo Assim” para estes pacotes. |
+| Proteção no pipeline | Publicada em `main` no commit `944b831`: jobs macOS falham se os cinco secrets estiverem ausentes/parciais e invocam `scripts/verify-macos-release.sh` para conferir assinatura Developer ID, avaliação `spctl` e ticket `stapler` tanto no `.dmg` como no `.zip`. |
+| README | Publicado em `main` no commit `944b831`: downloads macOS marcados indisponíveis e removida a orientação “Abrir Mesmo Assim” para estes pacotes. |
 | Validação da correção | `git diff --check`, `bash -n scripts/verify-macos-release.sh` e parse YAML do workflow passaram. Validação funcional em runner macOS e do pacote assinado/notarizado permanece pendente; a substituição não pode ser compilada/publicada sem esses secrets. |
 
 ## Release v2.4.3 publicada — 2026-10-15

@@ -4,8 +4,8 @@
 
 - Causa confirmada pelo log `38676380641`: o job macOS recebeu zero credenciais Apple; Electron Builder reportou `0 identities found` e pulou assinatura. Os quatro assets macOS publicados estão sem Developer ID/notarização e o Gatekeeper os rejeita como danificados/modificados.
 - Não recomende abrir Mesmo Assim nem remover quarantine. A README local marca macOS temporariamente indisponível.
-- Pipeline local endurecido: exige os cinco secrets Apple e verifica assinatura Developer ID, aceitação `spctl` e ticket `stapler` dentro do `.dmg` e `.zip` antes de anexar assets.
-- O clone de publicação não foi enviado; GitHub ainda serve os assets problemáticos da `v2.4.3`. O acesso aos secrets de organização deu 403; `gh secret list` não mostrou secrets do repositório, e o próprio log confirma que não havia credenciais no runner.
+- Pipeline endurecido e publicado em `main` no commit `944b831`: exige os cinco secrets Apple e verifica assinatura Developer ID, aceitação `spctl` e ticket `stapler` dentro do `.dmg` e `.zip` antes de anexar assets. A README pública agora marca macOS temporariamente indisponível.
+- GitHub ainda serve os assets problemáticos da `v2.4.3`; não publiquei outra release sem certificados válidos. O painel de secrets confirma que o repositório não tem secrets e nenhum secret da organização está disponível para ele.
 - **Próxima ação:** cadastrar no GitHub Actions os secrets `AIOFFICE_MAC_CERTIFICATE_BASE64`, `AIOFFICE_MAC_CERTIFICATE_PASSWORD`, `AIOFFICE_APPLE_API_KEY_P8_BASE64`, `AIOFFICE_APPLE_API_KEY_ID` e `AIOFFICE_APPLE_API_ISSUER`; então validar os jobs macOS e publicar uma nova versão (não mover `v2.4.3`). Não enviar valores privados pelo chat.
 
 ## Release v2.4.3 publicada — 2026-10-15
