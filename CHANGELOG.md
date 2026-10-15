@@ -5,12 +5,13 @@ All notable changes to AIOffice will be documented in this file.
 ## [Não lançado]
 Nenhuma mudança registrada.
 
-## [v2.4.0] - 2026-10-14
+## [v2.4.1] - 2026-10-14
 
 ### Adicionado
 - Gestão opcional dos CLIs oficiais Codex, Claude Code e OMP pelo app desktop: instalação/atualização no perfil privado do AIOffice, progresso e cancelamento, confirmação explícita e abertura do CLI oficial em terminal interativo para autenticação.
 - Integração de sessões e mensagens com Google Antigravity por hook local validado; mensagens só ficam disponíveis após atividade recente do hook aceito pelo servidor.
-- Nova identidade visual do AIOffice, com ilustração principal, ícones do aplicativo, favicons, imagem social e metadados atualizados.
+- Nova identidade visual do AIOffice distribuída nas builds: a arte oficial completa aparece no app, nos ícones, nos favicons, na imagem social e no instalador.
+- A janela Electron, o setup NSIS e o desinstalador do Windows usam explicitamente o novo ícone AIOffice; os assets são regenerados pela pipeline a partir da arte oficial.
 
 ### Alterado
 - A instalação de CLIs não altera o `PATH` global nem coleta credenciais. Reiniciar o AIOffice para ativar uma instalação é uma ação explícita; consultas e progresso chegam à interface sem recarregar a página.

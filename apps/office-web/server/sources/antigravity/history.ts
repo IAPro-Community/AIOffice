@@ -180,5 +180,3 @@ export class AntigravityHistory implements HistoryProvider {
     return meta;
   }
 }
-
-\n

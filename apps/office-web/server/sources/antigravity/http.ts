@@ -65,5 +65,3 @@ export function createAntigravityEventHandler(source: AntigravitySource): (req: 
     }).catch((error) => fail(res, error));
   };
 }
-
-\n

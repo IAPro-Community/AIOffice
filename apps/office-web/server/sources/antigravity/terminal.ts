@@ -160,5 +160,3 @@ export function createAntigravityTerminalParser(): TerminalParser {
     },
   };
 }
-
-\n

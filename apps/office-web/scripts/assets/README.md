@@ -5,11 +5,11 @@ Python transforma em pixel art: grade nítida,
 paleta limitada, sem dithering, alfa binário e ampliações só com NEAREST. Personagens e móveis
 **não** estão aqui: são procedurais (`client/src/art`).
 
-`client/public/assets/brand/aioffice-pixel-art.png` é a imagem oficial da marca. A pipeline cria a
-arte completa para splash/compartilhamento, recorta a tela central com o símbolo A para ícones
-pequenos e usa o letreiro da própria arte na recepção. Isso evita reduzir a composição inteira a
-favicons ilegíveis. Se a imagem oficial mudar, regenere as variantes pelo script e revise-as em 16,
-32, 128 e 512 px antes de publicar.
+`client/public/assets/brand/aioffice-pixel-art.png` é a imagem oficial da marca. A pipeline usa a
+composição completa e atualizada na splash, nos ícones do aplicativo e do instalador, nos favicons
+e na prévia de compartilhamento; a placa da recepção mantém o letreiro recortado da mesma arte. Se a
+imagem oficial mudar, regenere as variantes pelo script e revise-as em 16, 32, 128 e 512 px antes de
+publicar.
 
 ```
 scripts/assets/
@@ -109,8 +109,8 @@ Decisão:
 
 - **Artwork oficial** (`brand/aioffice-pixel-art.png`): mantém a composição inteira na splash e na
   prévia social. `logo-detailed.png` é a variante quadrada em resolução reduzida.
-- **Ícones pequenos**: a pipeline recorta o monitor central e o símbolo A antes de redimensionar; não
-  encolhe a cena e o wordmark inteiros para 16 ou 32 px.
+- **Ícones do app**: a pipeline redimensiona a arte oficial completa para manter a identidade visual
+  igual entre o app, o instalador e os favicons.
 - **Placa e textos do og-image**: texto de IA reduzido fica ilegível, e a Pixelify Sans em tamanhos
   de pixel fecha a abertura do "C" ("Oode Town"). Por isso há uma fonte bitmap proporcional 5x7
   própria, com minúsculas, descendentes e acentos do português (á à â ã é ê í ó ô õ ú ç).
@@ -121,9 +121,9 @@ Decisão:
 |---|---|---|
 | `brand/aioffice-pixel-art.png` | 1254x1254 | arte oficial; fonte das variantes completas |
 | `brand/logo-detailed.png` | 256x256 | arte completa reduzida para a tela de abertura |
-| `brand/logo-mark.png` / `@4x` | 32x32 / 128x128 | recorte do símbolo central, para interface e escala maior |
-| `brand/favicon-16.png`, `favicon-32.png` | 16x16 / 32x32 | recorte do símbolo central para tamanhos pequenos |
-| `brand/apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `icon.ico` | 180, 192, 512 e múltiplos tamanhos | recorte legível para navegador, desktop, tarefa e instalador |
+| `brand/logo-mark.png` / `@4x` | 32x32 / 128x128 | arte oficial redimensionada para interface e escala maior |
+| `brand/favicon-16.png`, `favicon-32.png` | 16x16 / 32x32 | arte oficial redimensionada |
+| `brand/apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `icon.ico` | 180, 192, 512 e múltiplos tamanhos | identidade visual do app e do instalador |
 | `brand/signage.png` / `@4x` | 64x16 / 256x64 | placa da recepção |
 | `illustrations/empty-office.png` | 960x540 | 480x270 nativo, x2 NEAREST, 32 cores |
 | `art/painting-*.png` (8) | 26x16 | só a tela (sem moldura), para `rects.art` do sprite `painting` |

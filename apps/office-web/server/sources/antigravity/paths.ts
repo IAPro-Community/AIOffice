@@ -36,5 +36,3 @@ export function antigravityStores(home: string): AntigravityStore[] {
 export function transcriptPath(brain: string, sessionId: string): string {
   return join(brain, sessionId, '.system_generated', 'logs', 'transcript.jsonl');
 }
-
-\n

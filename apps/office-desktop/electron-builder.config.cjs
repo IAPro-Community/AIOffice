@@ -2,6 +2,7 @@ const path = require('node:path');
 const { existsSync } = require('node:fs');
 const requireSigning = process.env.AIOFFICE_REQUIRE_SIGNING === '1';
 const windowsPublisher = process.env.AIOFFICE_WINDOWS_PUBLISHER_NAME?.trim();
+const windowsDesktopIcon = 'apps/office-web/client/public/assets/brand/icon.ico';
 const npmExecPath = process.env.npm_execpath;
 const bundledNpm = npmExecPath && /(?:^|[\\/])npm-cli\.js$/i.test(npmExecPath)
   ? path.resolve(path.dirname(npmExecPath), '..')
@@ -96,10 +97,12 @@ module.exports = {
   win: {
     target: [{ target: 'nsis', arch: ['x64'] }],
     artifactName: 'AIOffice-Setup.exe',
-    icon: 'apps/office-web/client/public/assets/brand/icon.ico',
+    icon: windowsDesktopIcon,
     ...(windowsPublisher ? { publisherName: [windowsPublisher] } : {}),
   },
   nsis: {
+    installerIcon: windowsDesktopIcon,
+    uninstallerIcon: windowsDesktopIcon,
     oneClick: false,
     perMachine: false,
     allowElevation: true,

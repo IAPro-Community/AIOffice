@@ -1,13 +1,14 @@
 # WORKLOG — AIOffice
 
-## 2026-10-14 — Preparação da release v2.4.0
+## 2026-10-14 — Preparação da release v2.4.1
 - **Escopo**: consolidar os deltas locais posteriores à v2.3.0 em um clone de publicação limpo, preservando o checkout original com merge aberto.
 - **Desktop instalado**: oferecer instalar/atualizar CLIs oficiais Codex, Claude Code e OMP em pasta privada do AIOffice; progresso/cancelamento pela UI; autenticação em terminal oficial e reinício somente após confirmação.
 - **Antigravity**: registrar sessões App/IDE/CLI, ler histórico com validação de caminhos e entregar mensagem na próxima invocação via hook local validado, sem sobrepor decisões nativas de permissão.
-- **Produto e distribuição**: levar a identidade visual pendente ao app/readme; documentar os CLIs e downloads Windows/macOS/Linux; workflow gera e testa os builds nativos e só publica a release depois de validar os nove assets e seus hashes.
+- **Produto e distribuição**: integrar a arte oficial completa aos ícones do app e do instalador; documentar os CLIs e downloads Windows/macOS/Linux; workflow gera e testa os builds nativos e só publica a release depois de validar os nove assets e seus hashes.
 - **Diagnóstico e UX**: bootstrap Electron captura erros anteriores à inicialização do `main.mjs`; estado de atualizações é comunicado em background, sem refresh integral automático.
-- **Verificação**: `npm run desktop:verify` passou com 22 testes raiz, 1.279 testes web (10 ignorados), 31 testes desktop, typechecks, build, i18n (2.430 textos) e verificações de sintaxe. Setup NSIS instalado em diretório/perfil temporários; inicialização, serviços, janela e hook passaram. QA visual via CDP confirmou v2.4.0 e os três cartões de CLI. Instalação/login reais dos CLIs não foram executados; os testes usam perfil temporário.
-- **Artefato local**: `dist/installers-v2.4.0-final/AIOffice-Setup.exe`, 121.206.034 bytes, SHA-256 `12356DF5F176930C12CB69ABDFA9917EFEB06F54C457EC56649C01A931EFC671`. É o setup candidato; CI nativo produzirá os arquivos usados pela release.
+- **Verificação**: `npm run desktop:verify` passou com 22 testes raiz, 1.279 testes web (10 ignorados), 31 testes desktop, typechecks, build, i18n (2.430 textos) e verificações de sintaxe. Smoke do executável Windows empacotado e do instalado confirmou inicialização, serviços, janela e hook. Os ícones extraídos do setup e do app instalado conferem com o `icon.ico` gerado da arte oficial completa. QA visual via CDP dos três cartões de CLI ocorreu na candidata anterior; instalação/login reais e envio a sessões reais não foram executados.
+- **Falha anterior**: a tag v2.4.0 teve falha de typecheck no Actions devido a caracteres literais no fim de cinco fontes; não houve release nem assets publicados. A tag não foi alterada; a correção segue como v2.4.1.
+- **Artefato local**: `%TEMP%\AIOffice-v2.4.1-final-brand-build\AIOffice-Setup.exe`, 122.398.571 bytes, SHA-256 `87FE4EFE4F5A82AA908192FF7B03513E22F2D8C3CB156EA88C2BFAA73816E648`, Authenticode `NotSigned`. CI nativo produzirá os arquivos usados pela release.
 
 ## 2026-10-14 — Publicação v2.3.0 concluída
 - **Mudança**: release estável publicada no GitHub a partir de `762a500bbde264f241dabd16c2e40b107ec4c7f8`, com os nove assets Windows, macOS Intel/Apple silicon, Linux x64 e manifestos de atualização.

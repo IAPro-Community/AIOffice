@@ -105,5 +105,3 @@ async function main() {
 }
 
 main().catch(async () => { await writeOutput({}); });
-
-\n

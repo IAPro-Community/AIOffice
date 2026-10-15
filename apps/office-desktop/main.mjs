@@ -110,6 +110,13 @@ function serviceEntrypoint() {
   return appFile(join('apps', 'office-web', 'dist', 'server', 'index.js'));
 }
 
+function appIconFile() {
+  const builtIcon = appFile(join('apps', 'office-web', 'dist', 'client', 'assets', 'brand', 'icon-512.png'));
+  return existsSync(builtIcon)
+    ? builtIcon
+    : appFile(join('apps', 'office-web', 'client', 'public', 'assets', 'brand', 'icon-512.png'));
+}
+
 async function waitForServer(child, port) {
   const deadline = Date.now() + START_TIMEOUT_MS;
   const healthUrl = `http://127.0.0.1:${port}/api/health`;
@@ -313,6 +320,7 @@ function createMainWindow() {
     minHeight: 620,
     show: false,
     title: PRODUCT,
+    icon: appIconFile(),
     backgroundColor: '#17182b',
     webPreferences: {
       preload: appFile(join('apps', 'office-desktop', 'preload.cjs')),

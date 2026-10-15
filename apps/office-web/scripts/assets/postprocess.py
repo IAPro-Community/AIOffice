@@ -178,24 +178,9 @@ def build_brand(out_root: Path) -> dict:
     def scaled(size: int) -> Image.Image:
         return source.resize((size, size), Image.Resampling.LANCZOS)
 
-    # A marca completa tem agentes, telas e wordmark demais para sobreviver em 16–32 px.
-    # Em tamanhos pequenos, use a tela central com o símbolo A do próprio artwork.
-    mark_crop = source.crop((
-        round(source.width * 0.385),
-        round(source.height * 0.16),
-        round(source.width * 0.60),
-        round(source.height * 0.35),
-    ))
-
-    def mark(size: int) -> Image.Image:
-        cropped = mark_crop.copy()
-        cropped.thumbnail((size - 2, size - 2), Image.Resampling.LANCZOS)
-        canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-        canvas.alpha_composite(cropped, ((size - cropped.width) // 2, (size - cropped.height) // 2))
-        return canvas
-
-    mark32, mark16 = mark(32), mark(16)
-    mark128 = mark(128)
+    # Preserve the complete, current AIOffice artwork across the app and installer icons.
+    mark32, mark16 = scaled(32), scaled(16)
+    mark128 = scaled(128)
     sign_crop = source.crop((round(source.width * 0.0383), round(source.height * 0.7241), round(source.width * 0.9809), round(source.height * 0.9761)))
     sign_large = sign_crop.resize((256, 64), Image.Resampling.LANCZOS)
     sign = sign_large.resize((64, 16), Image.Resampling.LANCZOS)
@@ -206,9 +191,9 @@ def build_brand(out_root: Path) -> dict:
     sign.save(brand / "signage.png")
     sign_large.save(brand / "signage@4x.png")
     scaled(256).save(brand / "logo-detailed.png", optimize=True)
-    mark(180).save(brand / "apple-touch-icon.png", optimize=True)
-    mark(192).save(brand / "icon-192.png", optimize=True)
-    icon512 = mark(512)
+    scaled(180).save(brand / "apple-touch-icon.png", optimize=True)
+    scaled(192).save(brand / "icon-192.png", optimize=True)
+    icon512 = scaled(512)
     icon512.save(brand / "icon-512.png", optimize=True)
     icon512.save(brand / "icon.ico", format="ICO", sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
     section: dict = {

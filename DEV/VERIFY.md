@@ -1,19 +1,20 @@
 # VERIFY — AIOffice
 
-## Candidata v2.4.0 — 2026-10-14
+## Candidata v2.4.1 — 2026-10-14
 
 | Verificação | Resultado |
 |---|---|
-| Clone de trabalho / checkout original | Candidato separado em `codex/aioffice-release-v2.4.0`; checkout original com merge preservado sem escrita. |
+| Clone de trabalho / checkout original | Candidato revisado em `AIOfficeBeta-publish-v2.3.0`; checkout original com merge preservado sem escrita. |
 | CLIs oficiais instaláveis | 15 testes de `provider-tools` aprovados antes desta rodada; instalação/login real não executados. |
-| Antigravity | 9 testes focados, `node --check` do hook e runner Windows em modo Node aprovados antes desta rodada. |
-| Smoke do aplicativo empacotado Windows | Aprovado em `dist/installers-v2.4.0-bootstrap`: serviços locais ativos, interface Electron carregada e hook instalado em perfil temporário. |
+| Antigravity | 9 testes focados, `node --check` do hook e runner Windows em modo Node aprovados; `desktop:verify` também valida a sintaxe do hook. |
+| Smoke do aplicativo empacotado e instalado Windows | `node scripts/desktop-smoke.mjs windows` passou tanto para `win-unpacked` quanto para o executável instalado pelo NSIS, com perfil temporário; serviços, janela Electron e hook Antigravity ficaram prontos e o processo encerrou limpo. |
 | `npm run desktop:verify` | Aprovado: typechecks e build raiz/web; 22 testes raiz, 1.279 testes web (10 ignorados), 31 desktop; i18n 2.430 textos; verificações de sintaxe. Avisos: traduções antigas sem uso e chunk cliente acima de 500 kB. |
-| Instalação do setup NSIS Windows x64 | Aprovada em diretório e perfil temporários; `AIOffice.exe` instalado iniciou Maestro, API local, janela e hook Antigravity. O primeiro boot completou o bootstrap do Maestro em aproximadamente 23 segundos. |
-| `AIOffice-Setup.exe` local | 121.206.034 bytes; SHA-256 `12356DF5F176930C12CB69ABDFA9917EFEB06F54C457EC56649C01A931EFC671`. |
-| QA visual dos CLIs | App instalado exibiu AIOffice v2.4.0 e três cartões (Codex CLI, Claude Code, OMP), com status e ações dentro da coluna rolável; API de CLI do preload presente. |
-| Builds nativos macOS/Linux e smoke | Executados pelo workflow GitHub nos runners correspondentes; pendentes de publicação desta candidata. |
-| Refresh da página | Nenhum reload automático novo encontrado. Atualização do desktop chega por IPC; atualizações do servidor oferecem botão manual e trocar idioma recarrega apenas após ação explícita. |
+| Instalação do setup NSIS Windows x64 | Setup instalado em diretório temporário e abriu o app; o log confirmou Maestro, API local, janela e hook Antigravity. O smoke isolado do executável instalado encerrou com sucesso. ProductVersion 2.4.1.0. |
+| Ícone do setup Windows | Ícones associados extraídos do setup e do executável instalado mostram a arte oficial completa atual; ambos conferem visualmente com `icon.ico`. NSIS declara ícones do setup e desinstalador. |
+| `AIOffice-Setup.exe` local | 122.398.571 bytes; SHA-256 `87FE4EFE4F5A82AA908192FF7B03513E22F2D8C3CB156EA88C2BFAA73816E648`; Authenticode `NotSigned`. |
+| QA visual dos CLIs | App instalado exibiu AIOffice v2.4.0 e três cartões (Codex CLI, Claude Code, OMP), com status e ações dentro da coluna rolável; API de CLI do preload presente. Os controles permanecem iguais na v2.4.1, que atualiza a arte dos ícones. |
+| Builds nativos macOS/Linux e smoke | Aguardam o workflow GitHub v2.4.1 nos runners correspondentes; ainda não publicados. |
+| Refresh da página | Nenhum reload automático periódico novo encontrado. Atualização do desktop chega por IPC; atualizações do servidor oferecem botão manual e trocar idioma recarrega apenas após ação explícita. |
 
 ## Publicação da release v2.3.0 — 2026-10-14
 
