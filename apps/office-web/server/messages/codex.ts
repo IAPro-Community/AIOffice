@@ -13,7 +13,7 @@ import { execFile } from 'node:child_process';
 import { accessSync, constants, existsSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { homedir } from 'node:os';
-import { dirname, isAbsolute, join, resolve } from 'node:path';
+import { delimiter, dirname, isAbsolute, join, resolve } from 'node:path';
 import { tr } from '../../shared/i18n';
 
 /** Prazo de um `codex queue`. */
@@ -64,9 +64,9 @@ const CODEX_TARGETS: Partial<Record<NodeJS.Platform, Record<string, { packageNam
 };
 
 function codexSearchDirs(env: NodeJS.ProcessEnv, platform: NodeJS.Platform): string[] {
-  const pathDelimiter = platform === 'win32' ? ';' : ':';
+  // Use the host runtime's PATH delimiter, even when tests simulate another target.
   const home = env.HOME || env.USERPROFILE || homedir();
-  const dirs = (env.PATH ?? env.Path ?? '').split(pathDelimiter).filter(Boolean);
+  const dirs = (env.PATH ?? env.Path ?? '').split(delimiter).filter(Boolean);
   if (platform === 'win32') {
     if (env.APPDATA) dirs.push(join(env.APPDATA, 'npm'));
     if (env.NPM_CONFIG_PREFIX) dirs.push(env.NPM_CONFIG_PREFIX);

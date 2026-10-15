@@ -6,6 +6,7 @@
 - **Por quê**: a distribuição instalada deve entregar suas integrações sem scripts npm/PowerShell à parte em execução; login e CLIs dos fornecedores continuam sendo pré-requisitos próprios.
 - **Interface móvel**: melhorias responsivas compatíveis do workspace, login com botão para colar o código e envio automático aos seis caracteres; a página não ganhou reload integral.
 - **Verificação**: `npm run desktop:verify` passou (typechecks, build, 22 testes raiz, 1.268 testes web com 10 ignorados, 16 desktop, i18n 2.402/2.402 e sintaxe); 49 testes focados passaram e 6 foram ignorados; a CLI Codex local respondeu a `--help` e `queue --help`. A entrega real não foi disparada para não enviar mensagem a uma conversa do usuário. Nenhum reload integral/polling novo foi adicionado.
+- **Preflight atualizado**: execução 38659549147 identificou um teste de matriz que simulava PATH POSIX usando o separador do Windows; o resolvedor agora usa o delimitador do sistema que executa o servidor. Repetir CI após este commit.
 - **Release**: repetir o preflight completo de quatro plataformas na versão final após commit/push e publicar/verificar `v2.3.0`. macOS segue sem assinatura/notarização Apple.
 
 ## 2026-10-14 — Distribuição nativa macOS/Linux (v2.3.0)
