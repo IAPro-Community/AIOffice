@@ -8,6 +8,7 @@ export function desktopPaths({ userDataDir, homeDir, legacyAppEnv }) {
     home,
     userData,
     maestroPrefix: join(userData, 'maestro-npm'),
+    providerTools: join(userData, 'provider-tools'),
     npmCache: join(userData, 'npm-cache'),
     dataDir: join(userData, 'habblaud'),
     envFile: join(userData, '.env'),

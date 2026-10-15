@@ -8,7 +8,6 @@ import { TIMELAPSE_ICONS } from './timelapse';
 import { focusPermission, nextPermissionAgent, permissionAgents } from './permission';
 import { UsageCards } from './usage';
 import { VersionChip } from './version';
-import { wordmark } from './widgets';
 import { tr } from '../../../shared/i18n';
 
 interface CounterRefs {
@@ -140,7 +139,6 @@ export class TopBar implements UiComponent {
             h(
               'div',
               { class: 'ui-topbar__status' },
-              h('span', { class: 'ui-brand__sub-prefix', text: 'Habblaud' }),
               this.version.el,
               this.pill,
               this.demoBadge,

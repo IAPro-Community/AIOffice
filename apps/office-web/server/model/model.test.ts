@@ -217,6 +217,16 @@ function makeOffice(names = new NameStore(null)) {
 const act = (id: string, at: number, kind: Activity['kind'] = 'read'): Activity => ({ id, at, kind, icon: '📖', text: 'Lendo x' });
 
 describe('Office', () => {
+  it('move um agente principal para o workspace confirmado pela fonte', () => {
+    const { office, now } = makeOffice();
+    office.addMain({ id: 'antigravity:s1', provider: 'antigravity', account: 'A', sessionId: 's1', cwd: '/p/antigo', role: 'Agente principal', startedAt: now(), status: 'idle' });
+    office.commit();
+    office.setMainCwd('antigravity:s1', '/p/novo');
+    const snap = office.commit().snapshot;
+    expect(snap.agents[0].roomId).toBe('/p/novo');
+    expect(snap.rooms.map((room) => room.id)).toContain('/p/novo');
+  });
+
   it('avisos com dedupe de 10 s e feed em lote', () => {
     const { office, advance, now } = makeOffice();
     office.addMain({ id: 'acc:1', account: 'acc', sessionId: 's1', cwd: '/p/loja/', role: 'Agente principal', startedAt: now(), status: 'working' });

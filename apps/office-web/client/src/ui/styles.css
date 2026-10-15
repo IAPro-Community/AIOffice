@@ -744,26 +744,6 @@
   line-height: 1.1;
 }
 
-.ui-brand__sub-prefix {
-  font-family: system-ui, -apple-system, sans-serif;
-  font-size: 11px;
-  font-weight: 600;
-  color: rgba(244, 241, 234, 0.72);
-  letter-spacing: 0.2px;
-}
-/* Logotipo em pixels: 47×8 px da placa da marca, em escala inteira (3×) para ficar nítido. */
-.ui-brand__name {
-  display: block;
-  line-height: 0;
-}
-
-.ui-wordmark {
-  display: block;
-  width: 135px;
-  height: 24px;
-  image-rendering: pixelated;
-}
-
 .ui-topbar__status {
   display: flex;
   align-items: center;
@@ -3154,6 +3134,82 @@
   margin: 0 0 2px;
 }
 
+.ui-about__provider-tools {
+  margin: 12px 0;
+  padding: 10px;
+  border: 1px solid var(--ui-border);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--ui-bg) 68%, transparent);
+}
+
+.ui-about__provider-tools h4 {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ui-about__provider-tools > .ui-set__hint {
+  margin: 0 0 8px;
+  line-height: 1.6;
+}
+
+.ui-about__provider-list {
+  display: grid;
+  gap: 6px;
+}
+
+.ui-about__provider {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 0;
+  border-top: 1px solid color-mix(in srgb, var(--ui-border) 70%, transparent);
+}
+
+.ui-about__provider-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.ui-about__provider-copy strong {
+  font-size: 11.5px;
+}
+
+.ui-about__provider-status {
+  color: var(--ui-muted);
+  font-size: 10.5px;
+  overflow-wrap: anywhere;
+}
+
+.ui-about__provider-actions {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.ui-about__provider-tools > .ui-set__hint[role='status'] {
+  margin: 7px 0 0;
+}
+
+.ui-about__provider-tools > .ui-btn {
+  margin-top: 8px;
+}
+
+@media (max-width: 540px) {
+  .ui-about__provider {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .ui-about__provider-actions {
+    justify-content: flex-start;
+  }
+}
+
 .ui-maestro__versions {
   margin: -3px 0 6px;
   line-height: 1.6;
@@ -3768,25 +3824,20 @@
   gap: 12px;
 }
 
-.ui-splash .ui-brand__mark {
-  width: 72px;
-  height: 72px;
-}
-
-.ui-splash .ui-brand__mark img,
-.ui-splash .ui-brand__mark .ui-mark {
-  width: 64px;
-  height: 64px;
-}
-
-.ui-splash__name {
+.ui-splash__logo {
   display: block;
-  line-height: 0;
+  width: min(240px, 54vw, 32vh);
+  height: auto;
+  object-fit: contain;
 }
 
-.ui-splash__name .ui-wordmark {
-  width: 225px;
-  height: 40px;
+.ui-splash__logo-fallback {
+  display: block;
+  color: var(--ui-text);
+  font-size: clamp(24px, 7vw, 38px);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-shadow: 0 2px 0 #242b49, 0 0 18px color-mix(in srgb, var(--ui-accent) 45%, transparent);
 }
 
 .ui-splash__text {
@@ -4367,12 +4418,6 @@
   }
 }
 
-@media (max-width: 1500px) {
-  .ui-topbar:has(.ui-usage-card:nth-child(4)) .ui-brand__name {
-    display: none;
-  }
-}
-
 /* 4 ou mais contas (ex.: as do Claude Code, a do Codex e as do demo): os cartões podem estreitar até perder a coluna
    do reinício (ela continua na dica de cada cartão) e o zoom fica na rolagem do mouse e nos atalhos + / −. */
 @media (max-width: 1700px) {
@@ -4381,12 +4426,6 @@
   }
 
   .ui-topbar:has(.ui-usage-card:nth-child(4)) .ui-topbar__right .ui-btn-group:first-child .ui-icon-btn:not(:first-child) {
-    display: none;
-  }
-}
-
-@media (max-width: 1140px) {
-  .ui-topbar:has(.ui-usage-card:nth-child(3)) .ui-brand__name {
     display: none;
   }
 }
@@ -4450,11 +4489,9 @@
 }
 
 @media (max-width: 1040px) {
-  .ui-brand__name,
   .ui-pill__text,
   .ui-demo-badge,
-  .ui-version,
-  .ui-brand__sub-prefix {
+  .ui-version {
     display: none;
   }
 

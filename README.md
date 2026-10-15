@@ -1,4 +1,8 @@
-# 🏢 AIOffice
+<p align="center">
+  <img src="apps/office-web/client/public/assets/brand/aioffice-pixel-art.png" width="320" alt="Ilustração em pixel art do AIOffice, com agentes trabalhando em um escritório neon." />
+</p>
+
+# AIOffice
 
 <p align="center"><strong>Seu escritório virtual para Claude Code, Codex e oh-my-pi.</strong><br />Projetos, agentes, tarefas e atividade recente em uma interface pixel art, com governança e segurança no mesmo monorepo.</p>
 
@@ -33,7 +37,7 @@ Estes links sempre apontam para a **última release publicada**. Uma mudança no
 
 Os instaladores macOS desta release não têm assinatura Apple configurada. Para instalar, abra o `.dmg` e arraste **AIOffice** para **Aplicativos**. Se o Gatekeeper bloquear o primeiro início, abra o app uma vez, vá a **Ajustes do Sistema → Privacidade e Segurança → Segurança → Abrir Mesmo Assim** e confirme somente se o arquivo foi baixado diretamente desta release oficial. O atualizador automático do macOS só é habilitado em builds assinadas e notarizadas. No Linux, a atualização em segundo plano é compatível com o AppImage; o `.deb` é atualizado pelo gerenciador de pacotes. No Windows, o app consulta releases em background, sem recarregar a página, e valida o instalador pelo SHA-256 publicado pelo GitHub antes de pedir confirmação para instalá-lo. O instalador Windows ainda pode exibir SmartScreen enquanto não houver certificado Authenticode.
 
-O desktop inclui o runtime Node e inicia o servidor e a interface local. As CLIs do Claude Code, Codex e oh-my-pi continuam sendo instaladas e autenticadas separadamente. Ao abrir o desktop, o AIOffice instala ou atualiza automaticamente seu plugin de mensagens do Claude Code e sua extensão do OMP; para mensagens ao Codex, localiza a CLI nativa já instalada. Não é preciso manter comandos `npm run` abertos no desktop. Sessões Claude/OMP já abertas precisam ser recarregadas ou reabertas. No Docker, o envio ao Codex ainda exige o auxiliar executado no host.
+O desktop inclui o runtime Node e inicia o servidor e a interface local. Em **Sobre → Ferramentas de IA**, você pode instalar ou atualizar Codex, Claude Code e OMP dentro do perfil privado do AIOffice; isso não muda o `PATH` global. A autenticação abre o CLI oficial em um terminal interativo, e você entra na conta diretamente com o fornecedor. O AIOffice não recebe nem armazena essas credenciais. Uma confirmação permite reiniciar o aplicativo para ativar um CLI recém-instalado. Ao abrir o desktop, o AIOffice instala ou atualiza automaticamente suas pontes de mensagens do Claude Code e OMP; Codex usa a CLI instalada ou uma cópia oficial já encontrada. Não é preciso manter comandos `npm run` abertos no desktop. Sessões Claude/OMP já abertas podem precisar ser recarregadas ou reabertas. No Docker, o envio ao Codex ainda exige o auxiliar executado no host.
 
 ## O que você encontra no AIOffice
 
@@ -105,11 +109,12 @@ Cada instalador deve ser criado no sistema operacional correspondente. O workflo
 
 | Ferramenta | O que aparece no escritório | Observações |
 |---|---|---|
-| Claude Code | Sessões, atividade, histórico, uso e recursos de mensagem/permissão | O desktop instala/verifica o plugin de mensagens automaticamente. As CLIs seguem externas e precisam de login. |
-| Codex CLI / app | Sessões, histórico, atividade, uso e mensagens locais | O desktop usa a CLI local (`codex queue`); aprove os hooks em `/hooks` para eventos e aprovações. No Docker, mantenha `npm run codex:bridge` no host. |
-| oh-my-pi (OMP) | Sessões, histórico, atividade e mensagens | O desktop instala/atualiza a extensão automaticamente; em sessões abertas antes disso, feche e abra de novo. `omp:install` continua disponível no modo Node. |
+| Claude Code | Sessões, atividade, histórico, uso e recursos de mensagem/permissão | O desktop instala/verifica o plugin e pode instalar/atualizar o CLI oficial. Login feito no terminal do fornecedor. Sessões abertas podem precisar de `/reload-plugins`. |
+| Codex CLI / app | Sessões, histórico, atividade, uso e mensagens locais | O desktop pode instalar/atualizar o CLI oficial e usa `codex queue`; aprove os hooks em `/hooks` para eventos e aprovações. No Docker, mantenha `npm run codex:bridge` no host. |
+| oh-my-pi (OMP) | Sessões, histórico, atividade e mensagens | O desktop pode instalar/atualizar o CLI oficial e instala/atualiza a extensão do AIOffice; em sessões antigas, feche e abra de novo. `omp:install` continua disponível no modo Node. |
+| Google Antigravity | Sessões, atividade e envio de mensagens pela integração local | O desktop instala o hook do AIOffice se encontrar o perfil Gemini; enviar mensagem exige um hook validado e ativo. |
 
-Devin, Antigravity, OpenCode, Freebuf e Gemini CLI não têm integração de sessões e mensagens de ponta a ponta. Uma conexão MCP também não equivale à leitura de uma sessão de CLI.
+Devin, OpenCode, Freebuf e Gemini CLI não têm integração de sessões e mensagens de ponta a ponta. Uma conexão MCP também não equivale à leitura de uma sessão de CLI.
 
 ## Estrutura
 

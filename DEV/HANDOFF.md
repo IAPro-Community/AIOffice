@@ -1,5 +1,19 @@
 # HANDOFF — AIOffice
 
+## Candidata v2.4.0 — 2026-10-14
+
+- Base da publicação: `v2.3.0` (`762a500`); trabalho concentrado no clone seguro `AIOfficeBeta-publish-v2.3.0`, sem alterar o checkout original que contém um merge em andamento.
+- Inclui identidade visual pendente, gestão opcional dos CLIs oficiais Codex/Claude Code/OMP no desktop instalado, integração nativa do Antigravity App/IDE/CLI, bootstrap com log para erros de carga Electron e correções de documentação.
+- A autenticação acontece pelo CLI oficial em terminal interativo, por ação explícita do usuário. O AIOffice não guarda credenciais nem altera o `PATH` global. Ativar uma CLI recém-instalada exige reiniciar o app com confirmação.
+- Smoke do diretório Windows empacotado aprovado em `dist/installers-v2.4.0-bootstrap`: serviços locais, health check, interface e instalação do hook Antigravity. O smoke não faz login nem envia mensagem a conversas reais.
+- `npm run desktop:verify` passou: 22 testes raiz, 1.279 testes web (10 ignorados), 31 testes desktop, typechecks, build, i18n (2.430 textos) e sintaxe. Há apenas os avisos já conhecidos de traduções sem uso e chunk web acima de 500 kB.
+- Setup NSIS Windows x64 criado e inspecionado em `dist/installers-v2.4.0-final`; instalação silenciosa em pasta/perfil temporários e startup do executável instalado passaram. O app confirmou Maestro, serviços locais, janela e hook Antigravity.
+- QA visual via CDP no app instalado: painel **Sobre** exibiu v2.4.0 e as ações dos três CLIs oficiais; todos os cartões cabem na coluna rolável. O app foi fechado ao fim do teste.
+- Builds finais macOS/Linux e smoke ficam a cargo dos runners nativos.
+- O workflow usa runners Windows x64, macOS Intel/Apple silicon e Linux x64 para produzir os nove assets e só publica depois de validar nomes, tamanhos e SHA-256.
+- Atualização em background continua por IPC. Não há recarga automática da página; o botão de recarga após atualização do servidor Node é manual.
+- **Próximo passo:** fechar a última revisão, integrar no `main` do clone seguro, publicar `v2.4.0` e acompanhar os jobs nativos até a release pública e os digests serem confirmados.
+
 ## Release v2.3.0 publicada — 2026-10-14
 
 - Tag `v2.3.0` aponta para o commit `762a500bbde264f241dabd16c2e40b107ec4c7f8`. A release está em https://github.com/IAPro-Community/AIOffice/releases/tag/v2.3.0.

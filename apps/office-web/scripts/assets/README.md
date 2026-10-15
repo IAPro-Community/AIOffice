@@ -1,9 +1,15 @@
-# Assets do Habblaud (imagens com IA + pixel art)
+# Assets do AIOffice (ilustrações e marca)
 
-Marca, ilustrações da UI e arte de parede do Habblaud. Os modelos de imagem da OpenRouter desenham
-as imagens, que o pós-processamento em Python transforma em pixel art de verdade: grade nítida,
+Ilustrações da UI e arte de parede usam imagens geradas pela OpenRouter que o pós-processamento em
+Python transforma em pixel art: grade nítida,
 paleta limitada, sem dithering, alfa binário e ampliações só com NEAREST. Personagens e móveis
 **não** estão aqui: são procedurais (`client/src/art`).
+
+`client/public/assets/brand/aioffice-pixel-art.png` é a imagem oficial da marca. A pipeline cria a
+arte completa para splash/compartilhamento, recorta a tela central com o símbolo A para ícones
+pequenos e usa o letreiro da própria arte na recepção. Isso evita reduzir a composição inteira a
+favicons ilegíveis. Se a imagem oficial mudar, regenere as variantes pelo script e revise-as em 16,
+32, 128 e 512 px antes de publicar.
 
 ```
 scripts/assets/
@@ -11,7 +17,7 @@ scripts/assets/
   generate.mjs          chama a OpenRouter (Node 24, sem dependências), com cache, retries, orçamento e log
   postprocess.py        CLI: processa as imagens brutas e compõe marca, ícones, molduras, og-image e manifest
   pixelops.py           operações de imagem (chroma key, detecção de grade, redução por moda, paleta...)
-  pixelart.py           pixel art desenhada à mão: mark 32/16 px, fonte bitmap e placa "Habblaud"
+  pixelart.py           fonte bitmap e ferramentas de composição do escritório
   test_pixelops.py      testes (unittest da stdlib)
   generation-log.json   todas as requisições: modelo, prompt exato, arquivo, custo e tomadas escolhidas
   .cache/               (ignorado) raw/ = imagem bruta em uso, takes/ = todas as tomadas, contact-sheet.png
@@ -31,6 +37,7 @@ node scripts/assets/generate.mjs gen poster-cat --force                         
 node scripts/assets/generate.mjs gen logo-mark --model openai/gpt-5.4-image-2 --as gpt   # tomada alternativa
 node scripts/assets/generate.mjs pick logo-mark gpt                              # adota a tomada alternativa
 python3 -E scripts/assets/postprocess.py           # gera client/public/assets/** + manifest + folha de contato
+python3 -E scripts/assets/postprocess.py --brand-only # regenera marca/og sem imagens brutas
 python3 -E scripts/assets/postprocess.py --only painting-cat --out /tmp/teste    # testa um asset isolado
 python3 -E scripts/assets/test_pixelops.py         # testes (grade/desampliação, chroma key, moda, fonte, marks)
 ```
@@ -98,13 +105,12 @@ Decisão:
 5. **Acabamento**: `despeckle` remove pixels isolados; contorno de 1px `#2b3245` nos pôsteres;
    molduras de 3px (madeira, preta, branca, dourada) com luz em cima e à esquerda nas pinturas.
 
-### O que foi desenhado à mão (e por quê)
+### Composição e identidade
 
-- **Mark 32x32 e favicon 16x16** (`pixelart.py`). A arte nativa da IA tem 78x86 px, e reduzi-la para 32
-  ou 16 sempre embaralha janelas e faixas. Então o mark pequeno é um "hinting" do desenho da IA:
-  mesmo prédio (laje com borda clara, vaso à direita, faixas de madeira, duas telas azuis no 2º andar,
-  porta de vidro com toldo), mesma paleta amostrada, redesenhado pixel a pixel. A versão da IA aparece onde há
-  espaço (`logo-detailed.png`, `icon-512.png`, og-image).
+- **Artwork oficial** (`brand/aioffice-pixel-art.png`): mantém a composição inteira na splash e na
+  prévia social. `logo-detailed.png` é a variante quadrada em resolução reduzida.
+- **Ícones pequenos**: a pipeline recorta o monitor central e o símbolo A antes de redimensionar; não
+  encolhe a cena e o wordmark inteiros para 16 ou 32 px.
 - **Placa e textos do og-image**: texto de IA reduzido fica ilegível, e a Pixelify Sans em tamanhos
   de pixel fecha a abertura do "C" ("Oode Town"). Por isso há uma fonte bitmap proporcional 5x7
   própria, com minúsculas, descendentes e acentos do português (á à â ã é ê í ó ô õ ú ç).
@@ -113,10 +119,11 @@ Decisão:
 
 | Arquivo | Tamanho | Observação |
 |---|---|---|
-| `brand/logo-mark.png` / `@4x` | 32x32 / 128x128 | transparente, desenhado à mão a partir da IA |
-| `brand/logo-detailed.png` | 78x86 | arte nativa da IA (transparente) |
-| `brand/favicon-16.png`, `favicon-32.png` | 16, 32 | transparentes |
-| `brand/apple-touch-icon.png`, `icon-192.png`, `icon-512.png` | 180, 192, 512 | céu de entardecer em faixas + calçada; 512 usa o prédio detalhado |
+| `brand/aioffice-pixel-art.png` | 1254x1254 | arte oficial; fonte das variantes completas |
+| `brand/logo-detailed.png` | 256x256 | arte completa reduzida para a tela de abertura |
+| `brand/logo-mark.png` / `@4x` | 32x32 / 128x128 | recorte do símbolo central, para interface e escala maior |
+| `brand/favicon-16.png`, `favicon-32.png` | 16x16 / 32x32 | recorte do símbolo central para tamanhos pequenos |
+| `brand/apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `icon.ico` | 180, 192, 512 e múltiplos tamanhos | recorte legível para navegador, desktop, tarefa e instalador |
 | `brand/signage.png` / `@4x` | 64x16 / 256x64 | placa da recepção |
 | `illustrations/empty-office.png` | 960x540 | 480x270 nativo, x2 NEAREST, 32 cores |
 | `art/painting-*.png` (8) | 26x16 | só a tela (sem moldura), para `rects.art` do sprite `painting` |
@@ -133,11 +140,12 @@ Decisão:
   "brand": {
     "mark": { "file": "brand/logo-mark.png", "w": 32, "h": 32 },
     "markLarge": { "file": "brand/logo-mark@4x.png", "w": 128, "h": 128 },
-    "markDetailed": { "file": "brand/logo-detailed.png", "w": 78, "h": 86 },   // extra
+    "markDetailed": { "file": "brand/logo-detailed.png", "w": 256, "h": 256 },   // extra
     "signage": { "file": "brand/signage.png", "w": 64, "h": 16 },
     "signageLarge": { "file": "brand/signage@4x.png", "w": 256, "h": 64 },    // extra
     "favicon16": "brand/favicon-16.png", "favicon32": "brand/favicon-32.png",
-    "appleTouch": "brand/apple-touch-icon.png", "icon192": "brand/icon-192.png", "icon512": "brand/icon-512.png"
+    "appleTouch": "brand/apple-touch-icon.png", "icon192": "brand/icon-192.png", "icon512": "brand/icon-512.png",
+    "iconIco": "brand/icon.ico"
   },
   "illustrations": { "emptyOffice": { "file": "illustrations/empty-office.png", "w": 960, "h": 540, "scale": 2 } },
   "wallArt": [

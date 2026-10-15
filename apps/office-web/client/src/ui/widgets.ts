@@ -2,7 +2,6 @@
 // de progresso.
 import type { AccountInfo, Activity, AgentInfo, AgentStatus, Provider } from '../../../shared/types';
 import { h, setAttr, setHidden, setStyleVar, setText, setTitle, setVariant } from './dom';
-import { WORDMARK } from './icons';
 import { shellDoneKind, shellLine, shellStage, statusLabel, type ShellWait } from './model';
 import { accountChipLabel, accountProvider, fallbackShort, PROVIDER_NAME, showsProviderTag } from './provider';
 import { tr } from '../../../shared/i18n';
@@ -129,12 +128,4 @@ export function updateShellActivityLine(el: HTMLElement, wait: ShellWait, now: n
     el,
     [line.text, main?.command && main.command !== main.label ? main.command : '', `${stage.emoji} ${stage.text}`].filter(Boolean).join('\n'),
   );
-}
-
-/** Nome do produto como logotipo em pixels (o texto fica para leitores de tela). */
-export function wordmark(cls = 'ui-brand__name'): HTMLElement {
-  const el = h('span', { class: cls });
-  el.innerHTML = WORDMARK;
-  el.append(h('span', { class: 'ui-sr', text: 'Habblaud' }));
-  return el;
 }

@@ -25,7 +25,30 @@ type DesktopUpdaterApi = {
   checkForUpdates: () => Promise<{ ok: boolean; available?: boolean; version?: string }>;
   getUpdateState: () => Promise<unknown>;
   onUpdateState: (listener: (state: unknown) => void) => () => void;
+  getProviderTools?: () => Promise<unknown>;
+  installProviderTool?: (id: string) => Promise<unknown>;
+  cancelProviderInstall?: () => Promise<unknown>;
+  openProviderLogin?: (id: string) => Promise<unknown>;
+  restartAfterProviderInstall?: () => Promise<unknown>;
+  onProviderToolsState?: (listener: (state: unknown) => void) => () => void;
 };
+
+type ProviderToolId = 'codex' | 'claude' | 'omp';
+type ProviderToolState = {
+  id: ProviderToolId;
+  name: string;
+  supported: boolean;
+  canInstall: boolean;
+  installed: boolean;
+  version?: string;
+  state: string;
+  phase?: string;
+  progress?: number;
+  error?: string;
+};
+
+const PROVIDER_TOOL_NAMES: Record<ProviderToolId, string> = { codex: 'Codex CLI', claude: 'Claude Code', omp: 'oh-my-pi (OMP)' };
+const PROVIDER_TOOL_IDS: readonly ProviderToolId[] = ['codex', 'claude', 'omp'];
 
 function desktopUpdaterApi(): DesktopUpdaterApi | undefined {
   if (typeof window === 'undefined') return undefined;
@@ -219,6 +242,15 @@ export class AboutGroup {
   private pollStartedAt = 0;
   private desktopApi: DesktopUpdaterApi | undefined;
   private desktopState: DesktopUpdateState | undefined;
+  private providerToolsGroup: HTMLElement;
+  private providerToolsHint: HTMLElement;
+  private providerToolsList: HTMLElement;
+  private providerRestartBtn: HTMLButtonElement;
+  private providerRows = new Map<ProviderToolId, { status: HTMLElement; install: HTMLButtonElement; login: HTMLButtonElement; cancel: HTMLButtonElement }>();
+  private providerTools = new Map<ProviderToolId, ProviderToolState>();
+  private providerAction: ProviderToolId | undefined;
+  private providerToolsError: string | undefined;
+  private providerRestartRequired = false;
 
   constructor(private ctx: UiContext) {
     this.desktopApi = desktopUpdaterApi();
@@ -239,6 +271,13 @@ export class AboutGroup {
           this.ctx.invalidate();
         }
       }).catch(() => {});
+      if (this.desktopApi.getProviderTools && this.desktopApi.onProviderToolsState) {
+        this.desktopApi.onProviderToolsState((value) => {
+          this.applyProviderToolEvent(value);
+          this.renderProviderTools();
+        });
+        void this.loadProviderTools();
+      }
     }
     this.name = h('strong', { class: 'ui-about__version' });
     this.checkBtn = h('button', { class: 'ui-btn ui-btn--sm', type: 'button', text: tr('Verificar agora'), on: { click: () => void this.check() } });
@@ -254,6 +293,27 @@ export class AboutGroup {
       this.installHint,
     );
     this.repo = h('a', { class: 'ui-link-btn', text: tr('Código no GitHub'), attrs: { target: '_blank', rel: 'noopener noreferrer' } });
+    this.providerToolsHint = h('p', { class: 'ui-set__hint', role: 'status' });
+    this.providerToolsList = h('div', { class: 'ui-about__provider-list' });
+    for (const id of PROVIDER_TOOL_IDS) {
+      const status = h('span', { class: 'ui-about__provider-status', role: 'status' });
+      const install = h('button', { class: 'ui-btn ui-btn--sm', type: 'button', text: tr('Instalar'), on: { click: () => void this.installProviderTool(id) } });
+      const login = h('button', { class: 'ui-btn ui-btn--sm', type: 'button', text: tr('Abrir login'), on: { click: () => void this.openProviderLogin(id) } });
+      const cancel = h('button', { class: 'ui-btn ui-btn--sm', type: 'button', text: tr('Cancelar'), on: { click: () => void this.cancelProviderInstall() } });
+      this.providerRows.set(id, { status, install, login, cancel });
+      this.providerToolsList.append(h('article', { class: 'ui-about__provider' },
+        h('div', { class: 'ui-about__provider-copy' }, h('strong', { text: PROVIDER_TOOL_NAMES[id] }), status),
+        h('div', { class: 'ui-about__provider-actions' }, install, login, cancel),
+      ));
+    }
+    this.providerRestartBtn = h('button', { class: 'ui-btn ui-btn--sm', type: 'button', text: tr('Reiniciar para ativar'), on: { click: () => void this.restartAfterProviderInstall() } });
+    this.providerToolsGroup = h('div', { class: 'ui-about__provider-tools', hidden: true },
+      h('h4', { text: tr('Ferramentas de IA') }),
+      h('p', { class: 'ui-set__hint', text: tr('Instale os CLIs oficiais em uma pasta privada do AIOffice. O login é feito por você no terminal do próprio CLI.') }),
+      this.providerToolsList,
+      this.providerToolsHint,
+      this.providerRestartBtn,
+    );
     this.el = h(
       'div',
       { class: 'ui-set-group ui-about', attrs: { id: 'ui-about' } },
@@ -261,6 +321,7 @@ export class AboutGroup {
       h('div', { class: 'ui-about__head' }, h('span', { class: 'ui-about__name' }, 'AIOffice ', this.name), this.checkBtn),
       this.status,
       this.fresh,
+      this.providerToolsGroup,
       this.repo,
     );
   }
@@ -268,6 +329,7 @@ export class AboutGroup {
   render(): void {
     const info = versionInfo(this.ctx.store.liveSnapshot);
     setHidden(this.el, !info);
+    this.renderProviderTools();
     if (!info) return;
     const s = info.updates;
     if (this.activeTarget && info.version === this.activeTarget) {
@@ -399,6 +461,161 @@ export class AboutGroup {
     } finally {
       this.requesting = false;
       this.render();
+      this.ctx.invalidate();
+    }
+  }
+
+  private async loadProviderTools(): Promise<void> {
+    if (!this.desktopApi?.getProviderTools) return;
+    try {
+      const value = await this.desktopApi.getProviderTools();
+      if (!Array.isArray(value)) throw new Error(tr('Resposta inválida do gerenciador de CLIs.'));
+      for (const item of value) {
+        if (!item || typeof item !== 'object') continue;
+        const raw = item as Record<string, unknown>;
+        if (!PROVIDER_TOOL_IDS.includes(raw.id as ProviderToolId)) continue;
+        const id = raw.id as ProviderToolId;
+        this.providerTools.set(id, {
+          id,
+          name: PROVIDER_TOOL_NAMES[id],
+          supported: raw.supported === true,
+          canInstall: raw.canInstall === true,
+          installed: raw.installed === true,
+          ...(typeof raw.version === 'string' ? { version: raw.version } : {}),
+          state: typeof raw.state === 'string' ? raw.state : 'missing',
+          ...(typeof raw.progress === 'number' && Number.isFinite(raw.progress) ? { progress: raw.progress } : {}),
+          ...(typeof raw.error === 'string' ? { error: raw.error } : {}),
+        });
+      }
+      this.providerToolsError = undefined;
+    } catch {
+      this.providerToolsError = tr('Não foi possível consultar os CLIs. Feche e abra as configurações para tentar novamente.');
+    }
+    this.renderProviderTools();
+    this.ctx.invalidate();
+  }
+
+  private applyProviderToolEvent(value: unknown): void {
+    if (!value || typeof value !== 'object') return;
+    const raw = value as Record<string, unknown>;
+    if (!PROVIDER_TOOL_IDS.includes(raw.id as ProviderToolId)) return;
+    const id = raw.id as ProviderToolId;
+    const current = this.providerTools.get(id) ?? {
+      id, name: PROVIDER_TOOL_NAMES[id], supported: true, canInstall: true, installed: false, state: 'missing',
+    };
+    if (raw.state === 'settled') {
+      void this.loadProviderTools();
+      return;
+    }
+    const phase = typeof raw.phase === 'string' ? raw.phase : undefined;
+    const state = typeof raw.state === 'string' ? raw.state : current.state;
+    const installed = state === 'installed' ? true : current.installed;
+    this.providerTools.set(id, {
+      ...current,
+      state,
+      installed,
+      ...(typeof raw.version === 'string' ? { version: raw.version } : {}),
+      ...(typeof raw.progress === 'number' && Number.isFinite(raw.progress) ? { progress: raw.progress } : {}),
+      ...(typeof raw.error === 'string' ? { error: raw.error } : {}),
+      ...(phase ? { phase } : {}),
+    });
+    if (raw.restartRequired === true) this.providerRestartRequired = true;
+  }
+
+  private renderProviderTools(): void {
+    const available = !!this.desktopApi?.getProviderTools;
+    setHidden(this.providerToolsGroup, !available);
+    if (!available) return;
+    for (const id of PROVIDER_TOOL_IDS) {
+      const refs = this.providerRows.get(id)!;
+      const tool = this.providerTools.get(id);
+      const active = tool?.state === 'installing';
+      const status = !tool
+        ? tr('Consultando disponibilidade…')
+        : !tool.supported
+          ? tr('Não disponível nesta plataforma.')
+          : tool.error ?? (active
+            ? tool.phase === 'verifying' ? tr('Verificando o executável…')
+              : tool.phase === 'activating' ? tr('Ativando a instalação…')
+                : tool.phase === 'downloading' && tool.progress !== undefined ? tr('Baixando… {0}%', [Math.round(tool.progress)])
+                  : tr('Instalando…')
+            : tool.installed ? tr('Instalado · versão {0}', [tool.version ?? tr('desconhecida')])
+              : tool.canInstall ? tr('Não instalado.') : tr('Instalação indisponível nesta execução.'));
+      setText(refs.status, status);
+      setHidden(refs.install, !tool?.supported || !tool.canInstall || !!active);
+      setText(refs.install, tool?.installed ? tr('Atualizar') : tr('Instalar'));
+      refs.install.disabled = this.providerAction !== undefined;
+      setHidden(refs.login, !tool?.installed || !!active);
+      refs.login.disabled = this.providerAction !== undefined;
+      setHidden(refs.cancel, !active);
+      refs.cancel.disabled = this.providerAction !== id;
+    }
+    setText(this.providerToolsHint, this.providerToolsError ?? (this.providerRestartRequired
+      ? tr('CLI instalado. Reinicie o AIOffice para ativar a ferramenta nas sessões.')
+      : tr('A autenticação é feita pelo CLI oficial no terminal e usa a conta que você escolher.')));
+    setHidden(this.providerRestartBtn, !this.providerRestartRequired);
+    this.providerRestartBtn.disabled = this.providerAction !== undefined;
+  }
+
+  private async installProviderTool(id: ProviderToolId): Promise<void> {
+    if (!this.desktopApi?.installProviderTool || this.providerAction) return;
+    this.providerAction = id;
+    this.providerToolsError = undefined;
+    this.renderProviderTools();
+    try {
+      const value = await this.desktopApi.installProviderTool(id);
+      const result = value && typeof value === 'object' ? value as Record<string, unknown> : {};
+      if (result.ok === true) {
+        this.providerRestartRequired = result.restartRequired === true || this.providerRestartRequired;
+        await this.loadProviderTools();
+      } else if (result.cancelled !== true) {
+        this.providerToolsError = typeof result.error === 'string' ? result.error : tr('Não foi possível instalar o CLI.');
+      }
+    } catch {
+      this.providerToolsError = tr('Não foi possível instalar o CLI.');
+    } finally {
+      this.providerAction = undefined;
+      this.renderProviderTools();
+      this.ctx.invalidate();
+    }
+  }
+
+  private async cancelProviderInstall(): Promise<void> {
+    if (!this.desktopApi?.cancelProviderInstall) return;
+    try { await this.desktopApi.cancelProviderInstall(); } catch { /* The progress event reports cancellation. */ }
+  }
+
+  private async openProviderLogin(id: ProviderToolId): Promise<void> {
+    if (!this.desktopApi?.openProviderLogin || this.providerAction) return;
+    this.providerAction = id;
+    this.providerToolsError = undefined;
+    this.renderProviderTools();
+    try {
+      const value = await this.desktopApi.openProviderLogin(id);
+      const result = value && typeof value === 'object' ? value as Record<string, unknown> : {};
+      if (result.ok !== true && result.cancelled !== true) this.providerToolsError = typeof result.error === 'string' ? result.error : tr('Não foi possível abrir o terminal.');
+    } catch {
+      this.providerToolsError = tr('Não foi possível abrir o terminal.');
+    } finally {
+      this.providerAction = undefined;
+      this.renderProviderTools();
+      this.ctx.invalidate();
+    }
+  }
+
+  private async restartAfterProviderInstall(): Promise<void> {
+    if (!this.desktopApi?.restartAfterProviderInstall || !this.providerRestartRequired || this.providerAction) return;
+    this.providerAction = 'codex';
+    this.renderProviderTools();
+    try {
+      const value = await this.desktopApi.restartAfterProviderInstall();
+      const result = value && typeof value === 'object' ? value as Record<string, unknown> : {};
+      if (result.ok !== true && result.cancelled !== true) this.providerToolsError = tr('Não foi possível reiniciar o AIOffice. Feche e abra o aplicativo quando puder.');
+    } catch {
+      this.providerToolsError = tr('Não foi possível reiniciar o AIOffice. Feche e abra o aplicativo quando puder.');
+    } finally {
+      this.providerAction = undefined;
+      this.renderProviderTools();
       this.ctx.invalidate();
     }
   }

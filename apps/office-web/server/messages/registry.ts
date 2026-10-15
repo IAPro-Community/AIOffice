@@ -84,6 +84,8 @@ export interface MessageRegistryOptions {
   demoDeliver?: (agentId: string, text: string) => boolean;
   /** Mensagens aos agentes do Codex; ausente = eles não recebem. */
   codex?: CodexDeliveryOptions;
+  /** Hook oficial Antigravity recentemente conectado para a sessão. */
+  antigravity?: { canMessage: (sessionId: string) => boolean };
   now?: () => number;
   /** Intervalo do relógio interno (start). */
   tickMs?: number;
@@ -163,6 +165,7 @@ function unavailableReason(a: AgentInfo, reachable: boolean): string | undefined
   if (!reachable) {
     if (a.provider === 'codex') return ERR_CODEX_UNAVAILABLE;
     if (isOmpAgent(a)) return ERR_OMP_NOT_CONNECTED;
+    if (a.provider === 'antigravity') return tr('o hook do Antigravity ainda não se conectou; abra a sessão no Antigravity e tente novamente');
     return tr('a sessão ainda não carregou o plugin de mensagens instalado pelo AIOffice; feche e reabra a sessão');
   }
   return undefined;
@@ -254,6 +257,7 @@ export class MessageRegistry {
     const a = this.opts.office.get(agentId);
     if (!a || a.kind !== 'main' || !present(a)) return false;
     if (a.provider === 'codex') return this.codexAvailable();
+    if (a.provider === 'antigravity') return this.opts.antigravity?.canMessage(a.sessionId) ?? false;
     if (a.account.toLowerCase() === 'aioffice') return true;
     const seenAt = this.seen.get(agentId);
     return seenAt !== undefined && this.now() - seenAt < this.presenceMs;

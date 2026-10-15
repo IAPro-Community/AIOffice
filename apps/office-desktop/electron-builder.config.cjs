@@ -48,6 +48,7 @@ module.exports = {
     'package.json',
     'LICENSE',
     'apps/office-desktop/main.mjs',
+    'apps/office-desktop/bootstrap.cjs',
     'apps/office-desktop/preload.cjs',
     'apps/office-desktop/service.mjs',
     'apps/office-desktop/security.mjs',
@@ -55,6 +56,7 @@ module.exports = {
     'apps/office-desktop/storage.mjs',
     'apps/office-desktop/update-policy.mjs',
     'apps/office-desktop/github-release-updater.mjs',
+    'apps/office-desktop/provider-tools.mjs',
     'apps/office-web/package.json',
     'apps/office-web/scripts/maestro.mjs',
     'apps/office-web/dist/**/*',
@@ -94,7 +96,7 @@ module.exports = {
   win: {
     target: [{ target: 'nsis', arch: ['x64'] }],
     artifactName: 'AIOffice-Setup.exe',
-    icon: 'apps/office-web/client/public/assets/brand/icon-512.png',
+    icon: 'apps/office-web/client/public/assets/brand/icon.ico',
     ...(windowsPublisher ? { publisherName: [windowsPublisher] } : {}),
   },
   nsis: {

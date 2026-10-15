@@ -1,4 +1,4 @@
-"""Pós-processamento e composição dos assets do Habblaud (pixel art a partir das imagens da IA).
+"""Pós-processamento das ilustrações AIOffice e geração das variantes oficiais da marca.
 
 Uso (a partir da raiz do projeto; requer Pillow e numpy):
     python3 -E scripts/assets/postprocess.py                  # gera tudo + manifest + folha de contato
@@ -36,6 +36,7 @@ CACHE = HERE / ".cache"
 RAW = CACHE / "raw"
 SPECS = HERE / "specs.json"
 PUBLIC = ROOT / "client" / "public" / "assets"
+BRAND_SOURCE = PUBLIC / "brand" / "aioffice-pixel-art.png"
 
 OUTLINE = "#1c2541"
 NIGHT = "#171c35"  # fundo do og-image sem ilustração (com ela, vale a cor do canto da ilustração)
@@ -168,30 +169,50 @@ def dusk_scene(w: int, h: int, horizon: int, seed: int = 3) -> Image.Image:
     return img
 
 
-def app_icon(mark: Image.Image, canvas: int, factor: int, ground_gap: int) -> Image.Image:
-    """Ícone quadrado: céu + calçada + prédio apoiado na calçada, ampliado por inteiro com NEAREST."""
-    horizon = canvas - ground_gap - 2
-    scene = dusk_scene(canvas, canvas, horizon)
-    x = (canvas - mark.width) // 2
-    y = canvas - ground_gap - mark.height
-    scene.alpha_composite(mark, (x, y))
-    return px.upscale(scene, factor)
-
-
-def build_brand(detailed: Image.Image | None, out_root: Path) -> dict:
+def build_brand(out_root: Path) -> dict:
     brand = out_root / "brand"
     brand.mkdir(parents=True, exist_ok=True)
-    mark32, mark16 = art.mark(32), art.mark(16)
-    sign = art.signage()
+    source = Image.open(BRAND_SOURCE).convert("RGBA")
+    source.save(brand / "aioffice-pixel-art.png", optimize=True)
+
+    def scaled(size: int) -> Image.Image:
+        return source.resize((size, size), Image.Resampling.LANCZOS)
+
+    # A marca completa tem agentes, telas e wordmark demais para sobreviver em 16–32 px.
+    # Em tamanhos pequenos, use a tela central com o símbolo A do próprio artwork.
+    mark_crop = source.crop((
+        round(source.width * 0.385),
+        round(source.height * 0.16),
+        round(source.width * 0.60),
+        round(source.height * 0.35),
+    ))
+
+    def mark(size: int) -> Image.Image:
+        cropped = mark_crop.copy()
+        cropped.thumbnail((size - 2, size - 2), Image.Resampling.LANCZOS)
+        canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+        canvas.alpha_composite(cropped, ((size - cropped.width) // 2, (size - cropped.height) // 2))
+        return canvas
+
+    mark32, mark16 = mark(32), mark(16)
+    mark128 = mark(128)
+    sign_crop = source.crop((round(source.width * 0.0383), round(source.height * 0.7241), round(source.width * 0.9809), round(source.height * 0.9761)))
+    sign_large = sign_crop.resize((256, 64), Image.Resampling.LANCZOS)
+    sign = sign_large.resize((64, 16), Image.Resampling.LANCZOS)
     mark32.save(brand / "logo-mark.png")
-    px.upscale(mark32, 4).save(brand / "logo-mark@4x.png")
+    mark128.save(brand / "logo-mark@4x.png")
     mark16.save(brand / "favicon-16.png")
     mark32.save(brand / "favicon-32.png")
     sign.save(brand / "signage.png")
-    px.upscale(sign, 4).save(brand / "signage@4x.png")
-    app_icon(mark32, 45, 4, 4).save(brand / "apple-touch-icon.png")
-    app_icon(mark32, 48, 4, 4).save(brand / "icon-192.png")
+    sign_large.save(brand / "signage@4x.png")
+    scaled(256).save(brand / "logo-detailed.png", optimize=True)
+    mark(180).save(brand / "apple-touch-icon.png", optimize=True)
+    mark(192).save(brand / "icon-192.png", optimize=True)
+    icon512 = mark(512)
+    icon512.save(brand / "icon-512.png", optimize=True)
+    icon512.save(brand / "icon.ico", format="ICO", sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
     section: dict = {
+        "source": "brand/aioffice-pixel-art.png",
         "mark": {"file": "brand/logo-mark.png", "w": 32, "h": 32},
         "markLarge": {"file": "brand/logo-mark@4x.png", "w": 128, "h": 128},
         "signage": {"file": "brand/signage.png", "w": sign.width, "h": sign.height},
@@ -201,12 +222,9 @@ def build_brand(detailed: Image.Image | None, out_root: Path) -> dict:
         "appleTouch": "brand/apple-touch-icon.png",
         "icon192": "brand/icon-192.png",
         "icon512": "brand/icon-512.png",
+        "iconIco": "brand/icon.ico",
+        "markDetailed": {"file": "brand/logo-detailed.png", "w": 256, "h": 256},
     }
-    if detailed is not None:
-        app_icon(detailed, 128, 4, 10).save(brand / "icon-512.png")
-        section["markDetailed"] = {"file": "brand/logo-detailed.png", "w": detailed.width, "h": detailed.height}
-    else:
-        app_icon(mark32, 128, 4, 16).save(brand / "icon-512.png")
     return section
 
 
@@ -214,39 +232,14 @@ def build_brand(detailed: Image.Image | None, out_root: Path) -> dict:
 # og-image (1200x630 = 600x315 nativo x2)
 
 
-def build_og(detailed: Image.Image | None, illustration: Image.Image | None, out_root: Path) -> str:
-    """Card de compartilhamento: ilustração no alto, painel com o prédio, "Habblaud" e a frase."""
-    w, h = 600, 315
-    # fundo = azul-marinho do canto da ilustração, para a emenda com ela não aparecer
-    night = illustration.convert("RGBA").getpixel((0, 0)) if illustration is not None else px.hex_rgb(NIGHT) + (255,)
-    og = Image.new("RGBA", (w, h), night)
-    if illustration is not None:
-        og.alpha_composite(illustration.convert("RGBA"), (w - illustration.width, 0))
-    panel_top = 218
-    # estrelas no céu noturno que sobra à esquerda da ilustração (só sobre pixels da cor de fundo)
-    strip = w - illustration.width if illustration is not None else w
-    rng = np.random.default_rng(11)
-    for _ in range(70):
-        x, y = int(rng.integers(2, w - 2)), int(rng.integers(2, panel_top - 6))
-        if x < strip - 1 and all(og.getpixel((x + dx, y + dy)) == night for dx in (-1, 0, 1) for dy in (-1, 0, 1)):
-            og.putpixel((x, y), (254, 243, 214, 255) if rng.random() < 0.35 else (122, 134, 176, 255))
-    draw = ImageDraw.Draw(og)
-    draw.rectangle((0, panel_top, w - 1, h - 1), fill="#12151d")
-    draw.line((0, panel_top, w - 1, panel_top), fill="#fac665")
-    draw.line((0, panel_top + 1, w - 1, panel_top + 1), fill="#2a3656")
-    mark = detailed if detailed is not None else px.upscale(art.mark(32), 2)
-    mx = 28
-    og.alpha_composite(mark, (mx, h - 12 - mark.height))
-    tx, ty = mx + mark.width + 20, panel_top + 12
-    og.alpha_composite(art.text_image("Hab", "#f4f1ea", 4, shadow="#05070c"), (tx, ty))
-    og.alpha_composite(art.text_image("blaud", "#fac665", 4, shadow="#05070c"), (tx + (art.text_width("Hab") + 1) * 4, ty))
-    lines = ["Seus agentes do Claude Code, ao vivo,", "num escritório em pixel art."]
-    for i, line in enumerate(lines):
-        img = art.text_image(line, "#c9d3e3", 2)
-        if tx + img.width > w - 12:
-            raise ValueError(f"linha do og-image larga demais: {line!r}")
-        og.alpha_composite(img, (tx, ty + 38 + i * 20))
-    px.upscale(og, 2).convert("RGB").save(out_root / "og-image.png", optimize=True)
+def build_og(out_root: Path) -> str:
+    """Prévia para compartilhamento com a arte oficial completa do AIOffice."""
+    w, h = 1200, 630
+    og = Image.new("RGBA", (w, h), "#12151d")
+    logo = Image.open(BRAND_SOURCE).convert("RGBA")
+    logo.thumbnail((h, h), Image.Resampling.LANCZOS)
+    og.alpha_composite(logo, ((w - logo.width) // 2, (h - logo.height) // 2))
+    og.convert("RGB").save(out_root / "og-image.png", optimize=True)
     return "og-image.png"
 
 
@@ -310,6 +303,7 @@ def raw_path(asset_id: str, take: str) -> Path:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--only", default="", help="ids de specs.json separados por vírgula")
+    parser.add_argument("--brand-only", action="store_true", help="regenera apenas a marca/og-image a partir do artwork oficial, sem imagens brutas")
     parser.add_argument("--take", default="", help="usa raw/<id>@<tomada>.png em vez da tomada escolhida")
     parser.add_argument("--out", default=str(PUBLIC), help="pasta de saída (padrão: client/public/assets)")
     args = parser.parse_args()
@@ -318,6 +312,16 @@ def main() -> int:
     only = {s for s in args.only.split(",") if s}
     out_root = Path(args.out)
     out_root.mkdir(parents=True, exist_ok=True)
+
+    if args.brand_only:
+        manifest_path = out_root / "manifest.json"
+        source_manifest = manifest_path if manifest_path.exists() else PUBLIC / "manifest.json"
+        manifest = json.loads(source_manifest.read_text())
+        manifest["brand"] = build_brand(out_root)
+        manifest["og"] = build_og(out_root)
+        manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
+        print(f"manifest: marca/og-image regenerados -> {manifest_path}")
+        return 0
 
     # 1) assets gerados por IA
     for asset in specs["assets"]:
@@ -339,13 +343,13 @@ def main() -> int:
         print(f"[{asset['id']}] {img.width}x{img.height} -> {dest.relative_to(ROOT) if dest.is_relative_to(ROOT) else dest}")
 
     if only:
+        if "logo-mark" in only:
+            build_brand(out_root)
         return 0
 
     # 2) marca, og-image, manifest e folha de contato (dependem dos arquivos acima)
     by_id = {a["id"]: a for a in specs["assets"]}
-    detailed_path = out_root / by_id["logo-mark"]["out"]
-    detailed = Image.open(detailed_path).convert("RGBA") if detailed_path.exists() else None
-    brand = build_brand(detailed, out_root)
+    brand = build_brand(out_root)
 
     ill_spec = by_id["empty-office"]
     ill_path = out_root / ill_spec["out"]
@@ -356,7 +360,7 @@ def main() -> int:
         big = Image.open(ill_path)
         illustration = big.resize((big.width // ill_scale, big.height // ill_scale), Image.NEAREST)
         illustrations["emptyOffice"] = {"file": ill_spec["out"], "w": big.width, "h": big.height, "scale": ill_scale}
-    og = build_og(detailed, illustration, out_root)
+    og = build_og(out_root)
 
     wall_art = []
     for asset in specs["assets"]:

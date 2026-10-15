@@ -19,6 +19,12 @@ npm run build && npm start   # produção: serve dist/client
 | Uso ao vivo (5h e semanal) | `~/.habblaud/usage/<conta>.json`, gravado pelo mod do Habblaud (`npm run mod:install`) ou pelo `scripts/statusline-tap.mjs` (`npm run usage:install`) |
 | Atalho da conta (`c`, `d`...) | linhas `alias x='... claude ...'` de `~/.zshrc`, `~/.bashrc`, `~/.zprofile`, `~/.bash_profile` |
 
+O Antigravity App, IDE e CLI são observados em `~/.gemini/antigravity*/brain/<conversationId>/.system_generated/logs/transcript.jsonl`.
+O AIOffice lê esses arquivos em modo somente leitura, monta sessões e histórico de sete dias e usa os hooks oficiais
+para presença e atividade ao vivo. `npm run antigravity:install` instala os hooks globais; eles consultam a caixa de
+mensagens antes da próxima invocação. A decisão de permissões permanece no Antigravity. Conversas ociosas não são
+acordadas por hooks.
+
 **Forks** (subagentes que herdam o contexto do pai): o transcript começa com uma linha `fork-context-ref`, a
 cópia da chamada `Agent` do pai (mesmo `tool_use` id do `.meta.json`) e o resultado dela ("Fork started…") junto
 com a instrução do fork. O parser ignora essa cópia — senão o resultado herdado parece o fim do subagente e o fork

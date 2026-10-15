@@ -247,6 +247,26 @@ Abra uma nova sessão OMP para carregar a extensão. A ponte envia a mensagem co
 ao escritório; `npm run omp:uninstall` remove a extensão se ela não tiver sido editada. O envio segue as proteções de
 acesso local e a opção `HABBLAUD_MENSAGENS` do servidor.
 
+### Antigravity no escritório (opcional)
+
+O AIOffice lê presença, projeto, atividade e conversa do Antigravity App, IDE e CLI a partir dos transcripts oficiais
+em `~/.gemini/antigravity*/brain/`. O histórico fica disponível por sete dias. Para receber eventos ao vivo e enviar
+mensagens do escritório, instale os hooks locais:
+
+```bash
+npm run antigravity:install
+npm run antigravity:status
+```
+
+O instalador acrescenta somente a entrada `AIOffice` em `~/.gemini/config/hooks.json`, cria backup quando esse arquivo
+já existe e preserva os outros hooks. `npm run antigravity:uninstall` remove apenas essa entrada. Se a configuração foi
+instalada enquanto o Antigravity estava aberto, inicie uma nova invocação para carregar os hooks.
+
+No app desktop instalado, esses hooks são instalados/verificados durante a inicialização quando existe o perfil local
+`~/.gemini`. Mensagens enviadas no AIOffice entram antes da próxima chamada do modelo; elas não acordam uma conversa
+ociosa. As decisões de permissão continuam nativas do Antigravity: o hook repassa a chamada à política padrão, e o
+AIOffice não aprova nem nega pedidos de permissão.
+
 ### Acesso remoto pelo celular (opcional)
 
 O painel local continua em `http://127.0.0.1:4747`. Instale [`cloudflared`](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) e deixe o executável disponível no `PATH` do AIOffice. No painel, abra **Configurações → Acesso pelo celular**, crie o acesso e use **Iniciar túnel**.

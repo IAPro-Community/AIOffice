@@ -41,6 +41,10 @@ import { CodexHistory } from './sources/codex/history';
 import { CodexSource } from './sources/codex/source';
 import { OmpSource } from './sources/omp/source';
 import { OmpHistory } from './sources/omp/history';
+import { AntigravitySource } from './sources/antigravity/source';
+import { AntigravityHistory } from './sources/antigravity/history';
+import { createAntigravityEventHandler } from './sources/antigravity/http';
+import { installAntigravityHooks } from './sources/antigravity/install';
 import { createBuildReader } from './build';
 import { UpdateChecker } from './updates/checker';
 import { UpdateInstaller } from './updates/installer';
@@ -156,6 +160,8 @@ if (codex) agents.add(codex);
 const omp = new OmpSource(office, accounts);
 agents.add(omp);
 omp.start();
+const antigravity = config.inDocker ? undefined : new AntigravitySource({ home: config.home, office, accounts });
+if (antigravity) agents.add(antigravity);
 // A extensão precisa existir no perfil do OMP que observa as sessões. No desktop e no modo Node local, instalamos
 // automaticamente ao iniciar; containers não conseguem gravar com segurança no perfil OMP do host.
 if (config.messages && !config.inDocker && existsSync(join(config.home, '.omp', 'agent'))) {
@@ -166,6 +172,22 @@ if (config.messages && !config.inDocker && existsSync(join(config.home, '.omp', 
     else if (bridge.state === 'conflict') log.warn(tr('Não substituí a extensão global {0} porque ela não pertence ao AIOffice.', [bridge.target]));
   } catch (error) {
     log.warn(tr('Instalação automática da extensão OMP falhou: {0}.', [errMsg(error)]));
+  }
+}
+// O AIOffice copia somente seu próprio hook oficial, sem substituir integrações de terceiros. No desktop, o
+// runner usa o executável Electron em modo Node; no Node local, usa o runtime atual.
+if (config.messages && antigravity && existsSync(join(config.home, '.gemini')) && !config.inDocker) {
+  try {
+    const installed = installAntigravityHooks({
+      home: config.home,
+      sourceHook: join(config.rootDir, 'mod', 'antigravity', 'hook.mjs'),
+      runtime: process.execPath,
+      electron: Boolean(process.versions.electron),
+      port: config.port,
+    });
+    if (installed.changed) log.info(tr('Hook de mensagens do Antigravity instalado/atualizado; abra novamente as sessões para ativá-lo.'));
+  } catch (error) {
+    log.warn(tr('Instalação do hook do Antigravity falhou: {0}.', [errMsg(error)]));
   }
 }
 // (CodexLive); sem ela (nenhuma pasta do Codex ou HABBLAUD_CODEX=0) a rota responde {ok: false}.
@@ -187,6 +209,12 @@ const history = config.terminal
   : undefined;
 if (history && codex) history.add(new CodexHistory({ accounts: () => accounts.entriesOf('codex'), openAgentOf: (acc, sid) => openMainAgent(office.list(), acc, sid) }));
 if (history) history.add(new OmpHistory({ account: omp.accountId, sessionsDir: omp.sessionsDir, openAgentOf: (acc, sid) => openMainAgent(office.list(), acc, sid) }));
+if (history && antigravity) history.add(new AntigravityHistory({
+  account: antigravity.accountId,
+  stores: antigravity.stores,
+  openAgentOf: (acc, sid) => openMainAgent(office.list(), acc, sid),
+  workspaceOf: (sid) => antigravity.workspaceOf(sid),
+}));
 // Linha do tempo do timelapse: grava cada snapshot novo (com throttle) em <dataDir>/timeline.
 const timelineDir = join(config.dataDir, TIMELINE_DIR);
 const timeline = config.timeline ? new TimelineRecorder({ dir: timelineDir }) : undefined;
@@ -218,6 +246,7 @@ const messages = config.messages
         run: codexBin ? createCodexQueueRunner(codexBin) : undefined,
         homeOf: (account) => accounts.entriesOf('codex').find((e) => e.id === account)?.detected.configDir,
       },
+      antigravity: { canMessage: (sessionId) => antigravity?.canMessage(sessionId) ?? false },
     })
   : undefined;
 late.messages = messages;
@@ -316,6 +345,7 @@ const api = createApiHandler({
   messages: messages ? createMessageRoutes(messages) : undefined,
   pty: ptys ? createPtyRoutes(ptys) : undefined,
   codexLive,
+  antigravityEvents: config.messages && antigravity ? createAntigravityEventHandler(antigravity) : undefined,
   stats,
   updates: {
     status: () => ({ ...updates.status(), installation: updateInstaller?.status() }),

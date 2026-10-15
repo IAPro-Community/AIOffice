@@ -1,6 +1,7 @@
 {
   "version": 1,
   "brand": {
+    "source": "brand/aioffice-pixel-art.png",
     "mark": {
       "file": "brand/logo-mark.png",
       "w": 32,
@@ -26,10 +27,11 @@
     "appleTouch": "brand/apple-touch-icon.png",
     "icon192": "brand/icon-192.png",
     "icon512": "brand/icon-512.png",
+    "iconIco": "brand/icon.ico",
     "markDetailed": {
       "file": "brand/logo-detailed.png",
-      "w": 78,
-      "h": 86
+      "w": 256,
+      "h": 256
     }
   },
   "illustrations": {

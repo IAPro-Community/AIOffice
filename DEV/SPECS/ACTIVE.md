@@ -2,7 +2,7 @@
 
 ## 1. Identificação do Projeto
 - **Nome**: AIOffice
-- **Status**: `v2.3.0` está publicada com builds nativos Windows/macOS/Linux. No desktop instalado, Codex envia pelo serviço local e as pontes AIOffice de Claude Code/OMP são instaladas na inicialização; os CLIs e logins dos fornecedores ainda são externos. Pedido ativo do usuário: deixar as integrações de mensagens completas no app instalado, sem dependência do modo Node. Limitar a capacidade anunciada a Codex, Claude Code e OMP até que outros provedores tenham adaptadores reais. Decisão pendente: se o app também deve oferecer instalar os CLIs oficiais com confirmação.
+- **Status**: `v2.3.0` é a versão pública até a conclusão do workflow. Candidata `v2.4.0` consolida os deltas locais desde a última release: identidade visual, integração Antigravity, instalação privada dos CLIs oficiais Codex/Claude Code/OMP no app instalado, diagnóstico de inicialização e matriz nativa. O usuário aprovou oferecer instalação; o login continua sob controle explícito do usuário. Não adicionar refresh integral automático. A publicação depende de todos os gates e dos runners nativos Windows/macOS/Linux.
 - **Localização**: Repositório AIOffice
 
 ## 2. Pilares de Integração

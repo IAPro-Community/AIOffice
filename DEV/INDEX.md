@@ -18,6 +18,7 @@ Hierarquia de documentação operacional do projeto AIOffice.
 | `DEV/SPECS/ACTIVE.md` | Especificação técnica, roadmap e critérios ativos, incluindo temas automáticos do Habblaud | Ativo |
 | `DEV/ADR/ADR-0001-omp-message-delivery.md` | Decisão sobre polling, envio e ACK da extensão OMP | Atual |
 | `DEV/ADR/ADR-0002-habblaud-update-policy.md` | Política para integrar Habblaud upstream, atualizar releases AIOffice e oferecer acesso remoto HTTPS | Atual |
+| `DEV/ADR/ADR-0003-antigravity-native-permissions.md` | Integração do Antigravity por hooks oficiais, mantendo as decisões de permissões no próprio produto | Atual |
 | `DEV/DESKTOP.md` | Execução, persistência, CLI NPM empacotada, instaladores, atualizações, assinatura e publicação do app Electron | Ativo |
 | `DEV/HANDOFF.md` | Estado operacional, evidências recentes e próxima ação segura | Ativo |
 | `DEV/UI-AUDIT-2026-10-13.md` | Auditoria da interface Habblaud, cobertura de provedores e roadmap de melhorias | Atual |

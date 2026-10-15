@@ -363,6 +363,17 @@ export class Office {
     this.markDirty();
   }
 
+  /** Atualiza a pasta do projeto quando uma fonte externa confirma o workspace da sessão. */
+  setMainCwd(id: string, cwd: string): void {
+    const rec = this.agents.get(id);
+    if (!rec || rec.info.kind !== 'main') return;
+    const roomId = normalizeCwd(cwd);
+    if (rec.info.roomId === roomId) return;
+    this.ensureRoom(roomId, this.now(), displayCwd(cwd));
+    rec.info.roomId = roomId;
+    this.markDirty();
+  }
+
   /** Mesmo processo, sessão nova (/clear, /resume): o personagem continua, tarefas e números zeram. */
   switchSession(id: string, sessionId: string): void {
     const rec = this.agents.get(id);

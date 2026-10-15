@@ -57,6 +57,8 @@ export interface ApiDeps {
    * não dependem da trava do terminal).
    */
   codexLive?: CodexLive;
+  /** Eventos dos hooks oficiais do Antigravity; sempre restrito a processo local/loopback. */
+  antigravityEvents?: (req: IncomingMessage, res: ServerResponse) => void;
   /** Renomeia a sala (POST /api/rooms/rename {id, name}; vazio volta ao padrão). Devolve o nome em uso, ou undefined se a sala não existe. */
   renameRoom?: (id: string, name: string) => string | undefined;
   /** Estatísticas do "Meu dia" (GET /api/stats, http/stats.ts). */
@@ -474,6 +476,17 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
       else if (!isLoopbackHost(req.headers.host) || (!deps.inDocker && !isLoopbackAddress(req.socket.remoteAddress))) {
         sendJson(res, 403, { error: tr('eventos do Codex só são aceitos pelo próprio computador (http://localhost ou http://127.0.0.1)') });
       } else handleCodexEvent(req, res, { live: deps.codexLive, entries: () => accounts.entriesOf('codex') }).catch((err) => fail(res, err));
+      return true;
+    }
+    if (path === '/api/antigravity/events') {
+      if (method !== 'POST') methodNotAllowed(res, 'POST');
+      else if (isRemoteRequest(req) || !isLoopbackHost(req.headers.host) || !isLoopbackAddress(req.socket.remoteAddress)) {
+        req.resume();
+        sendJson(res, 403, { error: tr('eventos do Antigravity só são aceitos pelo próprio computador') });
+      } else if (!deps.antigravityEvents) {
+        req.resume();
+        sendJson(res, 503, { error: tr('integração Antigravity indisponível') });
+      } else deps.antigravityEvents(req, res);
       return true;
     }
     if (path.startsWith('/api/aioffice/')) {

@@ -1,23 +1,11 @@
 // Camadas de estado: splash de carregamento, escritório vazio e aviso de conexão perdida.
 import type { UiComponent, UiContext } from './context';
 import { h, prefersReducedMotion, setHidden, setText } from './dom';
-import { FALLBACK_MARK } from './icons';
 import { emptyOfficeHint } from './provider';
-import { wordmark } from './widgets';
 import { tr } from '../../../shared/i18n';
 
 /** Depois de quanto tempo sem conexão o aviso aparece. */
 const DISCONNECTED_BANNER_MS = 8_000;
-
-function brandMark(size: number): HTMLElement {
-  const mark = h('span', { class: 'ui-brand__mark' });
-  const img = h('img', { attrs: { src: '/assets/brand/logo-mark@4x.png', alt: '', width: size, height: size, draggable: 'false' } });
-  img.addEventListener('error', () => {
-    mark.innerHTML = FALLBACK_MARK;
-  });
-  mark.append(img);
-  return mark;
-}
 
 export class Splash implements UiComponent {
   readonly el: HTMLElement;
@@ -28,10 +16,18 @@ export class Splash implements UiComponent {
 
   constructor(private ctx: UiContext) {
     this.text = h('p', { class: 'ui-splash__text', text: tr('Conectando ao escritório…') });
+    const logo = h('img', { class: 'ui-splash__logo', attrs: { src: '/assets/brand/logo-detailed.png', alt: 'AIOffice', width: 240, height: 240, draggable: 'false' } });
+    logo.addEventListener('error', () => {
+      logo.replaceWith(h('span', { class: 'ui-splash__logo-fallback', text: 'AIOffice', attrs: { 'aria-hidden': 'true' } }));
+    }, { once: true });
     this.el = h(
       'div',
       { class: 'ui-splash', role: 'status', attrs: { 'aria-live': 'polite' } },
-      h('div', { class: 'ui-splash__inner' }, brandMark(64), wordmark('ui-splash__name'), this.text, h('span', { class: 'ui-splash__bar' })),
+      h('div', { class: 'ui-splash__inner' },
+        logo,
+        this.text,
+        h('span', { class: 'ui-splash__bar' }),
+      ),
     );
   }
 

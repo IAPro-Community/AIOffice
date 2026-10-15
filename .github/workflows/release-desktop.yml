@@ -19,11 +19,11 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.ref }}
           fetch-depth: 0
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -61,10 +61,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.ref }}
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -153,16 +153,38 @@ jobs:
           Copy-Item -LiteralPath $installer -Destination 'dist/release-assets/AIOffice-Setup.exe'
       - name: Validate macOS assets
         if: matrix.id == 'macos-arm64'
-        run: test -s dist/installers/AIOffice-Setup-macOS-arm64.dmg && test -s dist/installers/AIOffice-Setup-macOS-arm64.zip
+        run: |
+          test -s dist/installers/AIOffice-Setup-macOS-arm64.dmg
+          test -s dist/installers/AIOffice-Setup-macOS-arm64.zip
+          mkdir -p dist/release-assets
+          cp dist/installers/AIOffice-Setup-macOS-arm64.dmg dist/installers/AIOffice-Setup-macOS-arm64.zip dist/release-assets/
       - name: Validate macOS assets
         if: matrix.id == 'macos-x64'
-        run: test -s dist/installers/AIOffice-Setup-macOS-x64.dmg && test -s dist/installers/AIOffice-Setup-macOS-x64.zip
+        run: |
+          test -s dist/installers/AIOffice-Setup-macOS-x64.dmg
+          test -s dist/installers/AIOffice-Setup-macOS-x64.zip
+          mkdir -p dist/release-assets
+          cp dist/installers/AIOffice-Setup-macOS-x64.dmg dist/installers/AIOffice-Setup-macOS-x64.zip dist/release-assets/
       - name: Validate Linux assets
         if: matrix.id == 'linux-x64'
         run: |
           ls -lh dist/installers
           test -s dist/installers/AIOffice-Setup-Linux-x64.AppImage
           test -s dist/installers/AIOffice-Setup-Linux-x64.deb
+          mkdir -p dist/release-assets
+          cp dist/installers/AIOffice-Setup-Linux-x64.AppImage dist/installers/AIOffice-Setup-Linux-x64.deb dist/release-assets/
+
+      - name: Build unpacked app for packaged runtime smoke
+        run: npm run desktop:build
+      - name: Smoke test packaged Windows app
+        if: matrix.id == 'windows-x64'
+        run: node scripts/desktop-smoke.mjs windows
+      - name: Smoke test packaged macOS app
+        if: matrix.id == 'macos-arm64' || matrix.id == 'macos-x64'
+        run: node scripts/desktop-smoke.mjs macos
+      - name: Smoke test packaged Linux app
+        if: matrix.id == 'linux-x64'
+        run: xvfb-run -a node scripts/desktop-smoke.mjs linux
 
       - name: Upload Windows assets
         if: matrix.id == 'windows-x64'
@@ -177,8 +199,8 @@ jobs:
         with:
           name: aioffice-installers-macos-arm64
           path: |
-            dist/installers/AIOffice-Setup-macOS-arm64.dmg
-            dist/installers/AIOffice-Setup-macOS-arm64.zip
+            dist/release-assets/AIOffice-Setup-macOS-arm64.dmg
+            dist/release-assets/AIOffice-Setup-macOS-arm64.zip
           if-no-files-found: error
       - name: Upload macOS Intel assets
         if: matrix.id == 'macos-x64'
@@ -186,8 +208,8 @@ jobs:
         with:
           name: aioffice-installers-macos-x64
           path: |
-            dist/installers/AIOffice-Setup-macOS-x64.dmg
-            dist/installers/AIOffice-Setup-macOS-x64.zip
+            dist/release-assets/AIOffice-Setup-macOS-x64.dmg
+            dist/release-assets/AIOffice-Setup-macOS-x64.zip
           if-no-files-found: error
       - name: Upload Linux assets
         if: matrix.id == 'linux-x64'
@@ -195,8 +217,8 @@ jobs:
         with:
           name: aioffice-installers-linux-x64
           path: |
-            dist/installers/AIOffice-Setup-Linux-x64.AppImage
-            dist/installers/AIOffice-Setup-Linux-x64.deb
+            dist/release-assets/AIOffice-Setup-Linux-x64.AppImage
+            dist/release-assets/AIOffice-Setup-Linux-x64.deb
           if-no-files-found: error
 
   publish:
@@ -207,13 +229,13 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.ref }}
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           pattern: aioffice-installers-*
           path: dist/release-assets
@@ -244,8 +266,79 @@ jobs:
             import { changelogSection } from "./scripts/release-aioffice.mjs";
             writeFileSync(process.env.RELEASE_NOTES_PATH, changelogSection(readFileSync("CHANGELOG.md", "utf8"), process.env.RELEASE_VERSION) + "\n", "utf8");
           '
-      - name: Publish the GitHub release
+      - name: Create or reuse an unpublished draft
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create "$GITHUB_REF_NAME" dist/release-assets/* --verify-tag --title "AIOffice $GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/release-notes.md"
+        shell: bash
+        run: |
+          if gh release view "$GITHUB_REF_NAME" --json isDraft --jq '.isDraft' > "$RUNNER_TEMP/release-is-draft" 2>/dev/null; then
+            if [[ "$(cat "$RUNNER_TEMP/release-is-draft")" != true ]]; then
+              echo "Refusing to overwrite an already published release: $GITHUB_REF_NAME" >&2
+              exit 1
+            fi
+            gh release edit "$GITHUB_REF_NAME" \
+              --title "AIOffice $GITHUB_REF_NAME" \
+              --notes-file "$RUNNER_TEMP/release-notes.md"
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              --draft \
+              --verify-tag \
+              --title "AIOffice $GITHUB_REF_NAME" \
+              --notes-file "$RUNNER_TEMP/release-notes.md"
+          fi
+
+      - name: Upload release assets to the draft
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "$GITHUB_REF_NAME" dist/release-assets/* --clobber
+
+      - name: Verify uploaded names, sizes, and SHA-256 digests before publication
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          expected_names=$(printf '%s\n' \
+            AIOffice-Setup.exe \
+            AIOffice-Setup-macOS-arm64.dmg AIOffice-Setup-macOS-arm64.zip \
+            AIOffice-Setup-macOS-x64.dmg AIOffice-Setup-macOS-x64.zip \
+            AIOffice-Setup-Linux-x64.AppImage AIOffice-Setup-Linux-x64.deb \
+            latest-mac.yml latest-linux.yml | sort)
+          actual_names=$(find dist/release-assets -maxdepth 1 -type f -printf '%f\n' | sort)
+          if [[ "$actual_names" != "$expected_names" ]]; then
+            echo 'Local release asset names do not match the stable release contract.' >&2
+            diff -u <(printf '%s\n' "$expected_names") <(printf '%s\n' "$actual_names") || true
+            exit 1
+          fi
+
+          release_json=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$GITHUB_REF_NAME")
+          if [[ "$(jq -r '.draft' <<<"$release_json")" != true ]]; then
+            echo 'Release stopped being a draft before asset verification.' >&2
+            exit 1
+          fi
+          remote_names=$(jq -r '.assets[].name' <<<"$release_json" | sort)
+          if [[ "$remote_names" != "$expected_names" ]]; then
+            echo 'Uploaded GitHub asset names do not exactly match the release contract.' >&2
+            diff -u <(printf '%s\n' "$expected_names") <(printf '%s\n' "$remote_names") || true
+            exit 1
+          fi
+
+          while IFS= read -r file; do
+            name=${file##*/}
+            local_size=$(stat -c '%s' "$file")
+            local_sha=$(sha256sum "$file" | cut -d ' ' -f 1)
+            remote_size=$(jq -r --arg name "$name" '.assets[] | select(.name == $name) | .size' <<<"$release_json")
+            remote_digest=$(jq -r --arg name "$name" '.assets[] | select(.name == $name) | .digest // empty' <<<"$release_json")
+            if [[ "$local_size" != "$remote_size" || "$remote_digest" != "sha256:$local_sha" ]]; then
+              echo "GitHub size or SHA-256 does not match local asset $name" >&2
+              exit 1
+            fi
+          done < <(find dist/release-assets -maxdepth 1 -type f | sort)
+
+      - name: Publish verified release as latest
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "$GITHUB_REF_NAME" --draft=false --latest

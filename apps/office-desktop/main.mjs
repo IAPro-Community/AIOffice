@@ -1,11 +1,12 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, shell, utilityProcess } from 'electron';
 // electron-updater 6.x is CommonJS; its ESM namespace does not expose autoUpdater as a named export.
 import electronUpdater from 'electron-updater';
+import { createProviderTools } from './provider-tools.mjs';
 import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { accessSync, appendFileSync, chmodSync, constants, existsSync, mkdirSync, readFileSync, renameSync, statSync } from 'node:fs';
+import { accessSync, appendFileSync, chmodSync, constants, existsSync, mkdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { delimiter, dirname, join } from 'node:path';
+import { delimiter, dirname, isAbsolute, join, resolve } from 'node:path';
 import { externalUrl, isAllowedAppNavigation, isTrustedServerReady, validateDesktopRequest } from './security.mjs';
 import { configuredServerPort, PortConflictError, portOwnerLabels, recoverOrphanedAIOfficePort } from './startup.mjs';
 import { desktopPaths, desktopServerCwd, preserveLegacyData, preserveLegacyEnv, serverEnvironment } from './storage.mjs';
@@ -19,10 +20,6 @@ const START_TIMEOUT_MS = 6 * 60_000;
 const SHUTDOWN_TIMEOUT_MS = 10_000;
 const LOG_MAX_BYTES = 5 * 1024 * 1024;
 const { autoUpdater } = electronUpdater;
-
-const appData = app.getPath('appData');
-app.setName(PRODUCT);
-app.setPath('userData', join(appData, app.isPackaged ? PRODUCT : `${PRODUCT}-dev`));
 
 let mainWindow;
 let backend;
@@ -42,6 +39,8 @@ let updateTimer;
 let logFile = join(app.getPath('userData'), 'aioffice.log');
 let settingsFile;
 let updateState = { state: 'idle', currentVersion: app.getVersion(), progress: 0 };
+let providerTools;
+let providerInstallController;
 
 function readDesktopReleaseMetadata() {
   try {
@@ -88,6 +87,12 @@ function broadcastUpdateState(next) {
   updateState = { ...updateState, ...next, currentVersion: app.getVersion() };
   for (const window of BrowserWindow.getAllWindows()) {
     if (!window.isDestroyed()) window.webContents.send('desktop:update-state', { ...updateState });
+  }
+}
+
+function broadcastProviderToolsState(state) {
+  for (const window of BrowserWindow.getAllWindows()) {
+    if (!window.isDestroyed()) window.webContents.send('desktop:provider-tools-state', state);
   }
 }
 
@@ -166,6 +171,7 @@ async function startLocalServices(paths) {
     AIOFFICE_STARTUP_NONCE: startupNonce,
     AIOFFICE_UPDATE_NONCE: updateShutdownNonce,
   });
+  if (providerTools) Object.assign(childEnvironment, await providerTools.environment(childEnvironment));
   backend = utilityProcess.fork(appFile(join('apps', 'office-desktop', 'service.mjs')), [entrypoint], {
     cwd: desktopServerCwd(paths, { packaged: app.isPackaged, appPath: app.getAppPath() }),
     env: childEnvironment,
@@ -220,6 +226,11 @@ async function stopLocalServices() {
 
 function showStartupError(error) {
   writeLog('error', `Application startup failed: ${error instanceof Error ? error.stack ?? error.message : String(error)}`);
+  if (process.env.AIOFFICE_DESKTOP_SMOKE === '1') {
+    process.exitCode = 1;
+    app.quit();
+    return;
+  }
   const serverDetail = backendLog.slice(-25).join('\n');
   let message = error instanceof Error ? error.message : 'Não foi possível iniciar os serviços locais.';
   let guidance = `O arquivo de diagnóstico fica em:\n${logFile}`;
@@ -322,10 +333,12 @@ function createMainWindow() {
   window.webContents.on('did-fail-load', (_event, errorCode, errorDescription, _validatedURL, isMainFrame) => {
     if (!isMainFrame || errorCode === -3) return;
     writeLog('error', `Could not load the local interface (code ${errorCode}): ${errorDescription}`);
+    if (process.env.AIOFFICE_DESKTOP_SMOKE === '1') { process.exitCode = 1; app.quit(); }
   });
   window.webContents.on('render-process-gone', (_event, details) => {
     writeLog('error', `Desktop renderer exited: ${details.reason} (code ${details.exitCode}).`);
     if (window.isDestroyed()) return;
+    if (process.env.AIOFFICE_DESKTOP_SMOKE === '1') { process.exitCode = 1; app.quit(); return; }
     window.show();
     void dialog.showMessageBox(window, {
       type: 'error',
@@ -345,6 +358,7 @@ function createMainWindow() {
   void window.loadURL(serverUrl).catch((error) => {
     writeLog('error', `Could not load the local interface: ${error instanceof Error ? error.message : String(error)}`);
     if (window.isDestroyed()) return;
+    if (process.env.AIOFFICE_DESKTOP_SMOKE === '1') { process.exitCode = 1; app.quit(); return; }
     window.show();
     void dialog.showMessageBox(window, {
       type: 'error',
@@ -360,6 +374,33 @@ function createMainWindow() {
       app.quit();
     });
   });
+  if (process.env.AIOFFICE_DESKTOP_SMOKE === '1') {
+    window.webContents.once('did-finish-load', () => {
+      setTimeout(async () => {
+        try {
+          if (process.env.AIOFFICE_DESKTOP_SMOKE_OPEN_ABOUT === '1') {
+            await window.webContents.executeJavaScript(`
+              const panel = document.querySelector('#ui-settings');
+              if (panel && !panel.matches(':popover-open')) panel.showPopover();
+              document.querySelector('#ui-about')?.scrollIntoView({ block: 'end' });
+            `);
+            await new Promise((resolve) => setTimeout(resolve, 800));
+          }
+          const screenshot = process.env.AIOFFICE_DESKTOP_SMOKE_SCREENSHOT;
+          if (screenshot && isAbsolute(screenshot)) {
+            writeFileSync(screenshot, (await window.webContents.capturePage()).toPNG());
+            writeLog('info', 'Desktop smoke screenshot captured.');
+          }
+          process.exitCode = 0;
+          app.quit();
+        } catch (error) {
+          writeLog('error', `Desktop smoke capture failed: ${error instanceof Error ? error.stack ?? error.message : String(error)}`);
+          process.exitCode = 1;
+          app.quit();
+        }
+      }, 300);
+    });
+  }
   return mainWindow;
 }
 
@@ -367,6 +408,71 @@ function assertTrustedRequest(event) {
   if (!serverUrl || !mainWindow || !validateDesktopRequest(event, serverUrl, mainWindow.webContents.mainFrame)) {
     throw new Error('Ação desktop recusada: a solicitação não veio da janela local principal.');
   }
+}
+
+function shellQuote(value) {
+  if (/[\r\n\0]/.test(value)) throw new Error('O caminho do CLI não pode ser aberto em um terminal com segurança.');
+  return `'${value.replaceAll("'", "'\\''")}'`;
+}
+
+function findTerminal(names) {
+  const pathKey = Object.keys(process.env).find((key) => key.toLowerCase() === 'path');
+  const dirs = (pathKey ? process.env[pathKey] : '').split(delimiter).filter(Boolean);
+  for (const name of names) {
+    for (const dir of dirs) {
+      const candidate = join(dir, name);
+      try { accessSync(candidate, constants.X_OK); return candidate; } catch { /* Try the next configured terminal. */ }
+    }
+  }
+  return undefined;
+}
+
+async function openProviderTerminal(id, executable, userData) {
+  const directory = join(userData, 'provider-tools', 'login');
+  mkdirSync(directory, { recursive: true, mode: 0o700 });
+  const base = `aioffice-${id}-${randomBytes(8).toString('hex')}`;
+  const command = id === 'codex' ? ' login' : '';
+  const file = join(directory, base + (process.platform === 'win32' ? '.cmd' : process.platform === 'darwin' ? '.command' : '.sh'));
+  if (process.platform === 'win32') {
+    const batchPath = executable.replaceAll('%', '%%');
+    writeFileSync(file, `@echo off\r\nsetlocal DisableDelayedExpansion\r\n"${batchPath}"${command}\r\nset "AIOFFICE_LOGIN_EXIT=%ERRORLEVEL%"\r\necho.\r\necho O login foi encerrado. Esta janela pode ser fechada.\r\npause\r\ndel "%~f0" >nul 2>&1\r\nexit /b %AIOFFICE_LOGIN_EXIT%\r\n`, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
+  } else {
+    writeFileSync(file, `#!/bin/sh\n${shellQuote(executable)}${command}\nstatus=$?\nprintf '\\nO login foi encerrado. Esta janela pode ser fechada.\\n'\nread -r -p 'Pressione Enter para fechar...' _\nrm -f -- "$0"\nexit "$status"\n`, { encoding: 'utf8', mode: 0o700, flag: 'wx' });
+    chmodSync(file, 0o700);
+  }
+  if (process.platform !== 'linux') {
+    const error = await shell.openPath(file);
+    if (error) {
+      try { unlinkSync(file); } catch { /* The launch error is more useful than cleanup failure. */ }
+      return { ok: false, error: `Não foi possível abrir o terminal: ${error}` };
+    }
+    return { ok: true };
+  }
+  const terminal = findTerminal(['x-terminal-emulator', 'gnome-terminal', 'konsole', 'xterm', 'kitty']);
+  if (!terminal) {
+    try { unlinkSync(file); } catch { /* The terminal may not have opened. */ }
+    return { ok: false, error: 'Nenhum terminal gráfico compatível foi encontrado. Abra o CLI pelo seu terminal do sistema.' };
+  }
+  const name = terminal.split(/[\\/]/).pop();
+  const args = name === 'gnome-terminal' ? ['--', '/bin/sh', file]
+    : name === 'kitty' ? ['/bin/sh', file]
+      : ['-e', '/bin/sh', file];
+  return new Promise((resolve) => {
+    let settled = false;
+    const child = spawn(terminal, args, { cwd: homedir(), detached: true, stdio: 'ignore', windowsHide: false, shell: false });
+    child.once('error', (error) => {
+      if (settled) return;
+      settled = true;
+      try { unlinkSync(file); } catch { /* Report the launch error. */ }
+      resolve({ ok: false, error: `Não foi possível abrir o terminal: ${error.message}` });
+    });
+    child.once('spawn', () => {
+      if (settled) return;
+      settled = true;
+      child.unref();
+      resolve({ ok: true });
+    });
+  });
 }
 
 function setupIpc() {
@@ -386,6 +492,83 @@ function setupIpc() {
   ipcMain.handle('desktop:get-update-state', (event) => {
     assertTrustedRequest(event);
     return { ...updateState };
+  });
+  ipcMain.handle('desktop:get-provider-tools', async (event) => {
+    assertTrustedRequest(event);
+    return providerTools ? providerTools.list() : [];
+  });
+  ipcMain.handle('desktop:install-provider-tool', async (event, id) => {
+    assertTrustedRequest(event);
+    if (!providerTools || !['codex', 'claude', 'omp'].includes(id)) return { ok: false, error: 'CLI não disponível.' };
+    if (providerInstallController) return { ok: false, error: 'Já existe uma instalação em andamento.' };
+    const names = { codex: 'Codex CLI', claude: 'Claude Code', omp: 'oh-my-pi (OMP)' };
+    const { response } = await dialog.showMessageBox(mainWindow, {
+      type: 'question',
+      title: `Instalar ${names[id]}`,
+      message: `Instalar a versão mais recente oficial de ${names[id]}?`,
+      detail: 'O CLI será instalado somente na pasta privada do AIOffice. O AIOffice não fará login nem terá acesso às credenciais. Depois da instalação, será necessário reiniciar o aplicativo para ativar o CLI.',
+      buttons: ['Instalar', 'Cancelar'],
+      defaultId: 0,
+      cancelId: 1,
+      noLink: true,
+    });
+    if (response !== 0) return { ok: false, cancelled: true };
+    const controller = new AbortController();
+    providerInstallController = controller;
+    try {
+      const result = await providerTools.install(id, { signal: controller.signal });
+      broadcastProviderToolsState({ id, state: 'installed', version: result.version, restartRequired: true });
+      return { ok: true, ...result };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'A instalação falhou. Confira a conexão e tente novamente.';
+      return { ok: false, error: message };
+    } finally {
+      providerInstallController = undefined;
+      broadcastProviderToolsState({ id, state: 'settled' });
+    }
+  });
+  ipcMain.handle('desktop:cancel-provider-install', (event) => {
+    assertTrustedRequest(event);
+    providerInstallController?.abort(new Error('Instalação cancelada pelo usuário.'));
+    providerTools?.cancel();
+    return { ok: true };
+  });
+  ipcMain.handle('desktop:open-provider-login', async (event, id) => {
+    assertTrustedRequest(event);
+    if (!providerTools || !['codex', 'claude', 'omp'].includes(id)) return { ok: false, error: 'CLI não disponível.' };
+    const executables = await providerTools.executables();
+    const executable = executables[id];
+    if (!executable) return { ok: false, error: 'Instale o CLI antes de autenticar.' };
+    const names = { codex: 'Codex', claude: 'Claude Code', omp: 'oh-my-pi (OMP)' };
+    const { response } = await dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: `Autenticar ${names[id]}`,
+      message: `Abrir ${names[id]} em um terminal para você entrar na sua conta?`,
+      detail: 'O login acontece no CLI oficial e no provedor. O AIOffice não solicita, lê nem armazena senhas ou tokens de autenticação.',
+      buttons: ['Abrir terminal', 'Cancelar'],
+      defaultId: 0,
+      cancelId: 1,
+      noLink: true,
+    });
+    if (response !== 0) return { ok: false, cancelled: true };
+    return openProviderTerminal(id, executable, app.getPath('userData'));
+  });
+  ipcMain.handle('desktop:restart-after-provider-install', async (event) => {
+    assertTrustedRequest(event);
+    const { response } = await dialog.showMessageBox(mainWindow, {
+      type: 'question',
+      title: 'Reiniciar AIOffice',
+      message: 'Reiniciar agora para ativar os CLIs instalados?',
+      detail: 'O AIOffice fechará e abrirá novamente. A interface não será recarregada em segundo plano.',
+      buttons: ['Reiniciar', 'Mais tarde'],
+      defaultId: 0,
+      cancelId: 1,
+      noLink: true,
+    });
+    if (response !== 0) return { ok: false, cancelled: true };
+    app.relaunch();
+    app.quit();
+    return { ok: true };
   });
 }
 
@@ -698,10 +881,17 @@ function startDesktop() {
     if (legacyEnv) writeLog('info', `Copied legacy environment configuration to application storage; original remains at ${legacyEnv}.`);
     try { process.loadEnvFile(paths.envFile); }
     catch (error) { if (error?.code !== 'ENOENT') writeLog('warn', `Could not load local configuration: ${error.message}`); }
-    const serverEnv = serverEnvironment(paths);
     const npmCli = app.isPackaged
       ? join(process.resourcesPath, 'npm', 'bin', 'npm-cli.js')
       : process.env.AIOFFICE_NPM_CLI || process.env.npm_execpath;
+    providerTools = createProviderTools({
+      rootDir: paths.providerTools,
+      npmCli: npmCli && existsSync(npmCli) ? resolve(npmCli) : undefined,
+      executable: process.execPath,
+      env: process.env,
+      onProgress: (state) => broadcastProviderToolsState(state),
+    });
+    const serverEnv = await providerTools.environment(serverEnvironment(paths));
     if (npmCli) serverEnv.AIOFFICE_NPM_CLI = npmCli;
     for (const [key, value] of Object.entries(serverEnv)) process.env[key] = value;
     writeLog('info', `Starting ${PRODUCT} ${app.getVersion()} (${app.isPackaged ? 'installed' : 'development'}).`);
@@ -710,7 +900,7 @@ function startDesktop() {
     try {
       await startLocalServices(paths);
       createMainWindow();
-      setupUpdater();
+      if (process.env.AIOFFICE_DESKTOP_SMOKE !== '1') setupUpdater();
       app.on('activate', () => { if (!mainWindow) createMainWindow(); });
     } catch (error) {
       showStartupError(error);

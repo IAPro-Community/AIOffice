@@ -62,6 +62,19 @@ function sent(r: SendResult): string {
 }
 
 describe('MessageRegistry: presença', () => {
+  it('Antigravity só permite envio depois de um evento aceito do hook oficial', () => {
+    const office = new Office({
+      names: new NameStore(null), version: 't', startedAt: 0,
+      accounts: () => [], sources: () => [], accountName: () => undefined,
+    });
+    office.addMain({ id: 'antigravity:s1', provider: 'antigravity', account: 'Antigravity', sessionId: 's1', cwd: '/p/a', role: 'Agente principal', startedAt: 0, status: 'idle' });
+    let connected = false;
+    const registry = new MessageRegistry({ office, antigravity: { canMessage: () => connected } });
+    expect(registry.send({ agentId: 'antigravity:s1', text: 'oi' })).toMatchObject({ error: 'unavailable' });
+    connected = true;
+    expect(registry.send({ agentId: 'antigravity:s1', text: 'oi' })).toHaveProperty('message.status', 'queued');
+  });
+
   it('a sessão que pergunta pela caixa de entrada passa a receber mensagens (canMessage) e o snapshot muda só na transição', () => {
     const { office, registry, clock } = setup();
     expect(snapAgent(office, MAIN)?.canMessage).toBeUndefined();

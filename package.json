@@ -1,10 +1,10 @@
 {
   "name": "aioffice",
   "desktopName": "aioffice",
-  "main": "apps/office-desktop/main.mjs",
+  "main": "apps/office-desktop/bootstrap.cjs",
   "private": true,
   "type": "module",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "description": "AIOffice - Virtual AI Office & Studio unindo Orquestrador-Maestro, OpenOrq, Habblaud, oh-my-pi e replica-skill",
   "license": "MIT",
   "repository": {
@@ -33,7 +33,7 @@
     "desktop:package:linux": "npm run build:office && electron-builder --config apps/office-desktop/electron-builder.config.cjs --linux AppImage deb --x64 --publish never",
     "desktop:test": "node --test apps/office-desktop/test/*.test.mjs",
     "desktop:doctor": "node apps/office-desktop/doctor.mjs",
-    "desktop:verify": "npm run typecheck && npm --prefix apps/office-web run typecheck && npm run build && npm test && npm --prefix apps/office-web run i18n:check && npm --prefix apps/office-web run test -- --testTimeout=15000 && npm run desktop:test && node --check apps/office-desktop/main.mjs && node --check apps/office-desktop/service.mjs && node --check apps/office-desktop/preload.cjs && node --check scripts/release-aioffice.mjs && node --check scripts/create-desktop-update-manifests.mjs",
+    "desktop:verify": "npm run typecheck && npm --prefix apps/office-web run typecheck && npm run build && npm test && npm --prefix apps/office-web run i18n:check && npm --prefix apps/office-web run test -- --testTimeout=15000 && npm run desktop:test && node --check apps/office-desktop/bootstrap.cjs && node --check apps/office-desktop/main.mjs && node --check apps/office-desktop/service.mjs && node --check apps/office-desktop/preload.cjs && node --check scripts/desktop-smoke.mjs && node --check scripts/release-aioffice.mjs && node --check scripts/create-desktop-update-manifests.mjs",
     "typecheck": "tsc --build",
     "clean": "tsc --build --clean",
     "test": "node --experimental-strip-types --test \"packages/*/test/*.test.ts\" \"apps/office-cli/test/*.test.ts\"",
