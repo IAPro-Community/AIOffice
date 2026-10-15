@@ -1,6 +1,6 @@
 # VERIFY — AIOffice
 
-## Candidata v2.4.3 — 2026-10-15
+## Release v2.4.3 publicada — 2026-10-15
 
 | Verificação | Resultado |
 |---|---|
@@ -11,13 +11,31 @@
 | `npm run desktop:verify` | Aprovado: typechecks, build, 22 testes raiz, 1.279 testes web (10 ignorados), 31 testes desktop, i18n 2.430/2.430 em en/es/fr e verificações de sintaxe. |
 | `AIOffice-Setup.exe` local v2.4.3 | 122.398.662 bytes; SHA-256 `52458E3A2066A7C03F3872A168AE6799C4778E352A6D0C5D9213B572FD1693BB`; ProductVersion/FileVersion `2.4.3`; Authenticode `NotSigned`. |
 | Smoke local Windows v2.4.3 | `node scripts/desktop-smoke.mjs windows` passou: serviços locais, janela e hook Antigravity iniciados com perfil temporário. |
-| Ícone do setup Windows | Ícone associado extraído de `AIOffice-Setup.exe` em 32×32 corresponde visualmente à arte de `icon-512.png`; configuração NSIS define `icon.ico` para setup e desinstalador, e `win.icon` define o ícone do app. |
+| Ícone do setup Windows | Ícone associado extraído do asset público `AIOffice-Setup.exe` em 32×32 corresponde visualmente à arte oficial atual; configuração NSIS define `icon.ico` para setup e desinstalador, e `win.icon` define o ícone do app. |
 | QA visual dos CLIs | App instalado exibiu AIOffice v2.4.0 e três cartões (Codex CLI, Claude Code, OMP), com status e ações dentro da coluna rolável; API de CLI do preload presente. Os controles permanecem iguais na v2.4.1, que atualiza a arte dos ícones. |
 | Workflow tag v2.4.1 (`38673127713`) | Verificação de origem e builds Windows, macOS Intel/Apple silicon e Linux passaram; os quatro smokes falharam por configuração da validação. Nenhum asset/release foi publicado. |
 | Workflow tag v2.4.2 (`38675243193`) | Origem, quatro builds e quatro smokes passaram. Montagem produziu os nove assets no draft; verificação final falhou porque `GET /releases/tags/{tag}` retorna 404 para drafts. Nada foi publicado. |
 | Correção v2.4.3 do lookup | Workflow usa a lista de releases autenticada (`releases?per_page=100`) e filtra o draft pelo `tag_name`; a lista foi confirmada localmente com o draft e seus nove assets. |
-| Workflow v2.4.3 | YAML parse passou; aguardando commit/tag e validação final dos runners nativos, incluindo o lookup do draft corrigido. |
+| Workflow v2.4.3 (`38676380641`) | `success`: gate de origem, Windows, macOS Intel/Apple silicon, Linux, smokes, montagem, lookup do draft, nove nomes/tamanhos/digests e publicação passaram. |
+| Release v2.4.3 | A API do GitHub e `/releases/latest` confirmam a tag `v2.4.3`, não draft/não prerelease, como latest; exatamente nove assets. Link: [GitHub Releases](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.4.3). |
+| Setup público baixado | 122.835.769 bytes; SHA-256 `50a3f5337c92b82f13df94c374a87cbd1bd2112c3239de2e5aef1e749f2d90eb`; ProductVersion/FileVersion `2.4.3`; Authenticode `NotSigned`. O arquivo foi baixado da release e o ícone foi extraído para conferência. |
 | Refresh da página | Nenhum reload automático periódico novo encontrado. Atualização do desktop chega por IPC; atualizações do servidor oferecem botão manual e trocar idioma recarrega apenas após ação explícita. |
+
+### Assets públicos v2.4.3
+
+| Asset | Tamanho (bytes) | SHA-256 GitHub |
+|---|---:|---|
+| `AIOffice-Setup.exe` | 122.835.769 | `50a3f5337c92b82f13df94c374a87cbd1bd2112c3239de2e5aef1e749f2d90eb` |
+| `AIOffice-Setup-macOS-arm64.dmg` | 138.751.829 | `7a6080c7990c84147e10115d4091c1b2ff1261fcbab73309fb711c65cc486370` |
+| `AIOffice-Setup-macOS-arm64.zip` | 138.546.575 | `30b111662c4132e0704abfd997596eec509503a3d424c94c9b60fdfd6d377db3` |
+| `AIOffice-Setup-macOS-x64.dmg` | 142.301.434 | `86c98d7f12cd44b99832bd4395aa0e925946a0c9757dd10e09c24326c1026143` |
+| `AIOffice-Setup-macOS-x64.zip` | 142.124.158 | `5119f94920e1f9e8c714c990fd1bd366f393b2739f2056f1da1fe06e9b7d8d4f` |
+| `AIOffice-Setup-Linux-x64.AppImage` | 133.771.475 | `e089e434cf49c65203eccb8c8257cbdc51638fb5174f896da537618e92326935` |
+| `AIOffice-Setup-Linux-x64.deb` | 106.568.792 | `da72f4d036cf841ca966df9109be83350c9eebd300cb66129fed3d17c7fc947d` |
+| `latest-linux.yml` | 371 | `901536cc28a9b2cbdd4e3f4250f2eb9695e1c344aa8d5ad8ca8317ce88ea2fea` |
+| `latest-mac.yml` | 528 | `c28784a43173027f507195ad7e75b9982ae8785885c013eb0ca55920b86ef113` |
+
+O draft da tentativa `v2.4.2` continua oculto e não é a versão latest; sua montagem falhou no lookup REST por tag. A `v2.4.3` publicou os mesmos nove contratos de asset pelo workflow corrigido.
 
 ## Publicação da release v2.3.0 — 2026-10-14
 

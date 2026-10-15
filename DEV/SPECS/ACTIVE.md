@@ -2,7 +2,7 @@
 
 ## 1. Identificação do Projeto
 - **Nome**: AIOffice
-- **Status**: `v2.3.0` é a versão pública até a conclusão do workflow. Candidata v2.4.3 consolida os deltas locais desde a última release: arte oficial completa nos ícones do app/instalador, integração Antigravity, instalação privada dos CLIs oficiais Codex/Claude Code/OMP no app instalado, diagnóstico de inicialização e matriz nativa. O usuário aprovou oferecer instalação; o login continua sob controle explícito do usuário. Não adicionar refresh integral automático. A publicação depende de todos os gates e dos runners nativos Windows/macOS/Linux.
+- **Status**: release estável v2.4.3 publicada com os deltas desde v2.3.0: arte oficial nos ícones, integração Antigravity, instalação privada dos CLIs oficiais Codex/Claude Code/OMP no desktop, diagnóstico e builds nativos. O usuário aprovou oferecer instalação; o login continua sob controle explícito do usuário. Não adicionar refresh integral automático. CI validou os quatro alvos e publicou os nove assets.
 - **Localização**: Repositório AIOffice
 
 ## 2. Pilares de Integração

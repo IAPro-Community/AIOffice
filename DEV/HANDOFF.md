@@ -1,21 +1,15 @@
 # HANDOFF — AIOffice
 
-## Candidata v2.4.3 — 2026-10-15
+## Release v2.4.3 publicada — 2026-10-15
 
-- Base do código: `main`, que contém as mudanças ainda não publicadas desde a release estável `v2.3.0` (`762a500`), incluindo identidade visual, integrações e instalação de CLIs. O trabalho de publicação fica no clone seguro `AIOfficeBeta-publish-v2.3.0`; o checkout original, que contém um merge em andamento, permanece intacto.
-- Inclui identidade visual pendente, gestão opcional dos CLIs oficiais Codex/Claude Code/OMP no desktop instalado, integração nativa do Antigravity App/IDE/CLI, bootstrap com log para erros de carga Electron e correções de documentação.
-- A autenticação acontece pelo CLI oficial em terminal interativo, por ação explícita do usuário. O AIOffice não guarda credenciais nem altera o `PATH` global. Ativar uma CLI recém-instalada exige reiniciar o app com confirmação.
-- Smokes Windows passaram localmente para o app empacotado v2.4.2 e para o executável instalado, usando perfil temporário; serviços, janela e hook Antigravity iniciaram e encerraram limpo.
-- O workflow `38673127713` validou a origem e compilou os pacotes dos três sistemas, mas falhou nos smokes: o runner Windows é Administrador e o CLI Maestro bloqueou a instalação; Linux exigiu `--no-sandbox` no runner; macOS precisava consultar o log no userData temporário e desativar GPU no smoke.
-- Correções de smoke v2.4.2: userData/log único em todos os hosts, `ORQUESTRADOR_ALLOW_ROOT_INSTALL=1` somente no perfil descartável de smoke, `--no-sandbox` no Linux e `--disable-gpu` no macOS. Esses ajustes não alteram flags da inicialização normal.
-- O workflow `38675243193` aprovou origem, builds e smokes dos quatro alvos; a montagem enviou os nove assets para um draft, mas o endpoint REST `releases/tags/{tag}` retornou 404 porque omite releases em rascunho. A versão não foi publicada; o draft `v2.4.2` continua oculto.
-- Correção v2.4.3: a verificação busca o draft na lista autenticada de releases e seleciona `tag_name`, preservando checagem exata dos nove nomes, tamanhos e SHA-256 antes de publicar.
-- Setup local v2.4.3: 122.398.662 bytes, SHA-256 `52458E3A2066A7C03F3872A168AE6799C4778E352A6D0C5D9213B572FD1693BB`, ProductVersion/FileVersion `2.4.3`, Authenticode `NotSigned`. Smoke passou; o ícone extraído do setup coincide visualmente com a nova arte oficial em 32×32; o NSIS aponta `icon.ico` para setup, app e desinstalador.
-- `npm run desktop:verify` passou na candidata v2.4.2: 22 testes raiz, 1.279 testes web (10 ignorados), 31 testes desktop, typechecks, build, i18n (2.430 textos em en/es/fr) e sintaxe. O código-fonte do app não mudou no bump para v2.4.3. Instalação/login reais dos CLIs e envio a sessões reais não foram executados.
-- QA visual via CDP do painel **Sobre** e das ações dos três CLIs ocorreu na candidata anterior; esta versão atualiza a arte dos ícones. A publicação v2.4.1 falhou antes da montagem da release; as tags v2.4.0 e v2.4.1 permanecem sem assets e não serão movidas.
-- O workflow usa runners Windows x64, macOS Intel/Apple silicon e Linux x64 para produzir os nove assets e só publica depois de validar nomes, tamanhos e SHA-256.
-- Atualização em background continua por IPC. Não há recarga automática da página; o botão de recarga após atualização do servidor Node é manual.
-- **Próximo passo:** commitar/enviar a candidata v2.4.3, publicar sua tag e confirmar que os quatro smokes, montagem, lookup do draft e nove digests passam no GitHub Actions.
+- Tag `v2.4.3` aponta para `8393eaeb88c9fa658231499695e407ac4d575bb2`; release estável latest: https://github.com/IAPro-Community/AIOffice/releases/tag/v2.4.3.
+- Workflow `38676380641` concluiu com `success`: gate de origem, builds e smokes Windows x64, macOS Intel/Apple silicon e Linux x64, montagem, validação do draft e dos nove digests.
+- A release inclui todas as mudanças acumuladas desde a `v2.3.0`: layout e identidade visual, CLIs oficiais opcionais no app instalado, integração Antigravity, diagnóstico desktop, atualizador sem refresh integral, documentação e instaladores multiplataforma. Os nove tamanhos e digests estão em `DEV/VERIFY.md`.
+- O setup Windows público foi baixado e conferido: 122.835.769 bytes, SHA-256 `50a3f5337c92b82f13df94c374a87cbd1bd2112c3239de2e5aef1e749f2d90eb`, versão `2.4.3`, `NotSigned`; o ícone extraído mostra a nova arte oficial. Build e smoke local também passaram.
+- `npm run desktop:verify` passou para o código da candidata `v2.4.2` (mesmo código-fonte da `v2.4.3`, que altera versão e pipeline): 22 testes raiz, 1.279 testes web (10 ignorados), 31 desktop, typechecks, build, i18n 2.430/2.430 em en/es/fr e sintaxe.
+- A tentativa `v2.4.2` deixou um draft oculto com nove assets; a API de busca por tag falhou ao retornar drafts. O workflow v2.4.3 consulta a lista de releases, verificou o conjunto e publicou corretamente. Os tags `v2.4.0`/`v2.4.1` continuam sem release e não foram movidos.
+- Atualização em background continua por IPC. Não há refresh automático da página; a recarga após atualização do servidor Node é manual.
+- **Próximo contexto:** partir da release estável `v2.4.3`; novos ajustes devem atualizar versão, changelog e os nove assets por uma nova tag.
 
 ## Release v2.3.0 publicada — 2026-10-14
 

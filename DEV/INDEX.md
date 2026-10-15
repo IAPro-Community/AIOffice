@@ -28,4 +28,4 @@ Hierarquia de documentação operacional do projeto AIOffice.
 | `apps/office-web/README*.md` | Guias Habblaud em inglês, português, espanhol e francês | Ativo |
 
 ## Estado da release
-- Release oficial mais recente: [`v2.3.0`](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.3.0), publicada a partir do commit `762a500`. Contém nove assets para Windows, macOS Intel/Apple silicon e Linux x64. A candidata `v2.4.3` reúne as mudanças ainda não publicadas, incluindo a arte oficial completa nos ícones do app/instalador, gestão opcional dos CLIs oficiais e integração nativa do Antigravity. Consulte `DEV/HANDOFF.md`, `DEV/DESKTOP.md` e `DEV/VERIFY.md` para status, limites e evidências.
+- Release oficial mais recente: [`v2.4.3`](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.4.3), publicada a partir do commit `8393eae`. Contém nove assets para Windows, macOS Intel/Apple silicon e Linux x64. Consulte `DEV/HANDOFF.md`, `DEV/DESKTOP.md` e `DEV/VERIFY.md` para limites e evidências.
