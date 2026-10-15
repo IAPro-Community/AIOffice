@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { AgentInfo } from '../../../shared/types';
 import {
   canSend,
-  CODEX_BRIDGE_HINT,
+  CODEX_DELIVERY_HINT,
   CODEX_TIMEOUT_ERROR,
   composerMode,
   composerTip,
@@ -49,7 +49,7 @@ describe('caixa de mensagem (peças puras)', () => {
     for (const status of ['working', 'waiting', 'shell'] as const) expect(composerMode(agent({ status }), ON).kind).toBe('ready');
     // Recurso ligado, mas a sessão sem o plugin: a dica de instalação.
     expect(composerMode(agent({ canMessage: undefined }), ON)).toEqual({ kind: 'hint', text: PLUGIN_HINT });
-    expect(PLUGIN_HINT).toBe('Para mandar mensagens daqui: npm run mod:install (plugin habblaud-mensagens)');
+    expect(PLUGIN_HINT).toBe('O AIOffice instala o plugin de mensagens do Claude Code ao iniciar; feche e reabra esta sessão para carregá-lo');
   });
 
   it('composerMode: quando não dá, diz por quê (a gaveta esconde, o terminal mostra o motivo)', () => {
@@ -101,11 +101,11 @@ describe('caixa de mensagem (peças puras)', () => {
     expect(['sending', 'queued', 'sent'].some((p) => isSettled(p as never))).toBe(false);
   });
 
-  it('Codex: com entregador, igual ao Claude Code; sem ele, a dica do codex:bridge; recurso desligado manda ao Codex', () => {
+  it('Codex: com entregador, igual ao Claude Code; sem ele, explica onde verificar; recurso desligado manda ao Codex', () => {
     const codex = (over: Partial<AgentInfo> = {}) => agent({ provider: 'codex', ...over });
     expect(composerMode(codex(), ON)).toEqual({ kind: 'ready' });
-    expect(composerMode(codex({ canMessage: undefined }), ON)).toEqual({ kind: 'hint', text: CODEX_BRIDGE_HINT });
-    expect(CODEX_BRIDGE_HINT).toBe('Para mandar mensagens ao Codex: com o Habblaud no Docker, deixe npm run codex:bridge rodando; no modo Node funciona sozinho');
+    expect(composerMode(codex({ canMessage: undefined }), ON)).toEqual({ kind: 'hint', text: CODEX_DELIVERY_HINT });
+    expect(CODEX_DELIVERY_HINT).toBe('O AIOffice não encontrou o executor local do Codex. No Docker, mantenha o auxiliar ativo no host; no aplicativo instalado, confira Ajuda → Diagnóstico');
     expect(composerMode(codex(), { ...ON, enabled: false })).toEqual({ kind: 'off', text: 'Para responder, use o Codex' });
     expect(composerMode(codex({ kind: 'sub', parentId: 'acc:1' }), ON).kind).toBe('off');
     expect(composerMode(codex({ status: 'offline' }), ON)).toEqual({ kind: 'off', text: 'Sessão encerrada' });

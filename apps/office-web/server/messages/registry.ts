@@ -41,16 +41,16 @@ export const MAX_OPEN = 5;
 /** Mensagens entregues ao plugin por rodada. */
 export const INBOX_BATCH = 5;
 
-export const ERR_NOT_FETCHED = tr('a sessão não buscou a mensagem: o plugin habblaud-mensagens está instalado e a sessão aberta?');
-export const ERR_OMP_NOT_FETCHED = tr('a sessão OMP não buscou a mensagem: a extensão do AIOffice está carregada e a sessão aberta?');
-export const ERR_OMP_NOT_CONNECTED = tr('a sessão OMP não conectou a extensão do AIOffice; confira a extensão global e reabra a sessão');
+export const ERR_NOT_FETCHED = tr('a sessão não buscou a mensagem: o AIOffice instala o plugin ao iniciar; feche e reabra sessões que já estavam abertas');
+export const ERR_OMP_NOT_FETCHED = tr('a sessão OMP não buscou a mensagem: a extensão instalada pelo AIOffice está carregada na sessão?');
+export const ERR_OMP_NOT_CONNECTED = tr('a sessão OMP ainda não carregou a extensão instalada pelo AIOffice; feche e reabra a sessão');
 export const ERR_NOT_CONFIRMED = tr('a sessão não confirmou a entrega');
 export const ERR_GONE = tr('o agente saiu do escritório');
 export const ERR_REFUSED = tr('a sessão não aceitou a mensagem');
 export const ERR_SESSION_CHANGED = tr('a conversa do agente mudou (/clear ou /resume) antes da entrega');
 export const ERR_CODEX_UNAVAILABLE =
-  tr('não há como entregar ao Codex agora: rode o Habblaud fora do Docker com o `codex` no PATH (ou HABBLAUD_CODEX_BIN) ou, no Docker, deixe o npm run codex:bridge rodando no Mac');
-export const ERR_CODEX_NOT_FETCHED = tr('o auxiliar do Codex não buscou a mensagem: o npm run codex:bridge está rodando no Mac?');
+  tr('CLI oficial do Codex não encontrada; instale-a ou defina HABBLAUD_CODEX_BIN com o caminho do binário. No Docker, mantenha o auxiliar ativo no host.');
+export const ERR_CODEX_NOT_FETCHED = tr('o auxiliar do Codex não buscou a mensagem; confira se ele está ativo no host do Docker');
 export const ERR_CODEX_SLOW = tr('o Codex demorou demais com as mensagens anteriores a este agente');
 export const ERR_CODEX_NOT_CONFIRMED = tr('o auxiliar do Codex não confirmou a entrega');
 export const ERR_CODEX_HOME = tr('a pasta da conta do Codex deste agente é desconhecida');
@@ -163,7 +163,7 @@ function unavailableReason(a: AgentInfo, reachable: boolean): string | undefined
   if (!reachable) {
     if (a.provider === 'codex') return ERR_CODEX_UNAVAILABLE;
     if (isOmpAgent(a)) return ERR_OMP_NOT_CONNECTED;
-    return tr('a sessão não está com o plugin habblaud-mensagens conectado (npm run mod:install)');
+    return tr('a sessão ainda não carregou o plugin de mensagens instalado pelo AIOffice; feche e reabra a sessão');
   }
   return undefined;
 }

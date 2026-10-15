@@ -522,6 +522,10 @@ línea): el texto entra en la sesión **como si lo hubieras escrito en su termin
 termina su turno y espera la siguiente solicitud, darle una instrucción nueva o corregir el rumbo, sin buscar la
 ventana correcta.
 
+La aplicación instalada también instala o actualiza automáticamente la extensión global de OMP al iniciar, si ya
+existe un perfil OMP. Cierra y vuelve a abrir las sesiones activas. Las CLI y las cuentas de cada proveedor se
+instalan y autentican por separado; no hace falta dejar comandos `npm run` activos para enviar mensajes desde el desktop.
+
 - El cuadro muestra el estado: **en cola** (la sesión busca los mensajes cada 2 segundos), **entregado** o **no se
   entregó**, con el motivo. Con el agente ocupado, el mensaje espera y entra cuando termine su turno, como un prompt
   escrito con el agente trabajando.
@@ -570,9 +574,10 @@ chip de la cuenta de Codex es hueco y lleva el sello **CODEX**.
   respuesta en Habblaud…". No hay "permitir siempre" ni "interrumpir", y Codex no deja responder sus preguntas desde
   fuera.
 - **Enviar mensajes:** el cuadro **Enviar mensaje** también funciona con Codex, a través de `codex queue`: el mensaje
-  entra en la cola de la sesión y Codex lo toma cuando termina lo que está haciendo (hasta unos 10 segundos después). En
-  modo Node, el propio Habblaud ejecuta el comando; **en Docker**, deja `npm run codex:bridge` en ejecución en el Mac
-  (el contenedor no ve tu Codex).
+  entra en la cola de la sesión y Codex lo toma cuando termina lo que está haciendo (hasta unos 10 segundos después).
+  La aplicación instalada y el modo Node ejecutan la CLI local, incluido el binario nativo de una instalación NPM
+  global en Windows; Codex CLI debe seguir instalada y autenticada. **Solo en Docker**, deja `npm run codex:bridge`
+  activo en el host (el contenedor no ve tu Codex).
 - **Uso de 5 horas y semanal:** viene de los propios archivos de Codex y solo se renueva mientras alguna sesión está en
   ejecución; la tarjeta muestra la antigüedad de los números y "sin cuota" cuando el workspace se quedó sin créditos.
 - **Cuándo entra la sesión:** con el primer mensaje (que es cuando Codex guarda la carpeta del proyecto); una CLI

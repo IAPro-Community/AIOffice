@@ -95,25 +95,25 @@ export class TopBar implements UiComponent {
     this.usage = new UsageCards(ctx);
 
     this.sidebarBtn = iconButton(ICONS.sidebar, tr('Painel lateral ( [ )'), () => ctx.togglePanel('sidebar'), 'ui-btn-sidebar');
-    this.feedBtn = iconButton(ICONS.feed, tr('Feed de atividade ( ] )'), () => ctx.togglePanel('feed'));
+    this.feedBtn = iconButton(ICONS.feed, tr('Feed de atividade ( ] )'), () => ctx.togglePanel('feed'), 'ui-btn-feed');
     this.timelapseBtn = iconButton(TIMELAPSE_ICONS.timelapse, tr('Timelapse: reproduzir o dia (L)'), () => ctx.toggleTimelapse(), 'ui-btn-timelapse');
-    this.settingsBtn = iconButton(ICONS.settings, tr('Configurações'), () => ctx.toggleSettings());
+    this.settingsBtn = iconButton(ICONS.settings, tr('Configurações'), () => ctx.toggleSettings(), 'ui-btn-settings');
     this.settingsBtn.setAttribute('aria-haspopup', 'dialog');
     this.version = new VersionChip(ctx, this.settingsBtn);
     const viewGroup = h(
       'div',
-      { class: 'ui-btn-group', role: 'group', attrs: { 'aria-label': tr('Câmera') } },
-      iconButton(ICONS.overview, tr('Visão geral (O)'), () => ctx.camera('overview')),
-      iconButton(ICONS.zoomOut, tr('Afastar (−)'), () => ctx.camera('zoomOut')),
-      iconButton(ICONS.zoomIn, tr('Aproximar (+)'), () => ctx.camera('zoomIn')),
+      { class: 'ui-btn-group ui-btn-group--camera', role: 'group', attrs: { 'aria-label': tr('Câmera') } },
+      iconButton(ICONS.overview, tr('Visão geral (O)'), () => ctx.camera('overview'), 'ui-btn-overview'),
+      iconButton(ICONS.zoomOut, tr('Afastar (−)'), () => ctx.camera('zoomOut'), 'ui-btn-zoom-out'),
+      iconButton(ICONS.zoomIn, tr('Aproximar (+)'), () => ctx.camera('zoomIn'), 'ui-btn-zoom-in'),
     );
     const panelGroup = h(
       'div',
-      { class: 'ui-btn-group', role: 'group', attrs: { 'aria-label': tr('Painéis') } },
+      { class: 'ui-btn-group ui-btn-group--panels', role: 'group', attrs: { 'aria-label': tr('Painéis') } },
       this.timelapseBtn,
       this.feedBtn,
       this.settingsBtn,
-      iconButton(ICONS.help, tr('Ajuda (?)'), () => ctx.openHelp()),
+      iconButton(ICONS.help, tr('Ajuda (?)'), () => ctx.openHelp(), 'ui-btn-help'),
     );
     this.panelGroup = panelGroup;
 

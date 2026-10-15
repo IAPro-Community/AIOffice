@@ -1,21 +1,21 @@
 // Caixa de mensagem (ui/composer.ts), parte pura e testada em ui/composer-model.test.ts: quando a caixa aparece (e
 // por que não), o que a tecla Enter faz, a linha de situação de cada envio e o ritmo da consulta da entrega.
-// No Codex a mensagem entra na fila da sessão (`codex queue`) e vira prompt quando ela fica ociosa: "Entregue" diz
-// isso; sem quem entregue (no Docker, o auxiliar do host), a dica é a do `npm run codex:bridge`.
+// No Codex a mensagem entra na fila da sessão (`codex queue`) e vira prompt quando ela fica ociosa. O desktop
+// localiza o binário nativo da CLI instalada; no Docker, a entrega precisa do auxiliar no host.
 import { MESSAGE_MAX } from '../../../shared/messages';
 import type { AgentInfo, OutboxStatus, Provider } from '../../../shared/types';
 import { tr } from '../../../shared/i18n';
 
-/** Dica para quem tem o recurso ligado, mas a sessão do agente não está com o plugin conectado. */
-export const PLUGIN_HINT = tr('Para mandar mensagens daqui: npm run mod:install (plugin habblaud-mensagens)');
-/** Dica para uma sessão OMP cuja extensão do AIOffice ainda não consultou a caixa de entrada. */
-export const OMP_HINT = tr('A extensão do AIOffice não conectou a esta sessão OMP; confira ~/.omp/agent/extensions e reabra a sessão');
-/** A mesma dica para um agente do Codex sem entregador (no modo Node o próprio servidor entrega). */
-export const CODEX_BRIDGE_HINT = tr('Para mandar mensagens ao Codex: com o Habblaud no Docker, deixe npm run codex:bridge rodando; no modo Node funciona sozinho');
+/** Dica para uma sessão Claude Code que ainda não carregou o plugin instalado pelo AIOffice. */
+export const PLUGIN_HINT = tr('O AIOffice instala o plugin de mensagens do Claude Code ao iniciar; feche e reabra esta sessão para carregá-lo');
+/** Dica para uma sessão OMP que ainda não carregou a extensão instalada pelo AIOffice. */
+export const OMP_HINT = tr('O AIOffice instala a extensão OMP ao iniciar; feche e reabra esta sessão para carregá-la');
+/** Dica para o Codex quando ainda não há um executor nativo disponível. */
+export const CODEX_DELIVERY_HINT = tr('O AIOffice não encontrou o executor local do Codex. No Docker, mantenha o auxiliar ativo no host; no aplicativo instalado, confira Ajuda → Diagnóstico');
 
 /**
  * - ready: dá para mandar (principal com o plugin conectado, recurso ligado, página local);
- * - hint: recurso ligado e principal presente, mas a sessão não está com o plugin (`text` diz como instalar);
+ * - hint: recurso ligado e principal presente, mas a integração ainda não está conectada (`text` explica o estado);
  * - off: não dá (`text` diz por quê). A gaveta esconde a caixa; o terminal mostra o motivo no lugar dela.
  */
 export type ComposerMode = { kind: 'ready' } | { kind: 'hint'; text: string } | { kind: 'off'; text: string };
@@ -43,7 +43,7 @@ export function composerMode(agent: AgentInfo | undefined, env: ComposerEnv): Co
   }
   if (!env.local) return { kind: 'off', text: tr('Para mandar mensagens por aqui, abra o Habblaud por http://localhost (ou 127.0.0.1)') };
   if (agent.canMessage !== true) {
-    const text = agent.provider === 'codex' ? CODEX_BRIDGE_HINT : agent.provider === 'omp' ? OMP_HINT : PLUGIN_HINT;
+    const text = agent.provider === 'codex' ? CODEX_DELIVERY_HINT : agent.provider === 'omp' ? OMP_HINT : PLUGIN_HINT;
     return { kind: 'hint', text };
   }
   return { kind: 'ready' };

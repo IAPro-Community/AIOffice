@@ -627,6 +627,19 @@ export function findExecutable(name: string, env: NodeJS.ProcessEnv = process.en
   return undefined;
 }
 
+/** O npm publica um shim `claude.cmd` no Windows; a instalação oficial também traz seu launcher nativo no pacote. */
+function claudeNpmExecutable(env: NodeJS.ProcessEnv, platform: NodeJS.Platform): string | undefined {
+  const sep = platform === 'win32' ? ';' : ':';
+  const dirs = (env.PATH ?? env.Path ?? '').split(sep).filter(Boolean);
+  if (platform === 'win32' && env.APPDATA) dirs.push(join(env.APPDATA, 'npm'));
+  const binary = platform === 'win32' ? 'claude.exe' : 'claude';
+  for (const dir of [...new Set(dirs)]) {
+    const packageBinary = join(dir, 'node_modules', '@anthropic-ai', 'claude-code', 'bin', binary);
+    if (isExecutableFile(packageBinary, platform)) return packageBinary;
+  }
+  return undefined;
+}
+
 /**
  * O executável do Claude Code: HABBLAUD_CLAUDE_BIN (um caminho, ou um nome procurado no PATH), a instalação nativa
  * em ~/.local/bin, ou o `claude` do PATH. A instalação nativa tem prioridade sobre um shim global antigo.
@@ -637,7 +650,17 @@ export function claudeBinFrom(env: NodeJS.ProcessEnv = process.env, platform: No
     const home = env.HOME || env.USERPROFILE || homedir();
     const native = join(home, '.local', 'bin', platform === 'win32' ? 'claude.exe' : 'claude');
     if (isExecutableFile(native, platform)) return native;
+    const npmNative = claudeNpmExecutable(env, platform);
+    if (npmNative) return npmNative;
     return findExecutable('claude', env, platform);
   }
-  return /[\\/]/.test(set) ? resolve(set) : findExecutable(set, env, platform);
+  if (/[\\/]/.test(set)) {
+    const explicit = resolve(set);
+    if (platform === 'win32' && /\.(?:cmd|bat)$/i.test(explicit)) {
+      const packageBinary = join(dirname(explicit), 'node_modules', '@anthropic-ai', 'claude-code', 'bin', 'claude.exe');
+      if (isExecutableFile(packageBinary, platform)) return packageBinary;
+    }
+    return explicit;
+  }
+  return findExecutable(set, env, platform) ?? (set.toLowerCase() === 'claude' ? claudeNpmExecutable(env, platform) : undefined);
 }

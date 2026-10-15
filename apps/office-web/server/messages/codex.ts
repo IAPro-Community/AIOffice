@@ -11,7 +11,9 @@
 // Node puro e sem dependências: também é importado pelo auxiliar do host (via tsx).
 import { execFile } from 'node:child_process';
 import { accessSync, constants, existsSync, statSync } from 'node:fs';
-import { delimiter, isAbsolute, join } from 'node:path';
+import { createRequire } from 'node:module';
+import { homedir } from 'node:os';
+import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { tr } from '../../shared/i18n';
 
 /** Prazo de um `codex queue`. */
@@ -44,23 +46,91 @@ function canExecute(p: string): boolean {
   }
 }
 
-/**
- * Nome do binário no PATH. No Windows, só o `codex.exe`: o `codex` sem extensão e o `codex.cmd` que o npm põe ao lado
- * são scripts, e o execFile (sem shell) não os roda.
- */
+/** Nome do binário nativo do Codex no PATH. */
 export const CODEX_BIN_NAME = process.platform === 'win32' ? 'codex.exe' : 'codex';
-const CODEX_CANDIDATES = process.platform === 'win32' ? ['codex.exe'] : ['codex'];
+const CODEX_TARGETS: Partial<Record<NodeJS.Platform, Record<string, { packageName: string; triple: string; executable: string }>>> = {
+  win32: {
+    x64: { packageName: '@openai/codex-win32-x64', triple: 'x86_64-pc-windows-msvc', executable: 'codex.exe' },
+    arm64: { packageName: '@openai/codex-win32-arm64', triple: 'aarch64-pc-windows-msvc', executable: 'codex.exe' },
+  },
+  darwin: {
+    x64: { packageName: '@openai/codex-darwin-x64', triple: 'x86_64-apple-darwin', executable: 'codex' },
+    arm64: { packageName: '@openai/codex-darwin-arm64', triple: 'aarch64-apple-darwin', executable: 'codex' },
+  },
+  linux: {
+    x64: { packageName: '@openai/codex-linux-x64', triple: 'x86_64-unknown-linux-musl', executable: 'codex' },
+    arm64: { packageName: '@openai/codex-linux-arm64', triple: 'aarch64-unknown-linux-musl', executable: 'codex' },
+  },
+};
 
-/** Binário do Codex: HABBLAUD_CODEX_BIN (caminho de um executável) ou `codex` no PATH. undefined = não achou. */
-export function findCodexBin(env: NodeJS.ProcessEnv, isExecutable: (p: string) => boolean = canExecute): string | undefined {
+function codexSearchDirs(env: NodeJS.ProcessEnv, platform: NodeJS.Platform): string[] {
+  const pathDelimiter = platform === 'win32' ? ';' : ':';
+  const home = env.HOME || env.USERPROFILE || homedir();
+  const dirs = (env.PATH ?? env.Path ?? '').split(pathDelimiter).filter(Boolean);
+  if (platform === 'win32') {
+    if (env.APPDATA) dirs.push(join(env.APPDATA, 'npm'));
+    if (env.NPM_CONFIG_PREFIX) dirs.push(env.NPM_CONFIG_PREFIX);
+  } else {
+    dirs.push(join(home, '.local', 'bin'), join(home, '.npm-global', 'bin'), join(home, '.volta', 'bin'), '/usr/local/bin');
+    if (platform === 'darwin') dirs.push('/opt/homebrew/bin');
+    const prefix = env.NPM_CONFIG_PREFIX || env.npm_config_prefix;
+    if (prefix) dirs.push(prefix, join(prefix, 'bin'));
+  }
+  return [...new Set(dirs.map((dir) => resolve(dir)))];
+}
+
+function codexPackageRoots(binDir: string): string[] {
+  return [
+    join(binDir, 'node_modules', '@openai', 'codex'),
+    resolve(binDir, '..', 'lib', 'node_modules', '@openai', 'codex'),
+    resolve(binDir, '..', '..', 'lib', 'node_modules', '@openai', 'codex'),
+  ];
+}
+
+/**
+ * npm exposes Codex through command wrappers on Windows. Resolve the official platform package and run its native
+ * binary directly; this keeps message text out of cmd.exe/PowerShell and avoids bundling a second copy of the CLI.
+ */
+function codexNativeFromPackageRoot(
+  root: string,
+  target: { packageName: string; triple: string; executable: string },
+  isExecutable: (path: string) => boolean,
+): string | undefined {
+  const entry = join(root, 'bin', 'codex.js');
+  if (!existsSync(entry)) return undefined;
+  try {
+    const require = createRequire(entry);
+    const packageJson = require.resolve(`${target.packageName}/package.json`);
+    const candidate = join(dirname(packageJson), 'vendor', target.triple, 'bin', target.executable);
+    return isExecutable(candidate) ? candidate : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Binário nativo do Codex: HABBLAUD_CODEX_BIN, PATH ou pacote global oficial do npm. */
+export function findCodexBin(
+  env: NodeJS.ProcessEnv,
+  isExecutable: (p: string) => boolean = canExecute,
+  platform: NodeJS.Platform = process.platform,
+  arch: string = process.arch,
+): string | undefined {
+  const target = CODEX_TARGETS[platform]?.[arch];
+  if (!target) return undefined;
   const explicit = env.HABBLAUD_CODEX_BIN?.trim();
-  if (explicit) return isExecutable(explicit) ? explicit : undefined;
-  for (const dir of (env.PATH ?? '').split(delimiter)) {
-    if (!dir || !isAbsolute(dir)) continue;
-    for (const name of CODEX_CANDIDATES) {
-      const p = join(dir, name);
-      if (isExecutable(p)) return p;
+  if (explicit) {
+    if (isExecutable(explicit)) return explicit;
+    if (isAbsolute(explicit)) {
+      return codexPackageRoots(dirname(explicit)).map((root) => codexNativeFromPackageRoot(root, target, isExecutable)).find(Boolean);
     }
+    return undefined;
+  }
+  for (const dir of codexSearchDirs(env, platform)) {
+    if (!dir || !isAbsolute(dir)) continue;
+    const direct = join(dir, platform === 'win32' ? 'codex.exe' : 'codex');
+    if (isExecutable(direct)) return direct;
+    const fromNpm = codexPackageRoots(dir).map((root) => codexNativeFromPackageRoot(root, target, isExecutable)).find(Boolean);
+    if (fromNpm) return fromNpm;
   }
   return undefined;
 }

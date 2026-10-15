@@ -33,7 +33,7 @@ Estes links sempre apontam para a **última release publicada**. Uma mudança no
 
 Os instaladores macOS desta release não têm assinatura Apple configurada. Para instalar, abra o `.dmg` e arraste **AIOffice** para **Aplicativos**. Se o Gatekeeper bloquear o primeiro início, abra o app uma vez, vá a **Ajustes do Sistema → Privacidade e Segurança → Segurança → Abrir Mesmo Assim** e confirme somente se o arquivo foi baixado diretamente desta release oficial. O atualizador automático do macOS só é habilitado em builds assinadas e notarizadas. No Linux, a atualização em segundo plano é compatível com o AppImage; o `.deb` é atualizado pelo gerenciador de pacotes. No Windows, o app consulta releases em background, sem recarregar a página, e valida o instalador pelo SHA-256 publicado pelo GitHub antes de pedir confirmação para instalá-lo. O instalador Windows ainda pode exibir SmartScreen enquanto não houver certificado Authenticode.
 
-O desktop inclui o runtime Node e inicia o servidor e a interface local. Claude Code, Codex e oh-my-pi são ferramentas separadas: instale e autentique cada uma conforme seu próprio fluxo. AIOffice identifica disponibilidade local; não cria nem valida suas contas nesses provedores.
+O desktop inclui o runtime Node e inicia o servidor e a interface local. As CLIs do Claude Code, Codex e oh-my-pi continuam sendo instaladas e autenticadas separadamente. Ao abrir o desktop, o AIOffice instala ou atualiza automaticamente seu plugin de mensagens do Claude Code e sua extensão do OMP; para mensagens ao Codex, localiza a CLI nativa já instalada. Não é preciso manter comandos `npm run` abertos no desktop. Sessões Claude/OMP já abertas precisam ser recarregadas ou reabertas. No Docker, o envio ao Codex ainda exige o auxiliar executado no host.
 
 ## O que você encontra no AIOffice
 
@@ -105,9 +105,9 @@ Cada instalador deve ser criado no sistema operacional correspondente. O workflo
 
 | Ferramenta | O que aparece no escritório | Observações |
 |---|---|---|
-| Claude Code | Sessões, atividade, histórico, uso e recursos de mensagem/permissão | Mod e plugins habilitam recursos adicionais. |
-| Codex CLI / app | Sessões, histórico, atividade e uso local | Hooks precisam ser aprovados; no Docker, mensagens exigem `npm run codex:bridge` no host. |
-| oh-my-pi (OMP) | Sessões, histórico e atividade | Instale a bridge com `npm --prefix apps/office-web run omp:install` e abra uma nova sessão. |
+| Claude Code | Sessões, atividade, histórico, uso e recursos de mensagem/permissão | O desktop instala/verifica o plugin de mensagens automaticamente. As CLIs seguem externas e precisam de login. |
+| Codex CLI / app | Sessões, histórico, atividade, uso e mensagens locais | O desktop usa a CLI local (`codex queue`); aprove os hooks em `/hooks` para eventos e aprovações. No Docker, mantenha `npm run codex:bridge` no host. |
+| oh-my-pi (OMP) | Sessões, histórico, atividade e mensagens | O desktop instala/atualiza a extensão automaticamente; em sessões abertas antes disso, feche e abra de novo. `omp:install` continua disponível no modo Node. |
 
 Devin, Antigravity, OpenCode, Freebuf e Gemini CLI não têm integração de sessões e mensagens de ponta a ponta. Uma conexão MCP também não equivale à leitura de uma sessão de CLI.
 

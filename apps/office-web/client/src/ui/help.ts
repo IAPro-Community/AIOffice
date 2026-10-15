@@ -62,7 +62,7 @@ const CODEX_HELP: string[] = [
   tr('Os agentes do Codex têm o chip da conta vazado (só a borda na cor da conta) e o selo CODEX na etiqueta e nos detalhes.'),
   tr('{0} Sem os hooks, o escritório lê os arquivos de sessão do Codex: cada passo aparece quando termina.', [CODEX_LIVE_HINT]),
   tr('Aprovar pelo escritório: no Codex, a aprovação só aparece no terminal depois que você responder aqui ou o prazo acabar (alguns segundos). Não há “não perguntar de novo” nem “interromper”, e recusar pede um motivo.'),
-  tr('Mensagens: entram na fila da sessão e viram o próximo prompt quando o Codex terminar o que está fazendo (até ~10 s). Com o Habblaud no Docker, deixe `npm run codex:bridge` rodando; no modo Node funciona sozinho.'),
+  tr('Mensagens do Codex entram na fila da sessão e viram o próximo prompt quando ela fica ociosa. O aplicativo instalado usa a CLI local; no Docker, o auxiliar roda no host.'),
   tr('Perguntas do Codex são respondidas no próprio Codex.'),
   tr('Uso: vem dos arquivos de sessão do Codex, sem instalar nada, e só se renova enquanto alguma sessão roda (por isso o cartão mostra a idade, ex.: “há 12 min”). “sem cota” quer dizer sem cota nem créditos para usar agora.'),
   tr('Meu dia: o Codex conta tokens, mas não grava custo.'),
@@ -73,7 +73,7 @@ const OMP_HELP: string[] = [
   tr('Cada sessão aberta do oh-my-pi aparece como agente na sala do projeto; as sessões de outros CLIs na mesma pasta compartilham a sala.'),
   tr('O terminal mostra prompts, respostas, raciocínio, chamadas de ferramentas e resultados lidos do arquivo de sessão do OMP.'),
   tr('O histórico do terminal inclui sessões recentes do OMP, abertas ou encerradas.'),
-  tr('Para mandar mensagens pelo escritório, a extensão de integração precisa estar instalada e carregada quando a sessão OMP abrir. Se a sessão estava aberta antes da instalação, feche e abra essa sessão novamente.'),
+  tr('O AIOffice instala ou atualiza a extensão OMP ao iniciar. Para carregá-la, feche e abra novamente as sessões OMP que já estavam abertas.'),
   tr('O Habblaud só permite enviar quando a sessão confirma que está consultando a caixa de entrada. Sem essa conexão, use o terminal OMP; a extensão não pode abrir uma sessão encerrada.'),
   tr('O OMP ainda não fornece dados de uso nem controles de permissão por esta integração.'),
 ];
@@ -158,7 +158,7 @@ export class HelpDialog {
               text: tr('Nos detalhes de um agente, “Abrir terminal” mostra a conversa da sessão do Claude Code, do Codex ou do oh-my-pi ao vivo (precisa do acesso local, bind 127.0.0.1).'),
             }),
             h('li', {
-              text: tr('Para mandar mensagens, Claude Code precisa do plugin habblaud-mensagens, Codex do entregador configurado e oh-my-pi da extensão carregada na sessão. A caixa só libera o envio quando a sessão está conectada. Enter manda, Shift+Enter quebra a linha.'),
+              text: tr('No desktop instalado, o AIOffice instala automaticamente as integrações de mensagem do Claude Code e do OMP; o Codex usa a CLI local. Instale e autentique os CLIs dos provedores. A caixa só libera o envio quando a sessão está conectada. Enter manda, Shift+Enter quebra a linha.'),
             }),
             h('li', {
               text: tr('No terminal: busca (lupa ou Ctrl/⌘+F), filtro “Tudo / Só prompts / Sem ferramentas” e um botão de copiar em cada entrada. O relógio da barra superior abre o histórico das sessões dos últimos 7 dias das ferramentas com histórico ativo; a busca também encontra pelo nome da ferramenta.'),

@@ -26,7 +26,14 @@ O instalador também inclui a CLI do NPM e toda a pasta `node_modules` dela em `
 
 O pacote inclui e descompacta `.claude-plugin/` e `apps/office-web/mod/` para que o Claude Code, executado fora do processo Electron, consiga ler o marketplace local. Com mensagens habilitadas, o servidor instala/verifica `habblaud-mensagens` nas contas detectadas; sessões já abertas precisam de `/reload-plugins` após a primeira instalação.
 
-O app herda `PATH` para localizar CLIs, observa as sessões do Claude Code, Codex e OMP e preserva o uso de `node-pty` para terminais interativos. `npm run desktop:doctor` e **Ajuda → Diagnóstico** verificam disponibilidade, não login/autenticação. Se uma ferramenta não estiver instalada ou autenticada, siga a instrução oficial dessa ferramenta. Nenhum token ou segredo é incluído nos instaladores.
+### Entrega de mensagens nas integrações instaladas
+
+- Claude Code: o desktop instala/verifica automaticamente o plugin de mensagens no perfil de cada conta detectada. Sessões já abertas podem carregar o plugin com `/reload-plugins` ou ao fechar e reabrir a sessão. Isso não instala todo o mod Habblaud, captura de uso nem plugins de permissão; `npm run mod:install` continua sendo o instalador completo para Node.
+- Codex: `codex queue` roda dentro do servidor local. O resolvedor encontra um executável nativo no `PATH` ou a dependência nativa da instalação global oficial do NPM (incluindo o prefixo global do NPM no Windows `codex.cmd`/`codex.ps1`), sem executar wrappers de shell e sem empacotar outra cópia da CLI. A CLI do Codex precisa estar instalada e autenticada pelo usuário; ela não faz parte do AIOffice. Apenas quando o servidor está em Docker, o auxiliar `npm run codex:bridge` precisa rodar no host.
+- OMP: se o perfil `~/.omp/agent` existe e mensagens estão habilitadas, a inicialização instala ou atualiza a extensão global do AIOffice e grava a porta local configurada. Uma extensão sem marcador AIOffice nunca é substituída. Sessões OMP que já estavam abertas precisam ser fechadas e abertas para carregar mudanças.
+- A instalação/verificação acontece no processo do servidor durante a inicialização, sem polling de renderer e sem recarga automática da página. O status da sessão continua chegando pelo fluxo de eventos já existente.
+
+As CLIs de Claude Code, Codex e OMP continuam instaladas/autenticadas separadamente, pois pertencem a fornecedores e têm contas próprias. O app herda o ambiente do usuário e também procura o prefixo global do NPM onde necessário; observar sessões é possível sem CLI em alguns provedores, mas enviar mensagens requer a CLI/integração correspondente. `npm run desktop:doctor` e **Ajuda → Diagnóstico** verificam disponibilidade, não login/autenticação. Nenhum token ou segredo é incluído nos instaladores.
 
 ## Persistência e encerramento
 
@@ -97,7 +104,7 @@ Histórico: o primeiro asset foi anexado à release existente `v2.1.0`; nenhuma 
 - “Porta em uso”: o desktop tenta recuperar uma instância órfã do próprio AIOffice. Se outro aplicativo usar a porta, a mensagem inclui nome e PID; feche-o ou defina outra `HABBLAUD_PORT`. A aplicação não se conecta a um serviço que não iniciou.
 - Se uma instância que oferece o shutdown autenticado recusar a parada por sessões interativas, feche essas sessões e abra o desktop de novo. Releases antigos sem esse handshake só podem ser identificados pelo PID antes do encerramento direcionado.
 - Processo não inicia ou fecha: a mensagem diferencia conflito de porta, configuração inválida, falha do Maestro, instalação incompleta, permissões, erro de criação do processo e timeout; consulte `aioffice.log` no diretório de dados indicado acima. A interface só abre para uma API com versão correspondente.
-- Ausência de agente no escritório: instale/autentique a ferramenta separadamente e confira o `PATH`; Codex e OMP leem os perfis/sessões já conhecidos pelo servidor.
+- Ausência de agente no escritório: instale/autentique a ferramenta separadamente. Codex e OMP leem os perfis/sessões já conhecidos pelo servidor; o log registra se a CLI que entrega mensagens foi encontrada.
 - A consulta e o download exigem HTTPS ao GitHub. Uma instalação `2.1.0` precisa do upgrade manual inicial para receber o atualizador Windows.
 - A máquina de desenvolvimento é Windows; builds macOS/Linux só ficam validados após sucesso nos respectivos runners nativos e inspeção dos assets publicados.
 

@@ -21,7 +21,7 @@ export class DayLauncher implements UiComponent {
     private readonly ctx: UiContext,
     private readonly mount: (el: HTMLElement) => void,
   ) {
-    this.button = iconButton(DAY_ICON, tr('Meu dia: para onde foi o tempo (M)'), () => this.toggle());
+    this.button = iconButton(DAY_ICON, tr('Meu dia: para onde foi o tempo (M)'), () => this.toggle(), 'ui-btn-day');
     this.button.setAttribute('aria-haspopup', 'dialog');
     if (ctx.store.mock) void this.load();
   }

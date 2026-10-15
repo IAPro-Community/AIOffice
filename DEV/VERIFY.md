@@ -1,5 +1,20 @@
 # VERIFY — AIOffice
 
+## Mensagens no desktop instalado — verificação local, 2026-10-14
+
+| Verificação | Resultado |
+|---|---|
+| Resolvedor do Codex | CLI nativa local respondeu a `codex --help` e `codex queue --help`. No instalador, o serviço detecta o binário nativo pela instalação oficial global do NPM e executa `codex queue` sem iniciar PowerShell/cmd. |
+| Matriz do pacote Codex | Testes sintéticos passaram para Windows x64, macOS x64/arm64 e Linux x64/arm64; Windows também cobre prefixo global do NPM encontrado pelo `APPDATA`, mesmo fora do `PATH`. |
+| Testes de integração | Resolver/delivery Codex, resolução Claude, extensão OMP, composer e fluxo remoto estão cobertos pela suíte web completa: 1.268 aprovados, 10 ignorados. |
+| `npm run desktop:verify` | Aprovado: typechecks root/app, build, 22 testes raiz, 1.268 testes web (10 ignorados), i18n 2.402/2.402 por idioma, 16 testes Electron e verificações de sintaxe. |
+| `npm run desktop:package:win` | Aprovado para NSIS x64 2.3.0 em `dist/installers-v2.3.0-final`: `AIOffice-Setup.exe`, 118.458.657 bytes, SHA-256 `A592B3E843E58162631FCCFE75B61DD04023373771A91BB6B6CAB47C5F97FEE2`, `ProductVersion=2.3.0`; sem assinatura Authenticode configurada. A saída padrão falhou ao substituir `win-unpacked` (`EPERM`), então a validação repetiu com diretório limpo. |
+| Conteúdo do app empacotado | Bundle do servidor, extensão OMP, marketplace e plugin Claude Code presentes no diretório de runtime do pacote. O Codex externo não é copiado: usa instalação local autenticada do usuário. |
+| Entrega efetiva | Não enviei mensagem a uma sessão real do usuário. Entrega com binário falso está coberta pela suíte; CLI real foi consultada só com help. |
+| Interface | Nenhum reload integral ou polling novo; instalação das pontes ocorre no boot do servidor e estados continuam no fluxo SSE/fetch existente. |
+| QA responsivo e login | 320, 360, 390, 500, 700, 768, 1.280 e 1.440 px sem overflow horizontal do documento. Login em 320, 390, 768 e 1.280 px; nomes acessíveis, conversão abc123 → ABC123, envio após seis caracteres e erro acessível verificados com clipboard/fetch simulados. |
+| Release | O preflight completo anterior (`38654902095`) passou antes desta mudança; executar novo workflow manual após sincronizar o commit. Só depois disso publicar `v2.3.0`. |
+
 ## Matriz nativa v2.3.0 — preflight completo, 2026-10-14
 
 | Verificação | Resultado |

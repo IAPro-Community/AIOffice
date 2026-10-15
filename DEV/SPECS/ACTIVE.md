@@ -2,7 +2,7 @@
 
 ## 1. Identificação do Projeto
 - **Nome**: AIOffice
-- **Status**: desktop Electron implementado; release Windows `v2.2.1` ativa; distribuição multi-plataforma `v2.3.0` em execução com builds nativos Windows/macOS/Linux e publicação após validação completa; auditoria ampla da interface concluída; paridade de provedores aberta; ativação gerenciada e validação operacional pendentes
+- **Status**: desktop Electron implementado; candidata `v2.3.0` inclui builds nativos Windows/macOS/Linux e entrega de mensagens integrada no desktop instalado; typechecks, builds e suítes locais precisam ser repetidos após a integração final; novo preflight CI e publicação da release ainda pendentes. Claude Code, Codex e OMP têm suporte a mensagens quando suas CLIs/perfis e autenticação estiverem disponíveis; não anunciar suporte universal aos demais provedores.
 - **Localização**: Repositório AIOffice
 
 ## 2. Pilares de Integração

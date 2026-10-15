@@ -8,9 +8,15 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-export const EXTENSION_SOURCE = join(ROOT, 'mod', 'omp', 'aioffice-bridge.ts');
 export const EXTENSION_MARKER = 'AIOffice Bridge Extension for oh-my-pi (omp).';
 const EXTENSION_NAME = 'aioffice-bridge.ts';
+const DEFAULT_PORT = 4747;
+
+export interface OmpBridgeInstallResult {
+  state: 'installed' | 'updated' | 'current' | 'conflict';
+  target: string;
+  backup?: string;
+}
 
 type Action = 'install' | 'status' | 'uninstall';
 
@@ -43,6 +49,41 @@ function backupPath(file: string): string {
   return candidate;
 }
 
+function extensionSource(root: string, port: number): string {
+  if (!Number.isInteger(port) || port < 1 || port > 65_535) throw new Error('A porta da extensão OMP precisa ficar entre 1 e 65535.');
+  const source = readFileSync(join(root, 'mod', 'omp', EXTENSION_NAME), 'utf8');
+  const url = /const HABBLAUD_URL = 'http:\/\/127\.0\.0\.1:\d+';/;
+  if (!url.test(source)) throw new Error('A URL local da extensão OMP não está no formato esperado.');
+  return source.replace(url, `const HABBLAUD_URL = 'http://127.0.0.1:${port}';`);
+}
+
+/** Instala/atualiza a extensão sem substituir arquivos que não pertençam ao AIOffice. */
+export function ensureOmpBridgeInstalled(root: string, home: string, port = DEFAULT_PORT): OmpBridgeInstallResult {
+  const target = extensionPath(home);
+  const source = extensionSource(root, port);
+  const installed = existsSync(target) ? readFileSync(target, 'utf8') : undefined;
+  if (installed === source) return { state: 'current', target };
+  if (installed !== undefined && !installed.includes(EXTENSION_MARKER)) return { state: 'conflict', target };
+
+  mkdirSync(dirname(target), { recursive: true });
+  const temp = `${target}.tmp-${process.pid}`;
+  writeFileSync(temp, source, { mode: 0o600 });
+  let backup: string | undefined;
+  try {
+    if (installed !== undefined) {
+      backup = backupPath(target);
+      renameSync(target, backup);
+    }
+    renameSync(temp, target);
+  } catch (error) {
+    if (backup && !existsSync(target)) renameSync(backup, target);
+    throw error;
+  } finally {
+    if (existsSync(temp)) rmSync(temp);
+  }
+  return { state: installed === undefined ? 'installed' : 'updated', target, ...(backup ? { backup } : {}) };
+}
+
 function printHelp(): void {
   console.log('Uso: npm run omp:<install|status|uninstall> [-- --dry-run]\n\n  install     instala ou atualiza a ponte na extensão global do OMP (backup antes)\n  status      confere se a ponte está instalada\n  uninstall   remove a ponte se o arquivo não foi alterado\n  --dry-run   mostra a ação sem gravar nada\n\nDepois de instalar ou atualizar, abra uma nova sessão OMP para carregar a extensão.');
 }
@@ -55,7 +96,8 @@ function main(argv: string[]): void {
   const { action, dryRun } = parseArgs(argv);
   const home = process.env.HOME || process.env.USERPROFILE || homedir();
   const target = extensionPath(home);
-  const source = readFileSync(EXTENSION_SOURCE, 'utf8');
+  const port = Number.parseInt(process.env.HABBLAUD_PORT ?? '', 10) || DEFAULT_PORT;
+  const source = extensionSource(ROOT, port);
   const installed = existsSync(target) ? readFileSync(target, 'utf8') : undefined;
 
   if (action === 'status') {
@@ -115,7 +157,8 @@ function main(argv: string[]): void {
   console.log('Feche e abra a sessão OMP para carregar a extensão.');
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+const invokedScript = process.argv[1]?.replaceAll('\\', '/').split('/').at(-1);
+if (invokedScript === 'omp-install.ts' && process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   try {
     main(process.argv.slice(2));
   } catch (error) {

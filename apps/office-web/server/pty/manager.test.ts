@@ -2,7 +2,7 @@ import { EventEmitter } from 'node:events';
 import { chmodSync, mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { ptyRequestProblem } from '../http/pty';
 import {
@@ -363,4 +363,14 @@ describe('carregar o node-pty e achar o claude', () => {
       expect(claudeBinFrom({ ...env, HABBLAUD_CLAUDE_BIN: 'outro' })).toBeUndefined();
     }),
   );
+
+  it('claudeBinFrom Windows resolve o launcher nativo instalado pelo npm no perfil do usuário', withDir((dir) => {
+    const appData = join(dir, 'roaming');
+    const npm = join(appData, 'npm');
+    const binary = join(npm, 'node_modules', '@anthropic-ai', 'claude-code', 'bin', 'claude.exe');
+    mkdirSync(dirname(binary), { recursive: true });
+    writeFileSync(binary, 'native');
+    writeFileSync(join(npm, 'claude.cmd'), 'shim');
+    expect(claudeBinFrom({ HOME: dir, USERPROFILE: dir, APPDATA: appData, PATH: npm }, 'win32')).toBe(binary);
+  }));
 });

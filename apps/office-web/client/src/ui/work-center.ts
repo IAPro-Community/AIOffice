@@ -75,7 +75,7 @@ export class WorkCenter implements UiComponent {
 
   constructor(private readonly ctx: UiContext, private readonly actions: WorkCenterActions) {
     const icon = '<svg class="ui-px-icon" width="20" height="20" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path fill="currentColor" d="M1 1h8v2H1zM1 4h3v2H1zM5 4h4v2H5zM1 7h8v2H1z"/></svg>';
-    this.button = iconButton(icon, tr('Central de trabalho'), () => this.openDialog());
+    this.button = iconButton(icon, tr('Central de trabalho'), () => this.openDialog(), 'ui-btn-work-center');
     this.button.setAttribute('aria-haspopup', 'dialog');
     this.button.setAttribute('aria-expanded', 'false');
 
@@ -149,8 +149,9 @@ export class WorkCenter implements UiComponent {
 
   render(): void {
     const count = this.actions.attentionCount();
-    setText(this.attentionButton.querySelector('.ui-work-center__action-count')!, String(count));
-    this.attentionButton.classList.toggle('has-items', count > 0);
+    const countEl = this.attentionButton?.querySelector?.('.ui-work-center__action-count');
+    if (countEl) setText(countEl as HTMLElement, String(count));
+    this.attentionButton?.classList?.toggle('has-items', count > 0);
     if (!this.isOpen) return;
     this.renderProject();
   }

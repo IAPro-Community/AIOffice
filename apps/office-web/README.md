@@ -495,6 +495,10 @@ and waits for the next request, give a new instruction or correct its course, wi
 
 `npm run mod:install` remains available for the full Habblaud setup, including usage capture and permission replies.
 
+The installed desktop also installs or updates the global OMP extension at startup when an OMP profile exists. Close
+and reopen OMP sessions that were already running. Provider CLIs and accounts remain separate installs that must be
+authenticated; the desktop does not need any `npm run` helper left open to send messages.
+
 - The box shows the status: **queued** (the session fetches messages every 2 seconds), **delivered** or **not
   delivered**, with the reason. With the agent busy, the message waits and goes in when it finishes its turn, like a
   prompt typed while the agent is working.
@@ -540,9 +544,10 @@ Codex account chip is hollow and carries the **CODEX** tag.
   **after** the office answers or the time runs out — in the meantime the terminal shows "Waiting for an answer in
   Habblaud…". There's no "always allow" or "interrupt", and Codex doesn't let you answer its questions from outside.
 - **Sending messages:** the **Send message** box works for Codex too, through `codex queue`: the message joins
-  the session's queue and Codex picks it up when it finishes what it's doing (up to about 10 seconds later). In Node mode
-  Habblaud runs the command itself; **in Docker**, keep `npm run codex:bridge` running on the Mac (the container can't
-  see your Codex).
+  the session's queue and Codex picks it up when it finishes what it's doing (up to about 10 seconds later). The
+  installed desktop and Node mode run the local CLI, including the native binary inside a global NPM install on
+  Windows; Codex CLI must still be installed and authenticated. **Only in Docker**, keep `npm run codex:bridge` running
+  on the host (the container can't see your Codex).
 - **5-hour and weekly usage:** comes from Codex's own files and only refreshes while some session is running; the card
   shows how old the numbers are and "no quota" when the workspace has run out of credits.
 - **When the session comes in:** with the first message (that's when Codex records the project folder); a CLI that's open

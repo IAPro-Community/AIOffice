@@ -4453,34 +4453,55 @@
   .ui-brand__name,
   .ui-pill__text,
   .ui-demo-badge,
-  .ui-version {
+  .ui-version,
+  .ui-brand__sub-prefix {
     display: none;
   }
 
-  /* A pílula de conexão vira um selo no canto do logo. */
   .ui-brand {
-    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    position: static;
+    min-width: 0;
   }
 
   .ui-brand__text {
-    position: absolute;
-    right: -4px;
-    bottom: -3px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    position: static;
+    min-width: 0;
+  }
+
+  .ui-brand__title-row {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    white-space: nowrap;
+  }
+
+  .ui-topbar__status {
+    display: inline-flex;
+    align-items: center;
   }
 
   .ui-pill {
-    width: 12px;
-    height: 12px;
+    width: 10px;
+    height: 10px;
     padding: 0;
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
-    border-radius: 4px;
+    border-radius: 50%;
     border: 2px solid #161a24;
     background: #161a24;
   }
 
   .ui-pill__dot {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
   }
 
   .ui-counter--waiting {
@@ -4549,37 +4570,127 @@
 
 @media (max-width: 600px) {
   .ui-root {
-    --top-h: 108px;
+    --top-h: 96px;
     --gap: 8px;
     --feed-h: 44vh;
   }
 
   .ui-topbar {
-    flex-wrap: wrap;
-    align-content: center;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
     row-gap: 6px;
-    column-gap: 8px;
+    column-gap: 6px;
     padding: 6px 8px;
+    align-items: center;
+    height: auto;
+    min-height: var(--top-h);
   }
 
-  .ui-brand__name {
-    font-size: 18px;
+  .ui-topbar__left {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
   }
 
-  .ui-counters {
-    margin-left: auto;
+  .ui-brand {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .ui-brand__mark {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+
+  .ui-brand__mark img {
+    width: 28px;
+    height: 28px;
+  }
+
+  .ui-brand__title {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .ui-brand__beta {
+    font-size: 9px;
+    padding: 1px 4px;
+  }
+
+  .ui-topbar__right {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: none;
+  }
+
+  .ui-topbar__right .ui-btn-group--camera,
+  .ui-topbar__right .ui-btn-group:first-child {
+    display: none;
+  }
+
+  .ui-btn-group {
     padding: 2px;
+    gap: 2px;
+    border-radius: 8px;
+  }
+
+  .ui-topbar__right .ui-icon-btn {
+    width: 31px;
+    height: 31px;
+    padding: 0;
+    border-radius: 6px;
+  }
+
+  .ui-topbar__right .ui-icon-btn .ui-px-icon {
+    width: 17px;
+    height: 17px;
+  }
+
+  /* Row 2: counters (if active) + usage cards */
+  .ui-counters {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: start;
+    margin: 0;
+    padding: 0;
+    background: none;
+    border: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .ui-counter--rooms,
+  .ui-counter--agents,
+  .ui-counter--working,
+  .ui-counter--subagents {
+    display: none;
   }
 
   .ui-counter {
     flex-direction: row;
-    align-items: baseline;
+    align-items: center;
     gap: 5px;
-    padding: 4px 8px;
+    padding: 3px 8px;
+    height: 28px;
+    border-radius: 6px;
   }
 
   .ui-counter__value {
-    font-size: 16px;
+    font-size: 14px;
   }
 
   .ui-counter--waiting:disabled {
@@ -4594,37 +4705,42 @@
     display: block;
   }
 
-  .ui-topbar__right {
-    margin-left: auto;
-  }
-
-  .ui-counters:has(.ui-counter--waiting:not(:disabled)) ~ .ui-topbar__right {
-    margin-left: 0;
-  }
-
   .ui-usage {
-    order: 10;
-    flex: 1 0 100%;
-    margin-left: 0;
-    /* Com 4 ou mais contas os cartões mantêm o mínimo de 128 px e não cabem: a fila rola (a dica já é fixa aqui). */
+    grid-column: 2;
+    grid-row: 2;
+    min-width: 0;
+    width: 100%;
+    margin: 0;
+    padding: 1px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
   }
 
+  .ui-usage::-webkit-scrollbar {
+    display: none;
+  }
+
   .ui-usage-card {
-    flex: 1 1 0;
+    flex: 0 0 auto;
     width: auto;
-    min-width: 0;
-    gap: 6px;
-    padding: 4px 6px 4px 4px;
+    min-width: 116px;
+    height: 29px;
+    gap: 5px;
+    padding: 2px 6px;
+    background: var(--ui-surface-2);
+    border: 1px solid var(--ui-line);
+    border-radius: 6px;
   }
 
   .ui-usage-card > .ui-acc-chip {
-    width: 22px;
-    font-size: 14px;
+    width: 20px;
+    font-size: 13px;
   }
 
-  /* Sem cabeçalho: a idade dos números vira um selo no chip; o reinício fica na forma curta (↻1h29). */
   .ui-usage-card__head {
     display: none;
   }
@@ -4634,7 +4750,7 @@
   }
 
   .ui-meter__label {
-    font-size: 10px;
+    font-size: 9px;
   }
 
   .ui-usage-tip {
@@ -4688,70 +4804,70 @@
   }
 }
 
-/* Celulares estreitos (até 410 px): marca + 7 botões ocupam a primeira linha inteira, então os contadores descem para a
-   linha dos cartões. Sem isso os botões da direita pulam para uma linha própria e a barra passa da altura fixa. */
-@media (max-width: 410px) {
-  .ui-counters {
-    order: 9;
-    margin-left: 0;
-  }
-
-  .ui-counters:has(.ui-counter--waiting:not(:disabled)) ~ .ui-topbar__right {
-    margin-left: auto;
-  }
-
-  .ui-usage {
-    order: 10;
-    flex: 1 1 60%;
-  }
-
-  /* A marca vira AIO ao lado do símbolo para não cortar o nome na barra estreita. */
-  .ui-brand {
-    gap: 4px;
-  }
-
-  .ui-brand__text {
-    position: static;
-    right: auto;
-    bottom: auto;
-  }
-
-  .ui-brand__title {
-    max-width: 26px;
-    overflow: hidden;
-    font-size: 15px;
-    letter-spacing: 0;
-    white-space: nowrap;
-  }
-
-  .ui-brand__beta,
-  .ui-brand__sub-prefix {
+/* Telas estreitas: remove botões secundários da barra para manter folga total */
+@media (max-width: 500px) {
+  .ui-btn-timelapse,
+  .ui-btn-help {
     display: none;
   }
 }
 
-/* Compacta os controles para manter marca e navegação na primeira linha. */
-@media (max-width: 375px) {
+/* Celulares padrão e estreitos (até 410 px) */
+@media (max-width: 410px) {
+  .ui-brand__beta {
+    display: none;
+  }
+
   .ui-topbar {
-    column-gap: 4px;
-    padding-right: 6px;
-    padding-left: 6px;
+    padding: 4px 6px;
+    row-gap: 4px;
+    column-gap: 5px;
   }
 
   .ui-topbar__right .ui-icon-btn {
-    width: 28px;
-    height: 28px;
+    width: 29px;
+    height: 29px;
+  }
+
+  .ui-topbar__right .ui-icon-btn .ui-px-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .ui-brand__title {
+    font-size: 14px;
   }
 }
 
-/* Em 320 px, o símbolo sozinho mantém a linha limpa e preserva o ponto de conexão. */
-@media (max-width: 340px) {
-  .ui-brand__text {
-    position: absolute;
-    right: -4px;
-    bottom: -3px;
+/* Telas compactas (até 360 px) */
+@media (max-width: 360px) {
+  .ui-topbar {
+    padding: 3px 5px;
+    column-gap: 4px;
   }
 
+  .ui-topbar__right .ui-icon-btn {
+    width: 27px;
+    height: 27px;
+  }
+
+  .ui-topbar__right .ui-icon-btn .ui-px-icon {
+    width: 15px;
+    height: 15px;
+  }
+
+  .ui-brand__title {
+    font-size: 13px;
+  }
+
+  .ui-usage-card {
+    min-width: 106px;
+    padding: 2px 4px;
+  }
+}
+
+/* Em 330 px ou menor, apenas o símbolo da marca fica visível */
+@media (max-width: 330px) {
   .ui-brand__title-row {
     display: none;
   }
@@ -7985,9 +8101,10 @@ html.is-replay #world {
   }
 }
 
-/* Entre o celular e o tablet a barra superior fica apertada com o botão "Meu dia": a visão geral segue no atalho O. */
-@media (min-width: 601px) and (max-width: 760px) {
-  .ui-topbar__right .ui-btn-group:first-child {
+/* Em telas estreitas e celulares a barra superior prioriza as ações do escritório: a visão geral segue no atalho O e no gesto de pinça/arrastar. */
+@media (max-width: 760px) {
+  .ui-topbar__right .ui-btn-group:first-child,
+  .ui-topbar__right .ui-btn-group--camera {
     display: none;
   }
 }

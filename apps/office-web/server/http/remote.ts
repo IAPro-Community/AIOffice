@@ -373,53 +373,269 @@ export function loginPage(): string {
 <html lang="${getLocale()}">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
-<title>AIOffice · entrar</title>
+<title>${esc(tr('AIOffice · Acesso Móvel'))}</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="/assets/brand/logo-mark.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="AIOffice">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#121520">
 <style>
   :root { color-scheme: dark; }
-  * { box-sizing: border-box; }
-  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #14161f; color: #e8e6df;
-         font: 16px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; padding: 16px; }
-  form { width: 100%; max-width: 360px; background: #1e2130; border: 2px solid #3a3f58; border-radius: 10px; padding: 24px; }
-  h1 { margin: 0 0 4px; font-size: 22px; color: #f4c95d; }
-  p { margin: 0 0 20px; color: #9aa0b8; font-size: 13px; }
-  a { color: #f4c95d; }
-  code { color: #e8e6df; }
-  label { display: block; font-size: 13px; color: #9aa0b8; margin: 12px 0 6px; }
-  input { width: 100%; padding: 12px; font: inherit; color: inherit; background: #14161f; border: 2px solid #3a3f58; border-radius: 6px; }
-  input:focus { outline: none; border-color: #f4c95d; }
-  button { width: 100%; margin-top: 20px; padding: 12px; font: inherit; font-weight: 700; color: #14161f; background: #f4c95d;
-           border: 0; border-radius: 6px; cursor: pointer; }
-  button:disabled { opacity: .6; cursor: wait; }
-  #err { min-height: 20px; margin-top: 12px; color: #ff8a80; font-size: 13px; }
-  .security-note { margin: 16px 0; padding: 10px; border: 1px solid #806d39; border-radius: 6px; color: #f2d990; font-size: 12px; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: grid;
+    place-items: center;
+    background: #111420 radial-gradient(circle at 50% 15%, rgba(60, 75, 120, 0.18) 0%, transparent 60%);
+    color: #e5e9f5;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    -webkit-font-smoothing: antialiased;
+  }
+  .card {
+    width: 100%;
+    max-width: 380px;
+    background: #181c2b;
+    border: 1px solid #2e354e;
+    border-radius: 14px;
+    padding: 24px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  }
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .brand-logo {
+    width: 44px;
+    height: 44px;
+    image-rendering: pixelated;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 4px;
+    border: 1px solid #333c56;
+  }
+  .brand-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .brand-title-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  h1 {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #f4c95d;
+  }
+  .tag {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(244, 201, 93, 0.15);
+    color: #f4c95d;
+    border: 1px solid rgba(244, 201, 93, 0.3);
+  }
+  .brand-sub {
+    font-size: 12px;
+    color: #8c96b5;
+  }
+  .desc {
+    margin-bottom: 18px;
+    color: #a3adc9;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .field {
+    margin-bottom: 16px;
+  }
+  .field-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 12px;
+    font-weight: 600;
+    color: #8c96b5;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  input {
+    width: 100%;
+    height: 52px;
+    padding: 0 16px;
+    font: 700 24px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.3em;
+    text-align: center;
+    text-transform: uppercase;
+    color: #ffffff;
+    background: #0f121d;
+    border: 2px solid #363e5c;
+    border-radius: 8px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    -webkit-appearance: none;
+  }
+  input:focus {
+    outline: none;
+    border-color: #f4c95d;
+    box-shadow: 0 0 0 3px rgba(244, 201, 93, 0.2);
+  }
+  .paste-btn {
+    margin-top: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: transparent;
+    border: 0;
+    color: #f4c95d;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 2px 0;
+  }
+  .paste-btn:hover {
+    text-decoration: underline;
+  }
+  button[type="submit"] {
+    width: 100%;
+    height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #121520;
+    background: linear-gradient(180deg, #fce182 0%, #f4c95d 100%);
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(244, 201, 93, 0.3);
+    transition: transform 0.1s, opacity 0.15s, filter 0.15s;
+    touch-action: manipulation;
+  }
+  button[type="submit"]:hover {
+    filter: brightness(1.05);
+  }
+  button[type="submit"]:active {
+    transform: scale(0.98);
+  }
+  button[type="submit"]:disabled {
+    opacity: 0.6;
+    cursor: wait;
+    transform: none;
+  }
+  .security-note {
+    margin: 16px 0 0;
+    padding: 10px 12px;
+    border-left: 3px solid #f4c95d;
+    background: rgba(244, 201, 93, 0.08);
+    border-radius: 0 6px 6px 0;
+    color: #f1d89b;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  #err {
+    min-height: 20px;
+    margin-top: 12px;
+    color: #ff7b72;
+    font-size: 13px;
+    text-align: center;
+    font-weight: 600;
+  }
+  #err:empty {
+    display: none;
+  }
 </style>
 </head>
 <body>
-<form id="f" autocomplete="on">
-  <h1>AIOffice</h1>
-  <p>${esc(tr('Acesse seu escritório com o código temporário gerado no painel local do AIOffice.'))}</p>
+<div class="card">
+  <div class="header">
+    <img src="/assets/brand/logo-mark.png" width="44" height="44" alt="AIOffice" class="brand-logo" onerror="this.style.display='none'">
+    <div class="brand-meta">
+      <div class="brand-title-row">
+        <h1>AIOffice</h1>
+        <span class="tag">${esc(tr('Móvel'))}</span>
+      </div>
+      <span class="brand-sub">${esc(tr('Escritório Virtual'))}</span>
+    </div>
+  </div>
+  <p class="desc">${esc(tr('Acesse seu escritório com o código temporário gerado no painel local do AIOffice.'))}</p>
+  <form id="f" autocomplete="on">
+    <div class="field">
+      <div class="field-label-row">
+        <label for="c">${esc(tr('Código de acesso'))}</label>
+        <button type="button" class="paste-btn" id="p" title="${esc(tr('Colar código copiado'))}">📋 ${esc(tr('Colar código'))}</button>
+      </div>
+      <div class="input-wrap">
+        <input id="c" name="code" type="text" inputmode="text" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" minlength="${LOGIN_CODE_LENGTH}" maxlength="${LOGIN_CODE_LENGTH}" placeholder="••••••" autofocus required>
+      </div>
+    </div>
+    <button id="b" type="submit">${esc(tr('Entrar'))}</button>
+    <div id="err" role="alert"></div>
+  </form>
   <p class="security-note">${esc(tr('Este link usa um endereço temporário do Cloudflare. Se o Chrome marcar o site como perigoso, não prossiga nem informe o código. Trocar a senha por um código não remove um alerta do Safe Browsing.'))}</p>
-  <label for="c">${esc(tr('Código de acesso'))}</label>
-  <input id="c" name="code" type="text" inputmode="text" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" minlength="${LOGIN_CODE_LENGTH}" maxlength="${LOGIN_CODE_LENGTH}" required>
-  <button id="b" type="submit">${esc(tr('Entrar'))}</button>
-  <div id="err" role="alert"></div>
-</form>
+</div>
 <script>
-  const f = document.getElementById('f'), b = document.getElementById('b'), err = document.getElementById('err');
+  const f = document.getElementById('f'), b = document.getElementById('b'), c = document.getElementById('c'), p = document.getElementById('p'), err = document.getElementById('err');
+  function formatCode() {
+    c.value = c.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6);
+    if (c.value.length === 6) {
+      f.requestSubmit();
+    }
+  }
+  c.addEventListener('input', formatCode);
+  if (p && navigator.clipboard && navigator.clipboard.readText) {
+    p.addEventListener('click', async () => {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          c.value = text.trim();
+          formatCode();
+          c.focus();
+        }
+      } catch {}
+    });
+  } else if (p) {
+    p.style.display = 'none';
+  }
   f.addEventListener('submit', async (e) => {
     e.preventDefault();
     b.disabled = true; err.textContent = '';
+    const cleanCode = c.value.replace(/[\\s-]/g, '').toUpperCase();
+    if (cleanCode.length !== 6) {
+      err.textContent = ${js(tr('O código precisa ter 6 caracteres.'))};
+      b.disabled = false;
+      c.focus();
+      return;
+    }
     try {
       const r = await fetch('/api/remote/login', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin', body: JSON.stringify({ code: f.code.value.replace(/[\\s-]/g, '').toUpperCase() }) });
+        credentials: 'same-origin', body: JSON.stringify({ code: cleanCode }) });
       if (r.ok) { location.replace('/'); return; }
       const body = await r.json().catch(() => ({}));
       err.textContent = body.error || ${js(tr('Não deu para entrar.'))};

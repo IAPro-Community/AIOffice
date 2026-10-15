@@ -1,5 +1,14 @@
 # HANDOFF — AIOffice
 
+## Mensagens no desktop instalado e distribuição v2.3.0 — 2026-10-14
+
+- O desktop local resolve a CLI nativa oficial do Codex em Windows, macOS e Linux a partir do `PATH`/prefixo global do NPM; no Windows ignora `codex.cmd`/`.ps1` e executa o binário do pacote oficial. Não é preciso manter `npm run codex:bridge` aberto fora do Docker.
+- Na inicialização do desktop, o plugin Claude Code e a ponte OMP são instalados/atualizados com segurança nos perfis existentes. Sessões já abertas precisam ser recarregadas/reabertas. Os CLIs e logins dos provedores continuam sendo pré-requisitos do fornecedor; AIOffice não empacota tokens ou uma segunda CLI.
+- Nenhuma recarga integral ou novo polling do renderer foi adicionado. Setup OMP roda somente no boot do servidor local e a entrega de mensagens usa as rotas/estado já existentes.
+- A integração inclui o layout responsivo da barra superior/Central de trabalho e o login móvel com botão de colagem e envio automático do código completo; QA visual cobriu 320–1.440 px e o fluxo de colagem foi exercitado com clipboard/fetch simulados.
+- Testes automatizados e `npm run desktop:verify` passaram após as mudanças (22 testes raiz, 1.268 web/10 ignorados, 16 Electron, i18n 2.402/2.402); o instalador Windows foi recompilado: 118.458.657 bytes, SHA-256 A592B3E843E58162631FCCFE75B61DD04023373771A91BB6B6CAB47C5F97FEE2. Os quatro pacotes nativos e a montagem de nove assets já passaram no preflight `38654902095`, ainda anterior a estas alterações.
+- **Próximo passo obrigatório:** concluir novo gate manual após o commit/push em `main`; só então publicar `v2.3.0` por tag e verificar a release/instaladores no GitHub. Apple signing não está configurado; macOS será unsigned e exige orientação do Gatekeeper.
+
 ## Distribuição nativa v2.3.0 — preflight concluído, publicação pendente, 2026-10-14
 
 - A última release antes da publicação é `v2.2.1`, apenas Windows x64. A tag `v2.3.0` ainda não foi criada.

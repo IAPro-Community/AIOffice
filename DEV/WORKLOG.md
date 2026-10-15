@@ -1,5 +1,13 @@
 # WORKLOG — AIOffice
 
+## 2026-10-14 — Mensagens funcionais no desktop instalado
+- **Falha**: a interface orientava manter `npm run codex:bridge` ativo no host quando Habblaud rodava em Docker; no Windows, a CLI Codex também podia ficar invisível atrás dos shims NPM.
+- **Correção**: no desktop/Node local, descobrir o executável nativo do Codex nas instalações globais oficiais do NPM para Windows/macOS/Linux e executar sem shell. Instalar/atualizar no boot somente as pontes próprias do AIOffice para Claude Code e OMP em perfis existentes, preservando extensões de terceiros e criando backup ao atualizar. Melhorar erros e instruções; o auxiliar externo continua necessário só no Docker.
+- **Por quê**: a distribuição instalada deve entregar suas integrações sem scripts npm/PowerShell à parte em execução; login e CLIs dos fornecedores continuam sendo pré-requisitos próprios.
+- **Interface móvel**: melhorias responsivas compatíveis do workspace, login com botão para colar o código e envio automático aos seis caracteres; a página não ganhou reload integral.
+- **Verificação**: `npm run desktop:verify` passou (typechecks, build, 22 testes raiz, 1.268 testes web com 10 ignorados, 16 desktop, i18n 2.402/2.402 e sintaxe); 49 testes focados passaram e 6 foram ignorados; a CLI Codex local respondeu a `--help` e `queue --help`. A entrega real não foi disparada para não enviar mensagem a uma conversa do usuário. Nenhum reload integral/polling novo foi adicionado.
+- **Release**: repetir o preflight completo de quatro plataformas na versão final após commit/push e publicar/verificar `v2.3.0`. macOS segue sem assinatura/notarização Apple.
+
 ## 2026-10-14 — Distribuição nativa macOS/Linux (v2.3.0)
 - **Mudança**: matriz de release adiciona macOS Intel/Apple silicon e Linux x64, manifestos para updater, downloads estáveis no README e assinatura Apple opcional.
 - **Verificação**: `npm run desktop:verify` aprovado localmente; instalador Windows x64 2.3.0 empacotado localmente (118.453.440 bytes, SHA-256 `65622CD3AD4F2B39BD6431BD3B0CD5E05A872009EFEBD59C106C4A3F0269F1E2`, `NotSigned`). CI manual `38653090528`: verificação, Windows e os dois builds macOS passaram. Build Linux produziu os pacotes, mas a checagem expôs os nomes nativos `x86_64.AppImage` e `amd64.deb` em vez dos aliases x64 do README.

@@ -4,6 +4,7 @@
 //   npm start      -> node dist/server/index.js (serve dist/client)
 import http from 'node:http';
 import { execFile } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { promisify } from 'node:util';
 import { join } from 'node:path';
 import { codexDirsRefused, isDefaultDir } from './accounts/detect';
@@ -46,6 +47,7 @@ import { UpdateInstaller } from './updates/installer';
 import { MaestroUpdateManager } from './updates/maestro';
 import { RemoteAccessRuntime } from './remote/runtime';
 import { ensureMessagesPluginInstalled, makeAsyncClaudeRunner, readPackageVersion } from '../scripts/mod-install';
+import { ensureOmpBridgeInstalled } from '../scripts/omp-install';
 import { tr } from '../shared/i18n';
 
 const config = loadConfig();
@@ -154,6 +156,18 @@ if (codex) agents.add(codex);
 const omp = new OmpSource(office, accounts);
 agents.add(omp);
 omp.start();
+// A extensão precisa existir no perfil do OMP que observa as sessões. No desktop e no modo Node local, instalamos
+// automaticamente ao iniciar; containers não conseguem gravar com segurança no perfil OMP do host.
+if (config.messages && !config.inDocker && existsSync(join(config.home, '.omp', 'agent'))) {
+  try {
+    const bridge = ensureOmpBridgeInstalled(config.rootDir, config.home, config.port);
+    if (bridge.state === 'installed') log.info(tr('Extensão do AIOffice instalada no OMP; feche e abra as sessões atuais para carregá-la.'));
+    else if (bridge.state === 'updated') log.info(tr('Extensão do AIOffice atualizada no OMP; feche e abra as sessões atuais para carregar a versão nova.'));
+    else if (bridge.state === 'conflict') log.warn(tr('Não substituí a extensão global {0} porque ela não pertence ao AIOffice.', [bridge.target]));
+  } catch (error) {
+    log.warn(tr('Instalação automática da extensão OMP falhou: {0}.', [errMsg(error)]));
+  }
+}
 // (CodexLive); sem ela (nenhuma pasta do Codex ou HABBLAUD_CODEX=0) a rota responde {ok: false}.
 const codexLive: CodexLive | undefined = codex;
 late.office = office;
@@ -191,10 +205,9 @@ const permissions = config.terminal
     })
   : undefined;
 late.permissions = permissions;
-// Mensagens pelo escritório (plugin habblaud-mensagens): entram na sessão como se você as tivesse digitado, então
-// seguem a mesma trava (e HABBLAUD_MENSAGENS=0 desliga só elas). Ao Codex vão por `codex queue` (messages/codex.ts):
-// fora do Docker o próprio servidor roda o comando (HABBLAUD_CODEX_BIN ou `codex` do PATH); no Docker, o auxiliar do
-// host (npm run codex:bridge).
+// Mensagens pelo escritório: o plugin Claude e a extensão OMP são instalados/verificados pelo desktop no perfil do
+// usuário; ao Codex vai por `codex queue`. O desktop e o Node local encontram a CLI local; no Docker, o auxiliar do
+// host busca a fila. HABBLAUD_MENSAGENS=0 desliga somente o envio pelo escritório.
 const codexBin = config.messages && !config.inDocker ? findCodexBin(process.env) : undefined;
 const messages = config.messages
   ? new MessageRegistry({
@@ -451,7 +464,7 @@ server.listen(config.port, config.host, () => {
         ? tr('   Mensagens ao Codex: pelo codex queue ({0}).', [codexBin])
         : config.inDocker
           ? tr('   Mensagens ao Codex: pelo auxiliar do host (deixe npm run codex:bridge rodando no Mac).')
-          : tr('   Mensagens ao Codex: sem o binário do Codex (codex no PATH ou HABBLAUD_CODEX_BIN); o auxiliar npm run codex:bridge também serve.'),
+          : tr('   Mensagens ao Codex: CLI não encontrada; instale e autentique o Codex CLI (HABBLAUD_CODEX_BIN pode apontar para o executável).'),
     );
   }
   log.info(

@@ -20,6 +20,13 @@ O **AIOffice** é uma plataforma integrada de engenharia de software assistida p
 - **Launcher Windows**: `start-aioffice.bat` faz build e inicia o servidor gerenciado em modo normal; não termina processos Node globais. O desktop Electron reconhece o utilitário da própria instalação ou o launcher `start-managed.mjs`, pede shutdown autenticado quando disponível e nunca mata um processo de outro aplicativo. Se uma instância com handshake recusar por PTYs ativos, ela permanece aberta.
 - **Inicialização Electron**: o evento de mensagem do `UtilityProcess` no main contém diretamente o payload pronto; a mensagem do filho em `process.parentPort` é que contém `.data`. O app só cria a janela depois desse handshake e do health check; nenhuma recarga integral automática foi adicionada.
 
+## 14. Mensagens no desktop instalado — 2026-10-14
+- A barra superior e a Central de trabalho acomodam larguras móveis; o login remoto tem ação para colar o código, normalização alfanumérica e envio no sexto caractere. A checagem visual cobriu 320–1.440 px sem overflow da página.
+- O desktop Electron roda a entrega de mensagens dentro do servidor local supervisionado; não exige manter `npm run codex:bridge` aberto. Esse auxiliar continua reservado ao Habblaud em Docker.
+- Codex usa o binário nativo encontrado em `PATH` ou no prefixo global oficial do NPM (incluindo `%APPDATA%/npm` no Windows) e chama `codex queue` diretamente, sem shim de shell. A CLI do Codex precisa estar instalada e autenticada pelo usuário.
+- Claude Code recebe instalação/verificação automática do plugin de mensagens; OMP recebe atualização automática da extensão AIOffice quando o perfil `.omp/agent` existe. Só pontes do AIOffice são instaladas; arquivos de terceiros não são substituídos.
+- Instalação e autenticação das CLIs externas continuam sob controle do fornecedor/usuário. Perfis/sessões já abertos podem exigir `/reload-plugins` ou reabertura. O renderer mantém SSE/fetch existentes; não há refresh integral novo.
+
 ## 3. Melhorias de produto — 2026-10-13
 - A interface inclui Central de trabalho por projeto, fila de atenção, catálogo por capacidade, filtro por ferramenta e biblioteca de seis modelos de workflow.
 - Os modelos geram texto para revisão e cópia; não enviam prompts nem iniciam agentes. A fila de atenção seleciona o agente; não aprova pedidos.

@@ -189,7 +189,7 @@ describe('rotas', () => {
     // Sessão sem o plugin conectado.
     const noPlugin = await post(srv, '/api/messages', { agentId: MAIN, text: 'oi' });
     expect(noPlugin.status).toBe(409);
-    expect(noPlugin.json).toMatchObject({ error: expect.stringMatching(/habblaud-mensagens/) });
+    expect(noPlugin.json).toMatchObject({ error: expect.stringMatching(/plugin de mensagens instalado pelo AIOffice/) });
     expect((await request(srv.base, '/api/messages')).status).toBe(405);
     expect((await request(srv.base, '/api/mod/inbox')).status).toBe(405);
     expect((await request(srv.base, '/api/messages/x', { method: 'POST', body: {} })).status).toBe(405);

@@ -234,8 +234,9 @@ deixe também `npm run codex:bridge` rodando no Mac (veja [Codex](#codex)).
 
 ### 5. oh-my-pi (OMP) no escritório (opcional)
 
-O Habblaud detecta sessões OMP e mostra atividade, conversa e histórico sem configuração. Para mandar mensagens do
-escritório ao terminal OMP, instale a ponte global:
+O Habblaud detecta sessões OMP e mostra atividade, conversa e histórico sem configuração. No desktop instalado, o
+AIOffice instala ou atualiza a ponte global automaticamente ao iniciar, quando o perfil OMP existe. No modo Node,
+instale manualmente para mandar mensagens do escritório ao terminal OMP:
 
 ```bash
 npm run omp:install
@@ -251,6 +252,8 @@ acesso local e a opção `HABBLAUD_MENSAGENS` do servidor.
 O painel local continua em `http://127.0.0.1:4747`. Instale [`cloudflared`](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) e deixe o executável disponível no `PATH` do AIOffice. No painel, abra **Configurações → Acesso pelo celular**, crie o acesso e use **Iniciar túnel**.
 
 Abra no telefone o link HTTPS ou o QR atual. Gere no painel local um código de seis caracteres e informe-o no telefone em até cinco minutos. O código vale para um único login e não faz parte do link nem do QR. Depois de reiniciar o AIOffice, inicie o túnel novamente e compartilhe o novo link. O túnel nunca inicia automaticamente.
+
+Na tela de login móvel, use **Colar código** ou digite os seis caracteres; letras são convertidas para maiúsculas e o envio começa automaticamente ao completar o código.
 
 As sessões móveis expiram em até 12 horas e podem ser revogadas individualmente em **Dispositivos com acesso**. Parar o túnel ou reiniciar o servidor encerra todas as sessões. O tráfego passa pela infraestrutura Cloudflare. Se o Chrome mostrar um aviso de site perigoso, não prossiga nem informe o código. Os comandos legados `npm run remote:setup` e `npm run remote:off` apenas orientam a usar as Configurações; eles não criam certificados nem configuram LAN/VPN.
 
@@ -513,6 +516,10 @@ e espera o próximo pedido, dar uma instrução nova ou corrigir o rumo, sem pro
 `npm run mod:install` continua disponível para instalar toda a integração Habblaud, incluindo captura de uso e
 respostas a pedidos de permissão.
 
+No desktop instalado, o AIOffice também instala/atualiza automaticamente a extensão global do OMP ao iniciar, quando
+o perfil OMP existe. Feche e abra novamente as sessões que já estavam abertas. As CLIs e contas dos provedores seguem
+instaladas e autenticadas separadamente; o desktop não precisa de um comando `npm run` em segundo plano.
+
 - A caixa mostra a situação: **na fila** (a sessão busca as mensagens a cada 2 segundos), **entregue** ou **não
   entregue**, com o motivo. Com o agente ocupado, a mensagem espera e entra quando ele terminar o turno, como um
   prompt digitado com o agente trabalhando.
@@ -558,9 +565,10 @@ chip da conta do Codex é vazado e leva o selo **CODEX**.
   **depois** que o escritório responde ou o prazo acaba — nesse meio-tempo o terminal mostra "Aguardando resposta no
   Habblaud…". Não há "sempre permitir" nem "interromper", e o Codex não deixa responder as perguntas dele por fora.
 - **Mandar mensagens:** a caixa **Mandar mensagem** funciona para o Codex também, pelo `codex queue`: a mensagem entra
-  na fila da sessão e o Codex a pega quando termina o que está fazendo (até uns 10 segundos depois). No modo Node o
-  próprio Habblaud roda o comando; **no Docker**, deixe `npm run codex:bridge` rodando no Mac (o container não
-  enxerga o seu Codex).
+  na fila da sessão e o Codex a pega quando termina o que está fazendo (até uns 10 segundos depois). O desktop
+  instalado e o modo Node rodam a CLI local, inclusive o binário nativo da instalação global do NPM no Windows; a CLI
+  precisa estar instalada e autenticada. **Só no Docker**, deixe `npm run codex:bridge` rodando no host (o container
+  não enxerga o seu Codex).
 - **Uso de 5 horas e semanal:** vem dos próprios arquivos do Codex e só se renova enquanto alguma sessão roda; o cartão
   mostra a idade dos números e "sem cota" quando o workspace ficou sem créditos.
 - **Quando a sessão entra:** com a primeira mensagem (é quando o Codex grava a pasta do projeto); uma CLI aberta e

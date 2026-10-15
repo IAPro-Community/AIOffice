@@ -126,7 +126,7 @@ describe('MessageRegistry: mandar', () => {
   it('agente desconhecido (not-found), sem o plugin conectado ou que saiu (unavailable, com o motivo)', () => {
     const { office, registry } = setup();
     expect(registry.send({ agentId: 'nao-existe', text: 'oi' })).toEqual({ error: 'not-found' });
-    expect(registry.send({ agentId: MAIN, text: 'oi' })).toEqual({ error: 'unavailable', reason: expect.stringMatching(/habblaud-mensagens/) });
+    expect(registry.send({ agentId: MAIN, text: 'oi' })).toEqual({ error: 'unavailable', reason: expect.stringMatching(/plugin de mensagens instalado pelo AIOffice/) });
     registry.inbox({ session: SESSION });
     office.closeMain(MAIN);
     expect(registry.send({ agentId: MAIN, text: 'oi' })).toEqual({ error: 'unavailable', reason: expect.stringMatching(/saiu/) });

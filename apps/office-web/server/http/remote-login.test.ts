@@ -7,6 +7,7 @@ describe('login remoto por Cloudflare', () => {
 
     expect(html).toContain('name="code" type="text" inputmode="text" autocomplete="one-time-code"');
     expect(html).toContain('minlength="6" maxlength="6"');
+    expect(html).toMatch(/<div class="field-label-row">\s*<label for="c">[\s\S]*?<\/label>\s*<button type="button" class="paste-btn"/);
     expect(html).toContain('Acesse seu escritório com o código temporário gerado no painel local do AIOffice.');
     expect(html).toContain('Este link usa um endereço temporário do Cloudflare.');
     expect(html).toContain('não prossiga nem informe o código.');

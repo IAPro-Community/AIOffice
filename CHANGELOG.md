@@ -12,11 +12,15 @@ Nenhuma mudança registrada.
 - Workflow de release com verificação comum e builds em runners nativos. A publicação só acontece após todos os sistemas e a validação do conjunto completo de arquivos.
 - Manifestos `latest-mac.yml` e `latest-linux.yml` com hashes SHA-512 e tamanhos para as atualizações nativas.
 - Downloads por sistema no README, com links estáveis para a última release publicada e instruções específicas de instalação.
+- Integrações de mensagens prontas no desktop instalado: instalação/verificação automática do plugin Claude Code e da extensão OMP, além da descoberta da CLI nativa do Codex para `codex queue`.
 
 ### Alterado
 - A publicação de uma nova versão usa aliases estáveis separados por plataforma e arquitetura; o README aponta sempre para os assets da última release.
+- A barra superior e a Central de trabalho se adaptam a telas estreitas sem criar rolagem horizontal na página; a faixa de indicadores mantém sua própria rolagem.
+- O login móvel aceita colar o código de acesso, normaliza letras para maiúsculas e envia automaticamente quando os seis caracteres forem preenchidos.
 - A compilação macOS pode ser assinada e notarizada quando os segredos Apple estiverem configurados. Sem eles, os pacotes são unsigned, podem exigir autorização manual do Gatekeeper e não habilitam atualização automática no macOS.
 - AppImage Linux recebe manifesto para atualização em background; `.deb` permanece sob gestão do sistema de pacotes. A verificação de atualização do desktop não recarrega a página.
+- As CLIs dos provedores continuam independentes: precisam estar instaladas e autenticadas. Não é necessário rodar scripts `npm` no desktop instalado; sessões já abertas podem precisar ser recarregadas ou reabertas. Docker continua usando o auxiliar Codex no host.
 
 ## [v2.2.1] - 2026-10-14
 

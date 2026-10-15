@@ -2,8 +2,8 @@
 // pelo HABBLAUD_CODEX_BIN ou PATH, e o registro com o entregador do Codex — modo Node (o servidor roda o comando, uma
 // mensagem por vez por agente) e o auxiliar do host (rodada/confirmação), canMessage, prazos e a separação da caixa de
 // entrada do plugin do Claude Code. Relógio injetado; dados sintéticos.
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { delimiter, join } from 'node:path';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { delimiter, dirname, join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { AgentInfo, OutboxMessage } from '../../shared/types';
 import { setQuiet } from '../log';
@@ -83,7 +83,57 @@ describe('codex queue (binário falso)', () => {
     expect(findCodexBin({ PATH: '/nao/existe' })).toBeUndefined();
   });
 
-  it.runIf(process.platform === 'win32')('findCodexBin no Windows: só o codex.exe; os scripts que o npm põe no PATH não rodam sem shell', () => {
+  it('findCodexBin resolve o binário nativo pelo pacote npm do Codex sem executar wrappers de shell', () => {
+    const prefix = join(tmp.dir, 'npm');
+    const codexRoot = join(prefix, 'node_modules', '@openai', 'codex');
+    const platformRoot = join(codexRoot, 'node_modules', '@openai', 'codex-win32-x64');
+    const native = join(platformRoot, 'vendor', 'x86_64-pc-windows-msvc', 'bin', 'codex.exe');
+    mkdirSync(join(codexRoot, 'bin'), { recursive: true });
+    mkdirSync(dirname(native), { recursive: true });
+    writeFileSync(join(codexRoot, 'package.json'), JSON.stringify({ name: '@openai/codex' }));
+    writeFileSync(join(codexRoot, 'bin', 'codex.js'), '');
+    writeFileSync(join(platformRoot, 'package.json'), JSON.stringify({ name: '@openai/codex-win32-x64' }));
+    writeFileSync(native, 'native');
+    writeFileSync(join(prefix, 'codex.cmd'), 'wrapper');
+    writeFileSync(join(prefix, 'codex.ps1'), 'wrapper');
+    expect(findCodexBin({ PATH: prefix }, (path) => existsSync(path) && path.endsWith('.exe'), 'win32', 'x64')).toBe(native);
+  });
+
+  it.each([
+    ['darwin', 'x64', '@openai/codex-darwin-x64', 'x86_64-apple-darwin'],
+    ['darwin', 'arm64', '@openai/codex-darwin-arm64', 'aarch64-apple-darwin'],
+    ['linux', 'x64', '@openai/codex-linux-x64', 'x86_64-unknown-linux-musl'],
+    ['linux', 'arm64', '@openai/codex-linux-arm64', 'aarch64-unknown-linux-musl'],
+  ] as const)('findCodexBin localiza o pacote nativo Codex em %s/%s', (platform, arch, packageName, triple) => {
+    const prefix = join(tmp.dir, 'npm');
+    const codexRoot = join(prefix, 'node_modules', '@openai', 'codex');
+    const platformRoot = join(codexRoot, 'node_modules', packageName);
+    const native = join(platformRoot, 'vendor', triple, 'bin', 'codex');
+    mkdirSync(join(codexRoot, 'bin'), { recursive: true });
+    mkdirSync(dirname(native), { recursive: true });
+    writeFileSync(join(codexRoot, 'package.json'), JSON.stringify({ name: '@openai/codex' }));
+    writeFileSync(join(codexRoot, 'bin', 'codex.js'), '');
+    writeFileSync(join(platformRoot, 'package.json'), JSON.stringify({ name: packageName }));
+    writeFileSync(native, 'native');
+    expect(findCodexBin({ PATH: prefix }, existsSync, platform, arch)).toBe(native);
+  });
+
+  it('findCodexBin procura o prefixo global do NPM no APPDATA, mesmo sem PATH', () => {
+    const appData = join(tmp.dir, 'roaming');
+    const prefix = join(appData, 'npm');
+    const codexRoot = join(prefix, 'node_modules', '@openai', 'codex');
+    const platformRoot = join(codexRoot, 'node_modules', '@openai', 'codex-win32-x64');
+    const native = join(platformRoot, 'vendor', 'x86_64-pc-windows-msvc', 'bin', 'codex.exe');
+    mkdirSync(join(codexRoot, 'bin'), { recursive: true });
+    mkdirSync(dirname(native), { recursive: true });
+    writeFileSync(join(codexRoot, 'package.json'), JSON.stringify({ name: '@openai/codex' }));
+    writeFileSync(join(codexRoot, 'bin', 'codex.js'), '');
+    writeFileSync(join(platformRoot, 'package.json'), JSON.stringify({ name: '@openai/codex-win32-x64' }));
+    writeFileSync(native, 'native');
+    expect(findCodexBin({ APPDATA: appData, PATH: '' }, existsSync, 'win32', 'x64')).toBe(native);
+  });
+
+  it.runIf(process.platform === 'win32')('findCodexBin no Windows: aceita o nativo no PATH e ignora wrappers sem pacote npm', () => {
     const npm = join(tmp.dir, 'npm');
     mkdirSync(npm);
     for (const f of ['codex', 'codex.cmd', 'codex.ps1']) writeFileSync(join(npm, f), '');

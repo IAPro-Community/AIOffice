@@ -521,6 +521,10 @@ du [terminal](#terminal) devient une zone de saisie. Écrivez et appuyez sur `En
 texte entre dans la session **comme si vous l'aviez tapé dans son terminal**. Vous pouvez répondre quand l'agent finit
 son tour et attend la demande suivante, donner une nouvelle instruction ou corriger le cap, sans chercher la bonne fenêtre.
 
+L'application installée installe ou met également à jour l'extension globale OMP au démarrage si un profil OMP existe.
+Fermez puis rouvrez les sessions déjà ouvertes. Les CLI et les comptes de chaque fournisseur restent des installations
+séparées à authentifier ; aucune commande `npm run` ne doit rester ouverte pour envoyer des messages depuis l'application.
+
 - La zone indique l'état : **en file** (la session récupère les messages toutes les 2 secondes), **remis** ou **non
   remis**, avec la raison. Si l'agent est occupé, le message attend et entre quand il finit son tour, comme un
   prompt tapé pendant que l'agent travaille.
@@ -569,8 +573,9 @@ seulement : Codex n'indique pas le coût). La pastille du compte Codex est évid
   depuis l'extérieur.
 - **Envoyer des messages :** la zone **Envoyer un message** fonctionne aussi pour Codex, via `codex queue` : le message
   entre dans la file de la session et Codex le prend quand il a fini ce qu'il est en train de faire (jusqu'à une dizaine
-  de secondes plus tard). En mode Node, Habblaud lance lui-même la commande ; **dans Docker**, laissez tourner
-  `npm run codex:bridge` sur le Mac (le conteneur ne voit pas votre Codex).
+  de secondes plus tard). L'application installée et le mode Node lancent la CLI locale, y compris le binaire natif
+  d'une installation NPM globale sous Windows ; Codex CLI doit tout de même être installé et authentifié. **Uniquement
+  dans Docker**, laissez tourner `npm run codex:bridge` sur l'hôte (le conteneur ne voit pas votre Codex).
 - **Utilisation sur 5 heures et sur la semaine :** elle provient des fichiers de Codex eux-mêmes et ne se met à jour que
   pendant qu'une session tourne ; la carte affiche l'âge des chiffres et « sans quota » quand l'espace de travail n'a
   plus de crédits.
