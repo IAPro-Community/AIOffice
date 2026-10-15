@@ -1,6 +1,6 @@
 # WORKLOG — AIOffice
 
-## 2026-10-15 — Correção do smoke e preparação da release v2.4.2
+## 2026-10-15 — Correção do smoke e do draft da release v2.4.3
 - **Escopo**: consolidar os deltas locais posteriores à v2.3.0 em um clone de publicação limpo, preservando o checkout original com merge aberto.
 - **Desktop instalado**: oferecer instalar/atualizar CLIs oficiais Codex, Claude Code e OMP em pasta privada do AIOffice; progresso/cancelamento pela UI; autenticação em terminal oficial e reinício somente após confirmação.
 - **Antigravity**: registrar sessões App/IDE/CLI, ler histórico com validação de caminhos e entregar mensagem na próxima invocação via hook local validado, sem sobrepor decisões nativas de permissão.
@@ -8,9 +8,11 @@
 - **Diagnóstico e UX**: bootstrap Electron captura erros anteriores à inicialização do `main.mjs`; estado de atualizações é comunicado em background, sem refresh integral automático. O smoke agora isola perfil/log e configura sandbox e GPU por runner.
 - **Falha v2.4.0**: Actions falhou no typecheck por caracteres literais no fim de cinco fontes; nenhuma release foi criada. A tag permanece intacta.
 - **Falha v2.4.1**: source verification e builds dos quatro targets passaram, mas os smokes Windows/macOS/Linux falharam por restrições do runner e caminho do log; a release foi cancelada antes da montagem dos assets. Não mover nem reutilizar essa tag.
-- **Verificação atual**: `npm run desktop:verify` passou (22 testes raiz, 1.279 web/10 ignorados, 31 desktop, i18n 2.430/2.430 em en/es/fr, typechecks, build e sintaxe); smoke local Windows v2.4.2 passou com perfil temporário; `git diff --check` e `npm run release -- --dry-run` passaram.
-- **Artefato local v2.4.2**: NSIS x64 produzido e smokeado em `dist/installers-v2.4.2-final/AIOffice-Setup.exe`; 122.398.578 bytes, SHA-256 `0541B07D513342B70F1BB843D683AC1809AFF0D0C4F213F66D5B774D04AEACB0`, ProductVersion/FileVersion `2.4.2`, Authenticode `NotSigned`. Ícone extraído do setup corresponde em 32×32 à arte atual; NSIS usa explicitamente `icon.ico`.
-- **Próximo passo**: enviar o commit/tag `v2.4.2`; conferir os quatro smokes e a publicação dos nove assets nos runners do GitHub Actions.
+- **Falha v2.4.2**: origem, quatro builds e quatro smokes passaram. O job final enviou os nove arquivos para um draft; `GET /releases/tags/{tag}` respondeu 404 porque a API não expõe drafts nesse endpoint. A release permaneceu oculta e não foi publicada.
+- **Correção v2.4.3**: o workflow seleciona o draft pela lista autenticada de releases, confirma que continua draft e compara nomes, tamanhos e SHA-256 antes de publicar.
+- **Verificação de código**: `npm run desktop:verify` passou (22 testes raiz, 1.279 web/10 ignorados, 31 desktop, i18n 2.430/2.430 em en/es/fr, typechecks, build e sintaxe); smoke local Windows v2.4.2 passou com perfil temporário; `git diff --check` e `npm run release -- --dry-run` passaram.
+- **Artefato local v2.4.3**: NSIS x64 em `dist/installers-v2.4.3-final-retry/AIOffice-Setup.exe`; 122.398.662 bytes, SHA-256 `52458E3A2066A7C03F3872A168AE6799C4778E352A6D0C5D9213B572FD1693BB`, ProductVersion/FileVersion `2.4.3`, Authenticode `NotSigned`. Smoke local passou; ícone extraído corresponde em 32×32 à arte atual; NSIS usa explicitamente `icon.ico`.
+- **Próximo passo**: enviar o workflow corrigido e taguear v2.4.3; acompanhar a publicação dos nove assets.
 
 ## 2026-10-14 — Publicação v2.3.0 concluída
 - **Mudança**: release estável publicada no GitHub a partir de `762a500bbde264f241dabd16c2e40b107ec4c7f8`, com os nove assets Windows, macOS Intel/Apple silicon, Linux x64 e manifestos de atualização.

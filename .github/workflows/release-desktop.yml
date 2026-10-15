@@ -313,7 +313,13 @@ jobs:
             exit 1
           fi
 
-          release_json=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$GITHUB_REF_NAME")
+          # Draft releases are omitted from GitHub's release-by-tag endpoint. List the
+          # releases and select the tag so the draft created above remains verifiable.
+          release_json=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" | jq -c --arg tag "$GITHUB_REF_NAME" '[.[] | select(.tag_name == $tag)][0] // empty')
+          if [[ -z "$release_json" ]]; then
+            echo "Could not find the draft release $GITHUB_REF_NAME in the release list." >&2
+            exit 1
+          fi
           if [[ "$(jq -r '.draft' <<<"$release_json")" != true ]]; then
             echo 'Release stopped being a draft before asset verification.' >&2
             exit 1

@@ -1,6 +1,6 @@
 # VERIFY — AIOffice
 
-## Candidata v2.4.2 — 2026-10-15
+## Candidata v2.4.3 — 2026-10-15
 
 | Verificação | Resultado |
 |---|---|
@@ -9,12 +9,14 @@
 | Antigravity | 9 testes focados, `node --check` do hook e runner Windows em modo Node aprovados; `desktop:verify` também valida a sintaxe do hook. |
 | Correção local do smoke Windows | `node --check scripts/desktop-smoke.mjs` e `node scripts/desktop-smoke.mjs windows` passaram após permitir bootstrap Maestro somente no perfil de smoke. |
 | `npm run desktop:verify` | Aprovado: typechecks, build, 22 testes raiz, 1.279 testes web (10 ignorados), 31 testes desktop, i18n 2.430/2.430 em en/es/fr e verificações de sintaxe. |
-| `AIOffice-Setup.exe` local v2.4.2 | 122.398.578 bytes; SHA-256 `0541B07D513342B70F1BB843D683AC1809AFF0D0C4F213F66D5B774D04AEACB0`; ProductVersion/FileVersion `2.4.2`; Authenticode `NotSigned`. |
-| Smoke local Windows v2.4.2 | `node scripts/desktop-smoke.mjs windows` passou: serviços locais, janela e hook Antigravity iniciados com perfil temporário. |
+| `AIOffice-Setup.exe` local v2.4.3 | 122.398.662 bytes; SHA-256 `52458E3A2066A7C03F3872A168AE6799C4778E352A6D0C5D9213B572FD1693BB`; ProductVersion/FileVersion `2.4.3`; Authenticode `NotSigned`. |
+| Smoke local Windows v2.4.3 | `node scripts/desktop-smoke.mjs windows` passou: serviços locais, janela e hook Antigravity iniciados com perfil temporário. |
 | Ícone do setup Windows | Ícone associado extraído de `AIOffice-Setup.exe` em 32×32 corresponde visualmente à arte de `icon-512.png`; configuração NSIS define `icon.ico` para setup e desinstalador, e `win.icon` define o ícone do app. |
 | QA visual dos CLIs | App instalado exibiu AIOffice v2.4.0 e três cartões (Codex CLI, Claude Code, OMP), com status e ações dentro da coluna rolável; API de CLI do preload presente. Os controles permanecem iguais na v2.4.1, que atualiza a arte dos ícones. |
 | Workflow tag v2.4.1 (`38673127713`) | Verificação de origem e builds Windows, macOS Intel/Apple silicon e Linux passaram; os quatro smokes falharam por configuração da validação. Nenhum asset/release foi publicado. |
-| Workflow v2.4.2 | Correções e verificações locais prontas; ainda não disparado. Publicação depende do commit/tag e da aprovação de todos os runners nativos. |
+| Workflow tag v2.4.2 (`38675243193`) | Origem, quatro builds e quatro smokes passaram. Montagem produziu os nove assets no draft; verificação final falhou porque `GET /releases/tags/{tag}` retorna 404 para drafts. Nada foi publicado. |
+| Correção v2.4.3 do lookup | Workflow usa a lista de releases autenticada (`releases?per_page=100`) e filtra o draft pelo `tag_name`; a lista foi confirmada localmente com o draft e seus nove assets. |
+| Workflow v2.4.3 | YAML parse passou; aguardando commit/tag e validação final dos runners nativos, incluindo o lookup do draft corrigido. |
 | Refresh da página | Nenhum reload automático periódico novo encontrado. Atualização do desktop chega por IPC; atualizações do servidor oferecem botão manual e trocar idioma recarrega apenas após ação explícita. |
 
 ## Publicação da release v2.3.0 — 2026-10-14
