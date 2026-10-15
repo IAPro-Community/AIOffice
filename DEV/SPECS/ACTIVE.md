@@ -2,7 +2,7 @@
 
 ## 1. Identificação do Projeto
 - **Nome**: AIOffice
-- **Status**: release estável `v2.4.3` publicada com os deltas desde `v2.3.0`; refresh Windows/Linux concluído no run `38772157012`, sem tag nova e sem assets macOS. A tag continua no commit `8393eaeb88c9fa658231499695e407ac4d575bb2`. O Gatekeeper rejeitou os builds macOS originais, publicados sem Developer ID; commit `944b831` exige as cinco credenciais Apple e valida assinatura, Gatekeeper e notarização antes de aceitar futuros pacotes. O mesmo-tag refresh atualiza downloads, não aciona o atualizador interno. Novas mudanças de produto exigem versão/tag superior. Não orientar a contornar o Gatekeeper.
+- **Status**: release estável `v2.4.3` continua sendo a publicada; candidata `v2.4.4` adiciona a extensão Chrome, Native Messaging host e tutorial. Esta atualização ainda está em validação e não deve ser tratada como publicada até o workflow de release confirmar os cinco assets. A tag `v2.4.3` permanece no commit `8393eaeb88c9fa658231499695e407ac4d575bb2`. Pacotes macOS unsigned foram rejeitados pelo Gatekeeper; não orientar a contorná-lo. Releases futuras só reativam macOS com assinatura/notarização Apple verificadas.
 - **Localização**: Repositório AIOffice
 
 ## 2. Pilares de Integração
@@ -11,6 +11,12 @@
 3. **Superfície Visual**: Habblaud (Web Pixel-Art Office)
 4. **Harness de Ferramentas**: oh-my-pi / Pi (Runtime e Subagentes)
 5. **Metodologia de Engenharia**: replica-skill (11 Skills Especializadas)
+
+## Candidata v2.4.4 — extensão Chrome
+- A extensão Manifest V3 é instalada separadamente do AIOffice Desktop e, nesta versão, distribuída como ZIP para carregar no Chrome em modo desenvolvedor.
+- O instalador Windows registra no HKCU o host `com.iapro.aioffice`, que conecta ao serviço existente ou inicia o Desktop em segundo plano. A extensão comunica ações tipadas; não oferece shell arbitrário.
+- Feed por projeto, filtros de projeto/tipo, avatares do AIOffice, terminal da sessão e envio de instruções à fila local. Notificações de todos os tipos vêm habilitadas inicialmente e podem ser configuradas individualmente.
+- Critérios de release: `npm run desktop:verify`, empacotamento ZIP validado, smoke do app Windows/Linux e verificação remota de exatamente cinco assets/digests antes de publicar. Estado/evidência final em `DEV/HANDOFF.md` e `DEV/VERIFY.md`.
 
 ## 3. Arquitetura do Workspace
 ```

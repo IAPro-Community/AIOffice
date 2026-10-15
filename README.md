@@ -21,7 +21,7 @@
 
 ![Visão da sala virtual do AIOffice com projetos e agentes de demonstração](apps/office-web/docs/screenshots/readme-office.png)
 
-> Todas as capturas deste README foram feitas com o simulador local do aplicativo. Projetos, agentes, tarefas e contas são fictícios.
+> As telas do aplicativo foram capturadas no simulador local. A prévia da extensão é ilustrativa. Projetos, agentes e atividades mostrados aqui são fictícios.
 
 ## Downloads
 
@@ -30,14 +30,25 @@ Estes links sempre apontam para a **última release publicada**. Uma mudança no
 | Sistema | Pacote | Download |
 |---|---|---|
 | Windows x64 | Instalador `.exe` | [Baixar AIOffice-Setup.exe](https://github.com/IAPro-Community/AIOffice/releases/latest/download/AIOffice-Setup.exe) |
+| Windows x64 | Extensão do Chrome `.zip` (modo desenvolvedor) | [Baixar AIOffice-Chrome-Extension.zip](https://github.com/IAPro-Community/AIOffice/releases/latest/download/AIOffice-Chrome-Extension.zip) |
 | macOS Apple silicon (M1/M2/M3/M4) | Temporariamente indisponível; build assinado pendente | — |
 | macOS Intel | Temporariamente indisponível; build assinado pendente | — |
 | Linux x64 | AppImage portátil | [Baixar AIOffice-Setup-Linux-x64.AppImage](https://github.com/IAPro-Community/AIOffice/releases/latest/download/AIOffice-Setup-Linux-x64.AppImage) |
 | Linux x64 | Pacote Debian/Ubuntu `.deb` | [Baixar AIOffice-Setup-Linux-x64.deb](https://github.com/IAPro-Community/AIOffice/releases/latest/download/AIOffice-Setup-Linux-x64.deb) |
 
-Os arquivos macOS da release `v2.4.3` foram publicados sem assinatura Developer ID nem notarização e foram removidos temporariamente. Eles podem ser rejeitados pelo Gatekeeper como danificados ou modificados; **não tente contornar esse bloqueio**. O download macOS só volta depois que uma compilação assinada e notarizada passar pela validação de assinatura, Gatekeeper e ticket da Apple. O atualizador automático do macOS só é habilitado em builds assinadas e notarizadas. No Linux, a atualização em segundo plano é compatível com o AppImage; o `.deb` é atualizado pelo gerenciador de pacotes. No Windows, o app consulta releases em background, sem recarregar a página, e valida o instalador pelo SHA-256 publicado pelo GitHub antes de pedir confirmação para instalá-lo. Reenviar instaladores à mesma tag mantém o número da versão e não aciona o atualizador interno; ele só oferece uma versão superior. O instalador Windows ainda pode exibir SmartScreen enquanto não houver certificado Authenticode.
+Os pacotes macOS continuam temporariamente indisponíveis até que uma compilação assinada com Developer ID e notarizada passe pela validação de assinatura, Gatekeeper e ticket da Apple. O atualizador automático do macOS só é habilitado em builds assinadas e notarizadas. No Linux, a atualização em segundo plano é compatível com o AppImage; o `.deb` é atualizado pelo gerenciador de pacotes. No Windows, o app consulta releases em background, sem recarregar a página, e valida o instalador pelo SHA-256 publicado pelo GitHub antes de pedir confirmação para instalá-lo. Reenviar instaladores à mesma tag mantém o número da versão e não aciona o atualizador interno; ele só oferece uma versão superior. O instalador Windows ainda pode exibir SmartScreen enquanto não houver certificado Authenticode.
 
 O desktop inclui o runtime Node e inicia o servidor e a interface local. Em **Sobre → Ferramentas de IA**, você pode instalar ou atualizar Codex, Claude Code e OMP dentro do perfil privado do AIOffice; isso não muda o `PATH` global. A autenticação abre o CLI oficial em um terminal interativo, e você entra na conta diretamente com o fornecedor. O AIOffice não recebe nem armazena essas credenciais. Uma confirmação permite reiniciar o aplicativo para ativar um CLI recém-instalado. Ao abrir o desktop, o AIOffice instala ou atualiza automaticamente suas pontes de mensagens do Claude Code e OMP; Codex usa a CLI instalada ou uma cópia oficial já encontrada. Não é preciso manter comandos `npm run` abertos no desktop. Sessões Claude/OMP já abertas podem precisar ser recarregadas ou reabertas. No Docker, o envio ao Codex ainda exige o auxiliar executado no host.
+
+## Extensão do Chrome
+
+A extensão coloca a atividade do AIOffice no painel lateral do Chrome no Windows. Ela agrupa eventos por projeto, filtra por projeto e tipo, mostra os personagens pixel art e permite abrir a sessão do agente ou enviar uma instrução para a fila local do AIOffice.
+
+![Prévia ilustrativa do painel lateral do AIOffice com agentes e atividades fictícias](apps/office-chrome-extension/docs/readme-preview.svg)
+
+Para instalar, primeiro instale o AIOffice Desktop: o instalador registra o conector Native Messaging usado pela extensão. Depois baixe e extraia o ZIP, abra `chrome://extensions`, ative **Modo do desenvolvedor** e escolha **Carregar sem compactação** na pasta extraída que contém `manifest.json`. Fixe o AIOffice na barra para abrir o painel. O tutorial também fica em **Configurações → Extensão para Chrome** e no [guia da extensão](apps/office-chrome-extension/README.md).
+
+Se o AIOffice já estiver aberto, a extensão reutiliza o serviço. Se estiver fechado, pode iniciá-lo em segundo plano; o ícone na bandeja do Windows permite voltar ao aplicativo. As notificações chegam enquanto o Chrome está aberto, e cada tipo de atividade pode ser configurado. A extensão requer o AIOffice Desktop no Windows e não é distribuída pela Chrome Web Store.
 
 ## O que você encontra no AIOffice
 
@@ -103,7 +114,7 @@ npm run desktop:package:linux
 npm run desktop:verify
 ```
 
-Cada instalador deve ser criado no sistema operacional correspondente. O workflow de release testa Windows x64, macOS Intel, macOS Apple silicon e Linux x64 em runners nativos; o fluxo temporário de atualização da release atual cobre somente Windows/Linux e nunca cria nem move tag. A publicação normal valida arquivos e manifestos antes de publicar. Authenticode é opcional; assinatura/notarização Apple é obrigatória para reativar os downloads macOS. Consulte [DEV/DESKTOP.md](DEV/DESKTOP.md) para detalhes, requisitos e limites atuais.
+Cada instalador deve ser criado no sistema operacional correspondente. O workflow atual verifica e empacota Windows x64 e Linux x64; os builds macOS não são agendados até que a assinatura e a notarização Apple possam ser validadas. A publicação mantém a release em rascunho até conferir nomes, tamanhos e SHA-256 dos cinco assets, incluindo o ZIP da extensão. Authenticode é opcional. Consulte [DEV/DESKTOP.md](DEV/DESKTOP.md) para detalhes, requisitos e limites atuais.
 
 ## Integrações
 

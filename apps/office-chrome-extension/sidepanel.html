@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <title>AIOffice</title>
+    <link rel="stylesheet" href="sidepanel.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div class="brand-lockup">
+          <div class="brand-mark" aria-hidden="true"><img src="data:image/png;base64,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" alt=""></div>
+          <div>
+            <p class="eyebrow">SEU ESCRITÓRIO DE AGENTES</p>
+            <h1>AIOffice</h1>
+          </div>
+        </div>
+        <span class="connection-pill" id="connection-pill" data-state="starting">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="connection-label">Conectando</span>
+        </span>
+      </header>
+
+      <section class="connection-card" aria-live="polite">
+        <div class="connection-copy">
+          <h2 id="connection-title">Preparando sua conexão</h2>
+          <p id="connection-message">Iniciando o AIOffice…</p>
+        </div>
+        <div class="progress-track" id="progress-track" aria-hidden="true"><span></span></div>
+        <p class="startup-note" id="startup-note">A primeira inicialização pode levar até seis minutos enquanto o AIOffice prepara seus componentes.</p>
+        <div class="connection-actions">
+          <button class="button button-primary" id="connect-button" type="button">Conectar / iniciar</button>
+          <button class="button button-secondary" id="open-button" type="button" disabled>Abrir AIOffice</button>
+        </div>
+      </section>
+
+      <details class="roster-section roster-disclosure" id="roster-disclosure">
+        <summary class="section-heading roster-summary">
+          <div>
+            <p class="eyebrow">VISÃO DO ESCRITÓRIO</p>
+            <h2 id="roster-title">Escritório</h2>
+          </div>
+          <span class="roster-summary-meta">
+            <span class="feed-count" id="roster-count">0 agentes · 0 salas</span>
+            <span class="chevron" aria-hidden="true">⌄</span>
+          </span>
+        </summary>
+        <div class="roster-empty" id="roster-empty">Aguardando a leitura do escritório local.</div>
+        <ul class="room-list" id="room-list" aria-label="Agentes por sala"></ul>
+      </details>
+
+      <section class="onboarding-card" id="onboarding-card" hidden>
+        <div class="onboarding-icon" aria-hidden="true">↗</div>
+        <div class="onboarding-copy">
+          <h2>Instale o AIOffice Desktop</h2>
+          <p>A extensão precisa do aplicativo desktop para iniciar o serviço quando ele estiver parado. Instale-o uma vez e volte aqui para conectar.</p>
+          <a class="text-link" href="https://github.com/IAPro-Community/AIOffice/releases" target="_blank" rel="noreferrer">Baixar nas releases oficiais <span aria-hidden="true">↗</span></a>
+        </div>
+      </section>
+
+      <section class="feed-section">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">AO VIVO</p>
+            <h2>Atividade dos agentes</h2>
+          </div>
+          <span class="feed-count" id="feed-count">0 eventos</span>
+        </div>
+        <div class="feed-filters">
+          <label class="filter-control">
+            <span>Projeto</span>
+            <select id="project-filter" aria-label="Filtrar atividades por projeto">
+              <option value="all">Todos os projetos</option>
+            </select>
+          </label>
+          <label class="filter-control">
+            <span>Atividade</span>
+            <select id="activity-filter" aria-label="Filtrar atividades por tipo">
+              <option value="all">Todos os tipos</option>
+            </select>
+          </label>
+        </div>
+        <div class="gap-banner" id="gap-banner" role="status" hidden>
+          <span id="gap-message"></span>
+          <button class="gap-clear" id="clear-gap" type="button" aria-label="Dispensar aviso de lacuna">Dispensar</button>
+        </div>
+        <div class="empty-state" id="empty-state">
+          <span class="empty-glyph" aria-hidden="true">⌁</span>
+          <h3>Seu feed começa aqui</h3>
+          <p>Quando os agentes trabalharem, as atividades aparecerão neste painel.</p>
+        </div>
+        <div class="feed-groups" id="feed-list" aria-label="Atividades recentes"></div>
+      </section>
+
+      <details class="settings-card" id="settings-card">
+        <summary>
+          <span>
+            <span class="eyebrow">PREFERÊNCIAS</span>
+            <strong>Notificações e privacidade</strong>
+          </span>
+          <span class="chevron" aria-hidden="true">⌄</span>
+        </summary>
+        <div class="settings-content">
+          <label class="setting-row">
+            <span><strong>Conectar ao abrir o Chrome</strong><small>Retoma os alertas e reconecta se o serviço já estiver ativo.</small></span>
+            <input id="connect-on-startup" type="checkbox" checked>
+          </label>
+          <label class="setting-row setting-row-featured">
+            <span><strong>Detalhes nas notificações</strong><small>Inclui o resumo completo e comandos nas notificações. O feed sempre mostra o resumo e os detalhes da ação.</small></span>
+            <input id="include-details" type="checkbox">
+          </label>
+          <label class="setting-row">
+            <span><strong>Avisos do escritório</strong><small>Chegadas, mudanças de sala e outros avisos.</small></span>
+            <input id="notices-enabled" type="checkbox" checked>
+          </label>
+          <div class="category-heading">
+            <strong>Tipos de atividade</strong>
+            <button class="text-button" id="toggle-all" type="button">Desativar todos</button>
+          </div>
+          <div class="category-list" id="category-list"></div>
+          <p class="privacy-note">As preferências e os IDs usados para evitar duplicatas ficam neste navegador. As notificações são locais.</p>
+        </div>
+      </details>
+
+      <footer class="footer-bar">
+        <span id="version-label">AIOffice Desktop</span>
+        <button class="stop-button" id="stop-button" type="button" hidden disabled>Encerrar serviço</button>
+      </footer>
+      <p class="action-feedback" id="action-feedback" role="status" aria-live="polite"></p>
+    </main>
+    <dialog class="agent-dialog" id="agent-dialog" aria-labelledby="agent-dialog-title">
+      <header class="agent-dialog-header">
+        <img class="agent-dialog-avatar" id="dialog-avatar" alt="" aria-hidden="true">
+        <div class="agent-dialog-identity">
+          <p class="eyebrow">SESSÃO DO AGENTE · AO VIVO</p>
+          <h2 id="agent-dialog-title">Agente</h2>
+          <p id="dialog-meta"></p>
+        </div>
+        <button class="icon-button" id="close-agent-dialog" type="button" aria-label="Fechar terminal">×</button>
+      </header>
+      <p class="terminal-note" id="terminal-note" role="status" aria-live="polite">Histórico, ferramentas e resultados aparecem aqui. Instruções entram pela fila do AIOffice.</p>
+      <ol class="terminal-list" id="terminal-list" aria-label="Conversa e ações do agente" aria-live="off"></ol>
+      <form class="message-form" id="message-form">
+        <label for="message-input">Dar uma instrução ao agente</label>
+        <div class="message-row">
+          <textarea id="message-input" rows="2" maxlength="20000" placeholder="Escreva uma instrução para este agente…"></textarea>
+          <button class="button button-primary" id="send-message" type="submit">Enviar</button>
+        </div>
+        <p class="message-status" id="message-status" role="status" aria-live="polite"></p>
+      </form>
+    </dialog>
+    <script src="avatar-renderer.js"></script>
+    <script type="module" src="sidepanel.js"></script>
+  </body>
+</html>

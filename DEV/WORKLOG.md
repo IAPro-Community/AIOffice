@@ -1,5 +1,14 @@
 # WORKLOG — AIOffice
 
+## 2026-10-15 — Candidata v2.4.4: extensão Chrome
+- **Pedido:** melhorar a extensão instalada para refletir o escritório AIOffice, separar agentes por projeto, habilitar filtros, personagens 2D, terminal e envio de comandos/instruções; documentar e entregar ZIP pelo GitHub.
+- **Produto:** painel lateral com agrupamento por projeto, filtros por projeto/tipo, avatares sem imagens quebradas, feed de atividades, preferências por tipo de notificação, visualização de terminal e envio à fila local do agente.
+- **Integração:** Native Messaging host Go incluído pelo instalador Windows, registro por usuário, conexão ao serviço ativo ou inicialização em segundo plano do Desktop. A extensão é distribuída separadamente e requer Chrome aberto para notificações.
+- **Documentação/distribuição:** tutorial no AIOffice Configurações; README e `DEV/DESKTOP.md` descrevem instalação, privacidade e limites. Prévia SVG fictícia está rotulada como ilustrativa. ZIP planejado como asset de release; Chrome Web Store não incluída.
+- **Versão:** candidata `2.4.4`; `CHANGELOG.md` registra as mudanças. Release v2.4.3 permanece intacta.
+- **Verificação local:** `npm run desktop:verify` passou (22 testes raiz, 1.279 web/10 ignorados, 36 desktop, 23 extensão, Go host, typechecks, build e i18n). Empacotamento Windows e smoke do app passaram; ZIP validado com 18 arquivos. Evidências e hashes locais em `DEV/VERIFY.md`.
+- **Estado:** push/tag e builds Linux no GitHub ainda pendentes; não registrar a candidata como release publicada antes de validar os cinco assets remotos.
+
 ## 2026-10-15 — Refresh temporário Windows/Linux sem tag
 - **Pedido**: retirar os downloads macOS enquanto a conta Apple não permite emitir Developer ID e atualizar a distribuição sem criar tag/versão.
 - **Limites**: manter `v2.4.3` intocada; confirmar que fontes empacotadas seguem idênticas à tag; publicar somente `.exe`, `.AppImage`, `.deb` e `latest-linux.yml`; sem assets/macOS ou manifesto Mac.

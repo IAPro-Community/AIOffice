@@ -2824,6 +2824,86 @@
   color: var(--ui-muted);
 }
 
+.ui-chrome-extension {
+  display: grid;
+  gap: 7px;
+}
+
+.ui-chrome-extension__intro,
+.ui-chrome-extension__note {
+  margin: 0;
+}
+
+.ui-chrome-extension__desktop {
+  display: grid;
+  gap: 5px;
+  padding: 8px;
+  border: 1px solid var(--ui-line);
+  border-left: 3px solid var(--ui-accent);
+  border-radius: 6px;
+  background: var(--ui-bg-soft);
+}
+
+.ui-chrome-extension__desktop strong {
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+
+.ui-chrome-extension__desktop p {
+  margin: 0;
+}
+
+.ui-chrome-extension__download {
+  text-decoration: none;
+  box-sizing: border-box;
+  justify-content: center;
+  width: 100%;
+  min-height: 36px;
+  white-space: normal;
+  text-align: center;
+}
+
+.ui-chrome-extension__guide-title {
+  margin: 3px 0 0;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.ui-chrome-extension__steps {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding-left: 20px;
+  font-size: 11.5px;
+}
+
+.ui-chrome-extension__steps li::marker {
+  color: var(--ui-accent);
+  font-weight: 700;
+}
+
+.ui-chrome-extension__address-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 5px;
+}
+
+.ui-chrome-extension__address {
+  padding: 4px 6px;
+  border: 1px solid var(--ui-line);
+  border-radius: 5px;
+  background: var(--ui-surface-2);
+  color: var(--ui-text);
+  font: 11px/1.3 var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
+.ui-chrome-extension__steps .ui-btn {
+  min-height: 30px;
+}
+
 .ui-mobile-access__setup,
 .ui-mobile-access__links,
 .ui-mobile-access__install,

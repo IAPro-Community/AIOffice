@@ -112,13 +112,13 @@ function aiofficeServerProcessKind(owner, executablePath, userDataDir) {
   const belongsToUser = userDataPath && commandLine.replaceAll('\\\\', '/').replaceAll('\\', '/').includes(userDataPath);
   const parentStillOpen = normalizedPath(owner.ParentExecutablePath) === normalizedPath(executablePath)
     && !String(owner.ParentCommandLine ?? '').toLowerCase().includes('--type=');
-  if (sameExecutable && utilityNode && belongsToUser && !parentStillOpen) return 'desktop';
+  if (sameExecutable && utilityNode && belongsToUser) return parentStillOpen ? 'desktop-active' : 'desktop';
   const normalizedCommandLine = commandLine.replaceAll('\\\\', '/').replaceAll('\\', '/');
   if (normalizedCommandLine.includes('apps/office-web/scripts/start-managed.mjs')) return 'managed';
   return undefined;
 }
 
-async function requestCooperativeShutdown(port, processId, fetchImpl) {
+export async function requestCooperativeShutdown(port, processId, fetchImpl = fetch) {
   const origin = `http://127.0.0.1:${port}`;
   try {
     const healthResponse = await fetchImpl(`${origin}/api/updates/health`, { signal: AbortSignal.timeout(1500) });
@@ -138,6 +138,31 @@ async function requestCooperativeShutdown(port, processId, fetchImpl) {
   }
 }
 
+/** Inspect a listener without stopping it. Only recognized AIOffice launchers are trusted. */
+export async function inspectAIOfficePort({
+  port,
+  executablePath,
+  userDataDir,
+  platform = process.platform,
+}) {
+  let owners;
+  try {
+    owners = await portListeners(port, platform);
+  } catch (error) {
+    return { state: 'inspection-failed', error };
+  }
+  if (!owners.length) return { state: 'free', owners: [] };
+
+  const classified = owners.map((owner) => ({ owner, kind: aiofficeServerProcessKind(owner, executablePath, userDataDir) }));
+  if (classified.some(({ kind }) => !kind)) return { state: 'occupied', owners };
+  return {
+    state: 'aioffice',
+    owners,
+    kinds: classified.map(({ kind }) => kind),
+    liveDesktop: classified.some(({ kind }) => kind === 'desktop-active'),
+  };
+}
+
 async function waitForPortToClear(port, platform, timeoutMs) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
@@ -148,14 +173,13 @@ async function waitForPortToClear(port, platform, timeoutMs) {
   return false;
 }
 
-/** Stop only a server process identified as the AIOffice utility or managed launcher. */
+/** Recover only through the service's authenticated shutdown endpoint; never signal a process. */
 export async function recoverOrphanedAIOfficePort({
   port,
   executablePath,
   userDataDir,
   platform = process.platform,
   fetchImpl = fetch,
-  killProcess = (pid, signal) => process.kill(pid, signal),
 }) {
   let owners;
   try {
@@ -167,23 +191,21 @@ export async function recoverOrphanedAIOfficePort({
 
   const appOwners = owners.map((owner) => ({ owner, kind: aiofficeServerProcessKind(owner, executablePath, userDataDir) }));
   if (appOwners.some(({ kind }) => !kind)) return { state: 'occupied', owners };
+  if (appOwners.some(({ kind }) => kind === 'desktop-active')) {
+    return { state: 'active', owners: appOwners.map(({ owner }) => owner) };
+  }
 
-  let shutdownMethod = 'cooperative shutdown';
   for (const { owner } of appOwners) {
     const cooperative = await requestCooperativeShutdown(port, Number(owner.ProcessId), fetchImpl);
     if (cooperative.activeSessions) return { state: 'active-sessions', owners };
     if (!cooperative.stopped) {
-      shutdownMethod = 'process signal';
-      try { killProcess(Number(owner.ProcessId), 'SIGTERM'); }
-      catch (error) {
-        if (error?.code !== 'ESRCH') return { state: 'stop-failed', owners, error };
-      }
+      return { state: 'stop-failed', owners };
     }
   }
 
   try {
     if (await waitForPortToClear(port, platform, SERVER_SHUTDOWN_TIMEOUT_MS)) {
-      return { state: 'recovered', owners: appOwners.map(({ owner }) => owner), shutdownMethod };
+      return { state: 'recovered', owners: appOwners.map(({ owner }) => owner), shutdownMethod: 'cooperative shutdown' };
     }
     const remainingOwners = await portListeners(port, platform);
     return { state: 'occupied', owners: remainingOwners.length ? remainingOwners : appOwners.map(({ owner }) => owner) };

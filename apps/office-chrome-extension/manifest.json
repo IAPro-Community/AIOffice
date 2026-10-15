@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "AIOffice — painel e notificações",
+  "version": "0.1.0",
+  "description": "Acompanhe agentes do AIOffice no painel lateral do Chrome.",
+  "icons": {
+    "16": "icon-16.png",
+    "32": "icon-32.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
+  },
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwvkQvuzmJ4vxK2CRhmzp+D7GVZ/p8KxG9ssCP+0HjMF3IYueHEP/7ieE9aK1uQ1i7SPQzLpFRaGX1ykovP1JdL2YW6EEQ2Jj9KKo7tvCIlNPu9rXTVokBVvS1qPcPXxQ42NydzhXm0X0jTvS1LETFauEFV4dAVoy8fck6zyvjUA7ugOQQqI3iYEvzdmM3fRJqDcpHQbqwOx/JReE2VpCBhvQFJUiSHZ8JvykwqluqGoiwoM9jRfucXH29L8d8LdBTCekBpyC0yYgCeZ69autYfBObPRpew4wjeKaMHC4N97TKwafi/lOi9NcRkgrPAYCTKol4xBeHVkLmsjFuwZDqwIDAQAB",
+  "permissions": [
+    "sidePanel",
+    "nativeMessaging",
+    "notifications",
+    "alarms",
+    "storage"
+  ],
+  "background": {
+    "service_worker": "service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Abrir AIOffice",
+    "default_icon": {
+      "16": "icon-16.png",
+      "32": "icon-32.png",
+      "48": "icon-48.png",
+      "128": "icon-128.png"
+    }
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  }
+}

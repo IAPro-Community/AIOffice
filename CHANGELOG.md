@@ -5,6 +5,19 @@ All notable changes to AIOffice will be documented in this file.
 ## [Não lançado]
 Nenhuma mudança registrada.
 
+## [v2.4.4] - 2026-10-15
+
+### Adicionado
+- Extensão Manifest V3 para o painel lateral do Chrome, com notificações configuráveis para todos os tipos de atividade e filtros por projeto e tipo.
+- Identificação do projeto, provedor, estado e personagem pixel art em cada agente e evento; sessões de terminal ao vivo e envio de instruções para a fila local do agente.
+- Companion Native Messaging para Windows: conecta ao Desktop já aberto ou inicia o serviço em segundo plano, com acesso à bandeja e encerramento cooperativo.
+- Tutorial de instalação em Configurações, pacote `AIOffice-Chrome-Extension.zip` nas releases e ícones AIOffice nos tamanhos exigidos pelo Chrome.
+
+### Alterado
+- O instalador Windows registra o Native Messaging host por usuário. A extensão continua separada do Desktop e exige que o Chrome esteja aberto para entregar notificações.
+- A release distribui os pacotes Windows e Linux e o ZIP da extensão; os downloads macOS continuam suspensos até que assinatura Developer ID e notarização sejam verificadas.
+- README e documentação descrevem instalação, permissões, filtros, ações, privacidade, limites de reconexão e requisitos da extensão.
+
 ## [v2.4.3] - 2026-10-15
 
 ### Adicionado

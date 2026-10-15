@@ -1,5 +1,6 @@
 const path = require('node:path');
 const { existsSync } = require('node:fs');
+const { spawnSync } = require('node:child_process');
 const requireSigning = process.env.AIOFFICE_REQUIRE_SIGNING === '1';
 const windowsPublisher = process.env.AIOFFICE_WINDOWS_PUBLISHER_NAME?.trim();
 const windowsDesktopIcon = 'apps/office-web/client/public/assets/brand/icon.ico';
@@ -80,7 +81,7 @@ module.exports = {
   }],
   directories: {
     buildResources: 'apps/office-desktop/build',
-    output: 'dist/installers',
+    output: process.env.AIOFFICE_BUILD_OUTPUT || 'dist/installers',
   },
   // node-pty ships per-platform N-API prebuilds; rebuilding those with the current Electron ABI
   // is unnecessary and would force every Windows packager to install Visual Studio C++ tools.
@@ -104,13 +105,30 @@ module.exports = {
     installerIcon: windowsDesktopIcon,
     uninstallerIcon: windowsDesktopIcon,
     oneClick: false,
+    include: 'apps/office-desktop/installer.nsh',
+    installerHeaderIcon: 'apps/office-web/client/public/assets/brand/icon.ico',
     perMachine: false,
-    allowElevation: true,
+    allowElevation: false,
     allowToChangeInstallationDirectory: true,
     createDesktopShortcut: 'always',
     createStartMenuShortcut: true,
     runAfterFinish: true,
     deleteAppDataOnUninstall: false,
+  },
+  afterPack: async ({ appOutDir, electronPlatformName }) => {
+    if (electronPlatformName !== 'win32') return;
+    const result = spawnSync(process.execPath, [
+      'apps/office-desktop/scripts/build-native-host.mjs',
+      appOutDir,
+    ], { stdio: 'inherit', windowsHide: true });
+    if (result.error) throw result.error;
+    if (result.status !== 0) throw new Error(`Native Messaging host build failed with exit code ${result.status}.`);
+    const smoke = spawnSync(process.execPath, [
+      'apps/office-desktop/scripts/test-native-host-framing.mjs',
+      path.join(appOutDir, 'AIOffice Native Host.exe'),
+    ], { stdio: 'inherit', windowsHide: true });
+    if (smoke.error) throw smoke.error;
+    if (smoke.status !== 0) throw new Error(`Native Messaging host protocol smoke test failed with exit code ${smoke.status}.`);
   },
   mac: {
     target: ['dmg', 'zip'],

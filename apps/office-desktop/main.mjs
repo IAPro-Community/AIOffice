@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, Menu, shell, utilityProcess } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, shell, Tray, utilityProcess } from 'electron';
 // electron-updater 6.x is CommonJS; its ESM namespace does not expose autoUpdater as a named export.
 import electronUpdater from 'electron-updater';
 import { createProviderTools } from './provider-tools.mjs';
@@ -8,7 +8,7 @@ import { accessSync, appendFileSync, chmodSync, constants, existsSync, mkdirSync
 import { homedir } from 'node:os';
 import { delimiter, dirname, isAbsolute, join, resolve } from 'node:path';
 import { externalUrl, isAllowedAppNavigation, isTrustedServerReady, validateDesktopRequest } from './security.mjs';
-import { configuredServerPort, PortConflictError, portOwnerLabels, recoverOrphanedAIOfficePort } from './startup.mjs';
+import { configuredServerPort, inspectAIOfficePort, PortConflictError, portOwnerLabels, recoverOrphanedAIOfficePort, requestCooperativeShutdown } from './startup.mjs';
 import { desktopPaths, desktopServerCwd, preserveLegacyData, preserveLegacyEnv, serverEnvironment } from './storage.mjs';
 import { compareStableVersions, downloadVerifiedInstaller, fetchLatestAIOfficeRelease, verifyDownloadedInstaller } from './github-release-updater.mjs';
 import { updateStrategy } from './update-policy.mjs';
@@ -22,6 +22,7 @@ const LOG_MAX_BYTES = 5 * 1024 * 1024;
 const { autoUpdater } = electronUpdater;
 
 let mainWindow;
+let tray;
 let backend;
 let backendExit;
 let backendReady = false;
@@ -39,6 +40,32 @@ let updateTimer;
 let logFile = join(app.getPath('userData'), 'aioffice.log');
 let settingsFile;
 let updateState = { state: 'idle', currentVersion: app.getVersion(), progress: 0 };
+const backgroundMode = process.argv.includes('--aioffice-background');
+const stopRequested = process.argv.includes('--aioffice-stop');
+let nativeStatusFile;
+let appStoragePaths;
+let adoptedService = false;
+let adoptedPort;
+let nativeEnsureRequested = false;
+let nativeStopInFlight = false;
+
+function writeNativeHostStatus(status) {
+  if (!nativeStatusFile) nativeStatusFile = join(app.getPath('userData'), 'aioffice-native-host-status.json');
+  try {
+    writeFileSync(nativeStatusFile, `${JSON.stringify({ ...status, at: Date.now() })}\n`, { encoding: 'utf8', mode: 0o600 });
+    return true;
+  } catch (error) {
+    writeLog('warn', `Could not write the Native Messaging status file: ${error instanceof Error ? error.message : String(error)}`);
+    return false;
+  }
+}
+
+function nativeReadyStatus() {
+  if (!serverUrl) return;
+  writeNativeHostStatus({ state: 'ready', version: app.getVersion(), port: expectedPort() });
+  nativeEnsureRequested = false;
+}
+
 let providerTools;
 let providerInstallController;
 
@@ -55,14 +82,20 @@ const desktopReleaseMetadata = readDesktopReleaseMetadata();
 
 const hasSingleInstance = app.requestSingleInstanceLock();
 if (!hasSingleInstance) app.quit();
-else app.on('second-instance', () => {
-  if (!mainWindow) {
-    if (serverUrl) createMainWindow();
+else app.on('second-instance', (_event, commandLine = []) => {
+  if (commandLine.includes('--aioffice-stop')) {
+    if (!nativeStopInFlight) {
+      nativeStopInFlight = true;
+      void handleStopRequest().finally(() => { nativeStopInFlight = false; });
+    }
     return;
   }
-  if (mainWindow.isMinimized()) mainWindow.restore();
-  mainWindow.show();
-  mainWindow.focus();
+  if (commandLine.includes('--aioffice-background')) {
+    nativeEnsureRequested = true;
+    nativeReadyStatus();
+    return;
+  }
+  openMainWindow();
 });
 
 function writeLog(level, message) {
@@ -158,6 +191,34 @@ async function startLocalServices(paths) {
   backendReady = false;
   backendLog = [];
   const port = expectedPort();
+  const inspection = await inspectAIOfficePort({
+    port,
+    executablePath: process.execPath,
+    userDataDir: paths.userData,
+  });
+  if (inspection.state === 'inspection-failed') {
+    throw new PortConflictError(port, [], 'inspection-failed');
+  }
+  if (inspection.state === 'occupied') {
+    throw new PortConflictError(port, inspection.owners, 'occupied');
+  }
+  if (inspection.state === 'aioffice') {
+    let health;
+    try {
+      const response = await fetch(`http://127.0.0.1:${port}/api/health`, { signal: AbortSignal.timeout(1500) });
+      health = response.ok ? await response.json() : undefined;
+    } catch { /* The existing process may be finishing startup; recovery below handles orphaned services. */ }
+    if (health?.ok === true && health.version === app.getVersion()) {
+      serverUrl = `http://127.0.0.1:${port}`;
+      adoptedService = true;
+      adoptedPort = port;
+      writeLog('info', `Reusing healthy AIOffice service on 127.0.0.1:${port}; owner ${portOwnerLabels(inspection.owners).join(', ')}.`);
+      return serverUrl;
+    }
+    if (inspection.liveDesktop) {
+      throw new PortConflictError(port, inspection.owners, 'active-unhealthy');
+    }
+  }
   const recovery = await recoverOrphanedAIOfficePort({
     port,
     executablePath: process.execPath,
@@ -210,11 +271,16 @@ async function startLocalServices(paths) {
     }
   });
   serverUrl = await waitForServer(backend, port);
+  adoptedService = false;
+  adoptedPort = undefined;
   return serverUrl;
 }
 
 async function stopLocalServices() {
-  if (!backend || backendExit) return;
+  if (!backend || backendExit) {
+    if (backendExit) serverUrl = undefined;
+    return;
+  }
   isStopping = true;
   const child = backend;
   await new Promise((resolve) => {
@@ -229,6 +295,43 @@ async function stopLocalServices() {
     child.postMessage({ type: 'shutdown' });
   });
   backend = undefined;
+  serverUrl = undefined;
+  adoptedService = false;
+  adoptedPort = undefined;
+}
+
+async function stopAdoptedService(port = adoptedPort ?? expectedPort()) {
+  const inspection = await inspectAIOfficePort({
+    port,
+    executablePath: process.execPath,
+    userDataDir: appStoragePaths?.userData ?? app.getPath('userData'),
+  });
+  if (inspection.state === 'free') return;
+  if (inspection.state !== 'aioffice') {
+    throw new Error(`O AIOffice não conseguiu confirmar que controla a porta ${port}; nenhum outro processo foi encerrado.`);
+  }
+  for (const owner of inspection.owners) {
+    const result = await requestCooperativeShutdown(port, Number(owner.ProcessId));
+    if (result.activeSessions) throw new Error('O AIOffice tem sessões interativas abertas e recusou o encerramento.');
+    if (!result.stopped) throw new Error('O serviço AIOffice não confirmou o encerramento seguro.');
+  }
+  serverUrl = undefined;
+  adoptedService = false;
+  adoptedPort = undefined;
+}
+
+async function handleStopRequest() {
+  try {
+    if (backend && !backendExit) await stopLocalServices();
+    else await stopAdoptedService();
+    writeNativeHostStatus({ state: 'stopped', port: adoptedPort ?? expectedPort() });
+    quitAllowed = true;
+    app.quit();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Não foi possível encerrar o AIOffice com segurança.';
+    writeNativeHostStatus({ state: 'error', message, port: adoptedPort ?? expectedPort() });
+    writeLog('warn', `Native Messaging stop request was rejected: ${message}`);
+  }
 }
 
 function showStartupError(error) {
@@ -279,6 +382,16 @@ function showStartupError(error) {
   try { portHint = String(expectedPort()); }
   catch { portHint = `valor inválido em HABBLAUD_PORT (${String(process.env.HABBLAUD_PORT ?? '').slice(0, 32)})`; }
   const detail = `${guidance}\n\nO arquivo de diagnóstico fica em:\n${logFile}${serverDetail ? `\n\nÚltimas mensagens do servidor:\n${serverDetail}` : ''}`;
+  if (backgroundMode) {
+    void (async () => {
+      try { await stopLocalServices(); }
+      catch (shutdownError) { writeLog('error', `Could not clean up after background startup failure: ${shutdownError instanceof Error ? shutdownError.message : String(shutdownError)}`); }
+      writeNativeHostStatus({ state: 'error', port: portHint, message: `${message}\n${guidance}` });
+      quitAllowed = true;
+      app.quit();
+    })();
+    return;
+  }
   void dialog.showMessageBox({
     type: 'error',
     title: `${PRODUCT} não iniciou`,
@@ -334,6 +447,14 @@ function createMainWindow() {
   });
   const window = mainWindow;
   installWindowGuards(window);
+  if (backgroundMode) {
+    window.on('close', (event) => {
+      if (!quitAllowed) {
+        event.preventDefault();
+        window.hide();
+      }
+    });
+  }
   window.once('ready-to-show', () => {
     writeLog('info', 'Desktop window is ready to show.');
     window.show();
@@ -578,6 +699,30 @@ function setupIpc() {
     app.quit();
     return { ok: true };
   });
+}
+
+function openMainWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    createMainWindow();
+    return;
+  }
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+}
+
+function createBackgroundTray() {
+  if (tray) return;
+  let icon = nativeImage.createFromPath(appIconFile());
+  if (!icon.isEmpty()) icon = icon.resize({ width: 16, height: 16 });
+  tray = new Tray(icon);
+  tray.setToolTip(`${PRODUCT} está ativo em segundo plano`);
+  tray.setContextMenu(Menu.buildFromTemplate([
+    { label: 'Abrir AIOffice', click: openMainWindow },
+    { type: 'separator' },
+    { label: 'Parar AIOffice', click: () => app.quit() },
+  ]));
+  tray.on('double-click', openMainWindow);
 }
 
 function setProgress(percent) {
@@ -880,6 +1025,7 @@ function startDesktop() {
       homeDir: homedir(),
       legacyAppEnv: join(app.getAppPath(), 'apps', 'office-web', '.env'),
     });
+    appStoragePaths = paths;
     mkdirSync(paths.userData, { recursive: true, mode: 0o700 });
     logFile = paths.logFile;
     settingsFile = paths.envFile;
@@ -903,13 +1049,28 @@ function startDesktop() {
     if (npmCli) serverEnv.AIOFFICE_NPM_CLI = npmCli;
     for (const [key, value] of Object.entries(serverEnv)) process.env[key] = value;
     writeLog('info', `Starting ${PRODUCT} ${app.getVersion()} (${app.isPackaged ? 'installed' : 'development'}).`);
+    if (stopRequested) {
+      try {
+        await stopAdoptedService();
+        writeNativeHostStatus({ state: 'stopped', port: expectedPort() });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Não foi possível encerrar o AIOffice com segurança.';
+        writeNativeHostStatus({ state: 'error', port: expectedPort(), message });
+        writeLog('warn', `Native Messaging stop request was rejected: ${message}`);
+      }
+      quitAllowed = true;
+      app.quit();
+      return;
+    }
     installApplicationMenu();
     setupIpc();
     try {
       await startLocalServices(paths);
-      createMainWindow();
+      if (backgroundMode) createBackgroundTray();
+      else createMainWindow();
       if (process.env.AIOFFICE_DESKTOP_SMOKE !== '1') setupUpdater();
-      app.on('activate', () => { if (!mainWindow) createMainWindow(); });
+      if (backgroundMode || nativeEnsureRequested) nativeReadyStatus();
+      app.on('activate', () => openMainWindow());
     } catch (error) {
       showStartupError(error);
     }
@@ -922,18 +1083,29 @@ app.on('before-quit', (event) => {
   if (quitPromise) return;
   quitPromise = (async () => {
     clearInterval(updateTimer);
-    await stopLocalServices();
+    if (backgroundMode && adoptedService) await stopAdoptedService();
+    else await stopLocalServices();
+    if (backgroundMode || (nativeEnsureRequested && !serverUrl)) {
+      writeNativeHostStatus({ state: 'stopped', port: expectedPort() });
+      nativeEnsureRequested = false;
+    }
     quitAllowed = true;
     app.quit();
   })().catch((error) => {
     writeLog('error', `Shutdown failed: ${error instanceof Error ? error.message : String(error)}`);
+    if (backgroundMode) {
+      writeNativeHostStatus({ state: 'error', port: expectedPort(), message: error instanceof Error ? error.message : 'Não foi possível encerrar o serviço local.' });
+      quitPromise = undefined;
+      dialog.showErrorBox('AIOffice continua ativo', error instanceof Error ? error.message : 'Não foi possível encerrar o serviço local. Use novamente a opção de parar na bandeja.');
+      return;
+    }
     quitAllowed = true;
     app.quit();
   });
 });
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+  if (process.platform !== 'darwin' && !backgroundMode) app.quit();
 });
 
 startDesktop();

@@ -27,6 +27,9 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.x'
       - name: Validate release tag
         if: github.event_name == 'push'
         shell: pwsh
@@ -49,12 +52,6 @@ jobs:
           - id: windows-x64
             label: Windows x64
             os: windows-latest
-          - id: macos-arm64
-            label: macOS Apple silicon
-            os: macos-15
-          - id: macos-x64
-            label: macOS Intel
-            os: macos-15-intel
           - id: linux-x64
             label: Linux x64
             os: ubuntu-24.04
@@ -68,6 +65,10 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      - uses: actions/setup-go@v5
+        if: matrix.id == 'windows-x64'
+        with:
+          go-version: '1.22.x'
       - run: npm ci
 
       - name: Configure optional Windows code signing
@@ -157,6 +158,10 @@ jobs:
           if (-not (Test-Path -LiteralPath $installer -PathType Leaf)) { throw "Windows installer is missing: $installer" }
           New-Item -ItemType Directory -Path 'dist/release-assets' -Force | Out-Null
           Copy-Item -LiteralPath $installer -Destination 'dist/release-assets/AIOffice-Setup.exe'
+      - name: Package and verify Chrome extension ZIP
+        if: matrix.id == 'windows-x64'
+        shell: pwsh
+        run: ./apps/office-chrome-extension/package-extension.ps1 -OutputPath dist/release-assets/AIOffice-Chrome-Extension.zip
       - name: Validate macOS assets
         if: matrix.id == 'macos-arm64'
         run: |
@@ -197,7 +202,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: aioffice-installers-windows-x64
-          path: dist/release-assets/AIOffice-Setup.exe
+          path: |
+            dist/release-assets/AIOffice-Setup.exe
+            dist/release-assets/AIOffice-Chrome-Extension.zip
           if-no-files-found: error
       - name: Upload macOS Apple silicon assets
         if: matrix.id == 'macos-arm64'
@@ -247,16 +254,14 @@ jobs:
           path: dist/release-assets
           merge-multiple: true
       - name: Generate native update manifests
-        run: node scripts/create-desktop-update-manifests.mjs
+        run: node scripts/create-desktop-update-manifests.mjs --linux-only
       - name: Validate complete release asset set
         shell: bash
         run: |
           for asset in \
             AIOffice-Setup.exe \
-            AIOffice-Setup-macOS-arm64.dmg AIOffice-Setup-macOS-arm64.zip \
-            AIOffice-Setup-macOS-x64.dmg AIOffice-Setup-macOS-x64.zip \
             AIOffice-Setup-Linux-x64.AppImage AIOffice-Setup-Linux-x64.deb \
-            latest-mac.yml latest-linux.yml; do
+            latest-linux.yml AIOffice-Chrome-Extension.zip; do
             test -s "dist/release-assets/$asset" || { echo "Missing release asset: $asset" >&2; exit 1; }
           done
       - name: Generate release notes
@@ -308,10 +313,8 @@ jobs:
         run: |
           expected_names=$(printf '%s\n' \
             AIOffice-Setup.exe \
-            AIOffice-Setup-macOS-arm64.dmg AIOffice-Setup-macOS-arm64.zip \
-            AIOffice-Setup-macOS-x64.dmg AIOffice-Setup-macOS-x64.zip \
             AIOffice-Setup-Linux-x64.AppImage AIOffice-Setup-Linux-x64.deb \
-            latest-mac.yml latest-linux.yml | sort)
+            latest-linux.yml AIOffice-Chrome-Extension.zip | sort)
           actual_names=$(find dist/release-assets -maxdepth 1 -type f -printf '%f\n' | sort)
           if [[ "$actual_names" != "$expected_names" ]]; then
             echo 'Local release asset names do not match the stable release contract.' >&2

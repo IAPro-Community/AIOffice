@@ -28,4 +28,5 @@ Hierarquia de documentação operacional do projeto AIOffice.
 | `apps/office-web/README*.md` | Guias Habblaud em inglês, português, espanhol e francês | Ativo |
 
 ## Estado da release
+- Candidata `v2.4.4`: extensão Chrome com Native Messaging host Windows, documentação de instalação e pacote ZIP planejado. A release pública permanece em `v2.4.3` até os gates e a publicação da tag terminarem. O contrato da candidata é cinco assets Windows/Linux, sem builds macOS unsigned. Evidências em `DEV/HANDOFF.md` e `DEV/VERIFY.md`.
 - Release oficial mais recente: [`v2.4.3`](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.4.3), tag mantida no commit `8393eaeb88c9fa658231499695e407ac4d575bb2`. O [refresh Windows/Linux](https://github.com/IAPro-Community/AIOffice/actions/runs/38772157012) concluiu sem nova tag; a release contém setup Windows, AppImage/deb Linux e `latest-linux.yml`. Assets macOS foram removidos temporariamente por falta de assinatura/notarização. A mesma versão atualiza downloads, mas não aciona o updater interno. Consulte `DEV/HANDOFF.md`, `DEV/DESKTOP.md` e `DEV/VERIFY.md` para evidências.

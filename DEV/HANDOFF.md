@@ -1,5 +1,15 @@
 # HANDOFF — AIOffice
 
+## Candidata de atualização v2.4.4 — extensão Chrome — 2026-10-15
+
+- **Pedido:** documentar a extensão, incluir a imagem no README, criar uma atualização versionada e publicar no GitHub.
+- **Implementação:** extensão Manifest V3 com ícone oficial, painel por projeto, filtros, personagens, feed/notificações configuráveis, terminal e envio de instrução ao agente; host Native Messaging e inicialização em segundo plano no Desktop Windows; tutorial nas configurações e ZIP de distribuição.
+- **Imagem do README:** `apps/office-chrome-extension/docs/readme-preview.svg` é uma ilustração demonstrativa identificada como tal, com projetos e agentes fictícios; não representa uma captura real do app.
+- **Gates locais:** `npm run desktop:verify` passou: typechecks, build, 22 testes raiz, 1.279 testes web (10 ignorados), 36 desktop, 23 da extensão, validação das 23 categorias/5 permissões e testes Go do host. `npm run release -- --dry-run` gerou as notas v2.4.4; `git diff --check` passou.
+- **Pacotes locais:** setup Windows x64 (124.432.231 bytes; SHA-256 `96bb11316e6325a22bbf2802b8633f13ee153d429d8e070541af240037869563`) compilou e passou framing smoke do host; `node scripts/desktop-smoke.mjs windows` confirmou serviço e interface. ZIP (98.184 bytes; SHA-256 `a73a7191ee6b0b7f5c19aa4dc90501bb54ee32f197abaf092ed148d03f56d65a`) contém 18 arquivos e passou o validador. Esses hashes são dos pacotes locais, não substituem os digests publicados.
+- **Release:** candidata `2.4.4`; contrato de cinco assets: setup Windows + extensão ZIP + AppImage/deb Linux + manifesto Linux. Mac permanece indisponível até assinatura/notarização Apple verificadas. Commit, push, workflow e tag ainda pendentes.
+- **Continuação:** revisar e enviar o commit a `main`; aguardar o workflow GitHub; registrar ID do run, URL da release e tamanhos/hashes remotos dos cinco assets após publicar.
+
 ## Atualização temporária Windows/Linux sem tag — 2026-10-15
 
 - Pedido: tirar os arquivos macOS da distribuição e subir atualização na release existente sem criar versão/tag.

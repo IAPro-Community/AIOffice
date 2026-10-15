@@ -8,6 +8,7 @@ import { SoundSettingsGroup } from './settings-sound';
 import type { SoundControl } from './sound';
 import { AboutGroup } from './version';
 import { MaestroUpdateGroup } from './maestro-update';
+import { ChromeExtensionSettingsGroup } from './settings-chrome-extension';
 import { intlLocale, LOCALE_STORAGE_KEY, LOCALES, normalizeLocale, tr, type Locale } from '../../../shared/i18n';
 import { DEFAULT_THEME_SCHEDULE, type SeasonalTheme, type ThemeSchedule } from '../world/api';
 
@@ -115,6 +116,7 @@ export class SettingsPopover implements UiComponent {
   private about: AboutGroup;
   private maestro: MaestroUpdateGroup;
   private mobileAccess: MobileAccessGroup;
+  private chromeExtension: ChromeExtensionSettingsGroup;
   private demoBusy = false;
   private anchor: HTMLElement | null = null;
 
@@ -252,6 +254,7 @@ export class SettingsPopover implements UiComponent {
     this.about = new AboutGroup(ctx);
     this.maestro = new MaestroUpdateGroup(ctx);
     this.mobileAccess = new MobileAccessGroup(ctx);
+    this.chromeExtension = new ChromeExtensionSettingsGroup();
 
     const close = iconButton(ICONS.close, tr('Fechar configurações'), () => this.hide(), 'ui-icon-btn--sm');
     this.el = h(
@@ -278,6 +281,7 @@ export class SettingsPopover implements UiComponent {
       h('div', { class: 'ui-set-group' }, h('h3', { text: tr('Idioma') }), this.language.row),
       this.demoGroup,
       this.mobileAccess.el,
+      this.chromeExtension.el,
       this.maestro.el,
       this.about.el,
     );

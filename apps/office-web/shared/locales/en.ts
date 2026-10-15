@@ -2,6 +2,26 @@
 // As lacunas {0}, {1}... (e as nomeadas, como {sala}) precisam aparecer na tradução, em qualquer ordem.
 // Chave ausente = o texto fica em PT. `npm run i18n:check` lista os textos sem tradução e as chaves que sobraram.
 export const EN: Readonly<Record<string, string>> = {
+  // client/src/ui/settings-chrome-extension.ts
+  "Extensão para Chrome": "Chrome extension",
+  "Acompanhe os agentes no painel lateral do Chrome.": "Follow your agents in Chrome's side panel.",
+  "Primeiro, instale o AIOffice Desktop no Windows.": "First, install AIOffice Desktop on Windows.",
+  "Ele instala o conector local que a extensão usa para acompanhar agentes e iniciar o serviço quando necessário.": "It installs the local connector the extension uses to follow agents and start the service when needed.",
+  "Baixar AIOffice Desktop para Windows": "Download AIOffice Desktop for Windows",
+  "Baixar extensão (.zip)": "Download extension (.zip)",
+  "Instalação em modo de desenvolvedor: o Chrome não carrega a extensão diretamente do ZIP.": "Developer-mode installation: Chrome cannot load the extension directly from the ZIP.",
+  "Como instalar no Chrome": "How to install in Chrome",
+  "Baixe o ZIP pelo botão acima e extraia para uma pasta permanente.": "Download the ZIP above and extract it to a permanent folder.",
+  "No Chrome, abra este endereço:": "In Chrome, open this address:",
+  "Ative o Modo do desenvolvedor na página Extensões.": "Turn on Developer mode on the Extensions page.",
+  "Clique em Carregar sem compactação e escolha a pasta extraída que contém manifest.json.": "Click Load unpacked and select the extracted folder that contains manifest.json.",
+  "Fixe o AIOffice na barra do Chrome e abra o painel lateral.": "Pin AIOffice in the Chrome toolbar and open the side panel.",
+  "Copiar endereço": "Copy address",
+  "Copiar endereço chrome://extensions": "Copy the chrome://extensions address",
+  "Endereço copiado.": "Address copied.",
+  "Não foi possível copiar. Digite chrome://extensions na barra do Chrome.": "Couldn't copy. Type chrome://extensions in Chrome's address bar.",
+  "Ver guia oficial do Chrome": "View Chrome's official guide",
+
   // client/src/main.ts
   "Escritório virtual em pixel art que mostra, em tempo real, o que seus agentes do Claude Code estão fazendo.": "Pixel-art virtual office that shows, in real time, what your Claude Code agents are doing.",
 
@@ -1693,6 +1713,7 @@ export const EN: Readonly<Record<string, string>> = {
   "editar o personagem desligado: só funciona com o Habblaud acessível apenas pelo próprio computador": "character editing disabled: it only works when Habblaud is reachable only from the computer running it",
   "o personagem só é editado pelo próprio computador (http://localhost ou http://127.0.0.1)": "the character can only be edited from the computer running Habblaud (http://localhost or http://127.0.0.1)",
   "eventos do Codex só são aceitos pelo próprio computador (http://localhost ou http://127.0.0.1)": "Codex events are only accepted from the computer running Habblaud (http://localhost or http://127.0.0.1)",
+  "eventos do Antigravity só são aceitos pelo próprio computador (http://localhost ou http://127.0.0.1)": "Antigravity events are only accepted from the computer running Habblaud (http://localhost or http://127.0.0.1)",
   "mensagens pelo escritório desligadas: só funcionam com o Habblaud acessível apenas pelo próprio computador (e sem HABBLAUD_MENSAGENS=0)": "messages from the office disabled: they only work when Habblaud is reachable only from the computer running it (and without HABBLAUD_MENSAGENS=0)",
   "mensagens só são mandadas pelo próprio computador (http://localhost ou http://127.0.0.1)": "messages can only be sent from the computer running Habblaud (http://localhost or http://127.0.0.1)",
   "agente não encontrado": "agent not found",
@@ -1828,6 +1849,8 @@ export const EN: Readonly<Record<string, string>> = {
 
   // server/messages/registry.ts
   "a sessão não buscou a mensagem: o AIOffice instala o plugin ao iniciar; feche e reabra sessões que já estavam abertas": "the session didn't fetch the message: AIOffice installs the plugin at startup; close and reopen sessions that were already open",
+  "a sessão Antigravity não registrou atividade recente; reabra a conversa ou aguarde um hook": "the Antigravity session has not reported recent activity; reopen the conversation or wait for a hook",
+  "a mensagem ficou na fila; abra a conversa ou inicie uma nova invocação no Antigravity para entregá-la": "the message stayed queued; open the conversation or start a new Antigravity invocation to deliver it",
   "a sessão OMP não buscou a mensagem: a extensão instalada pelo AIOffice está carregada na sessão?": "the OMP session didn't fetch the message: is the AIOffice-installed extension loaded in the session?",
   "a sessão não confirmou a entrega": "the session didn't confirm delivery",
   "a sessão não aceitou a mensagem": "the session didn't accept the message",

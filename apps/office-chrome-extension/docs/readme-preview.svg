@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="1110" viewBox="0 0 420 1110" role="img" aria-labelledby="title desc">
+  <title id="title">Prévia ilustrativa do painel lateral AIOffice</title>
+  <desc id="desc">Painel de demonstração com agentes fictícios, filtros por projeto, atividade recente, avatares pixel art, botões para terminal e instrução.</desc>
+  <defs>
+    <style>
+      text{font-family:Inter,"Segoe UI",Arial,sans-serif;fill:#e8ecf5} .muted{fill:#b3bdd0}.faint{fill:#9faac0}.accent{fill:#7cc8ff}.green{fill:#4fd18b}.small{font-size:10px}.tiny{font-size:8px}.body{font-size:11px}.label{font-size:9px;font-weight:700;letter-spacing:1.1px}.bold{font-weight:700}
+    </style>
+    <clipPath id="avatar1"><rect x="23" y="256" width="40" height="40" rx="3"/></clipPath>
+    <clipPath id="avatar2"><rect x="23" y="310" width="40" height="40" rx="3"/></clipPath>
+    <clipPath id="avatar3"><rect x="23" y="364" width="40" height="40" rx="3"/></clipPath>
+  </defs>
+  <rect width="420" height="1110" fill="#080c18"/>
+  <rect x="0.5" y="0.5" width="419" height="1109" rx="8" fill="none" stroke="#293244"/>
+  <rect x="18" y="17" width="39" height="39" rx="5" fill="#1a2030" stroke="#46536b"/>
+  <image x="21" y="20" width="33" height="33" href="data:image/png;base64,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"/>
+  <text x="68" y="29" class="label accent">SEU ESCRITÓRIO DE AGENTES</text>
+  <text x="68" y="49" font-size="19" font-weight="750">AIOffice</text>
+  <rect x="305" y="25" width="96" height="23" rx="12" fill="#12251f" stroke="#28543f"/>
+  <circle cx="318" cy="36.5" r="3.5" fill="#4fd18b"/>
+  <text x="328" y="40" font-size="9" class="green" font-weight="700">Conectado 2.4.4</text>
+
+  <rect x="14" y="69" width="392" height="105" rx="7" fill="#141821" stroke="#303a4b"/>
+  <text x="29" y="95" font-size="14" font-weight="700">AIOffice 2.4.4 conectado</text>
+  <text x="29" y="114" class="small muted">Feed ao vivo ativo neste navegador.</text>
+  <rect x="29" y="132" width="82" height="27" rx="4" fill="#163a30" stroke="#28664c"/>
+  <text x="49" y="150" class="small green" font-weight="700">Conectado</text>
+  <rect x="119" y="132" width="116" height="27" rx="4" fill="#1a2030" stroke="#53627b"/>
+  <text x="132" y="150" class="small" font-weight="700">Abrir AIOffice</text>
+
+  <rect x="14" y="184" width="392" height="235" rx="7" fill="#141821" stroke="#303a4b"/>
+  <text x="27" y="207" class="label accent">VISÃO DO ESCRITÓRIO</text>
+  <text x="27" y="226" font-size="14" font-weight="700">Escritório</text>
+  <text x="308" y="224" class="tiny muted">3 agentes · 2 salas</text>
+  <path d="M387 214l5 5 5-5" fill="none" stroke="#b3bdd0" stroke-width="1.5"/>
+  <line x1="25" y1="238" x2="395" y2="238" stroke="#303a4b"/>
+
+  <text x="28" y="257" font-size="10" class="accent bold">AIOffice Web</text>
+  <text x="356" y="257" class="tiny faint">2 agentes</text>
+  <line x1="28" y1="263" x2="392" y2="263" stroke="#303a4b"/>
+  <rect x="23" y="269" width="40" height="40" rx="3" fill="#1a2030" stroke="#354157"/>
+  <g clip-path="url(#avatar1)" shape-rendering="crispEdges">
+    <rect x="35" y="274" width="16" height="7" fill="#38253a"/><rect x="32" y="280" width="22" height="9" fill="#633b2d"/><rect x="35" y="284" width="5" height="5" fill="#f0c6a4"/><rect x="46" y="284" width="5" height="5" fill="#f0c6a4"/><rect x="37" y="290" width="14" height="7" fill="#4a86d8"/><rect x="32" y="295" width="24" height="10" fill="#4a86d8"/><rect x="35" y="304" width="7" height="9" fill="#303a56"/><rect x="47" y="304" width="7" height="9" fill="#303a56"/>
+  </g>
+  <text x="75" y="283" font-size="11" font-weight="700">Luna</text><text x="75" y="298" class="tiny accent bold">AIOffice Web</text><text x="148" y="298" class="tiny faint">· Codex</text>
+  <text x="77" y="311" class="tiny green">Trabalhando</text>
+  <rect x="218" y="280" width="74" height="23" rx="4" fill="#1a2030" stroke="#53627b"/><text x="231" y="295" class="tiny">Terminal</text>
+  <rect x="299" y="280" width="88" height="23" rx="4" fill="#14243a" stroke="#426a91"/><text x="310" y="295" class="tiny accent bold">Instrução</text>
+
+  <rect x="23" y="323" width="40" height="40" rx="3" fill="#1a2030" stroke="#354157"/>
+  <g clip-path="url(#avatar2)" shape-rendering="crispEdges">
+    <rect x="34" y="328" width="19" height="8" fill="#24232c"/><rect x="32" y="335" width="23" height="10" fill="#805239"/><rect x="35" y="340" width="5" height="5" fill="#e8b996"/><rect x="46" y="340" width="5" height="5" fill="#e8b996"/><rect x="37" y="346" width="14" height="7" fill="#73458e"/><rect x="32" y="351" width="24" height="11" fill="#73458e"/><rect x="35" y="360" width="7" height="8" fill="#303044"/><rect x="47" y="360" width="7" height="8" fill="#303044"/>
+  </g>
+  <text x="75" y="337" font-size="11" font-weight="700">Ravi</text><text x="75" y="352" class="tiny accent bold">AIOffice Web</text><text x="148" y="352" class="tiny faint">· Claude Code</text>
+  <text x="77" y="365" class="tiny" fill="#ffb547">Aguardando</text>
+  <rect x="218" y="334" width="74" height="23" rx="4" fill="#1a2030" stroke="#53627b"/><text x="231" y="349" class="tiny">Terminal</text>
+  <rect x="299" y="334" width="88" height="23" rx="4" fill="#14243a" stroke="#426a91"/><text x="310" y="349" class="tiny accent bold">Instrução</text>
+
+  <text x="28" y="384" font-size="10" class="accent bold">Automação Demo</text>
+  <text x="356" y="384" class="tiny faint">1 agente</text>
+  <rect x="23" y="390" width="40" height="22" rx="3" fill="#1a2030" stroke="#354157"/>
+  <g clip-path="url(#avatar3)" shape-rendering="crispEdges"><rect x="35" y="391" width="16" height="7" fill="#332339"/><rect x="32" y="397" width="22" height="9" fill="#b77550"/><rect x="37" y="406" width="14" height="7" fill="#3fb3a0"/></g>
+  <text x="75" y="401" font-size="11" font-weight="700">Jo</text><text x="75" y="414" class="tiny accent bold">Automação Demo</text>
+  <rect x="218" y="394" width="74" height="20" rx="4" fill="#1a2030" stroke="#53627b"/><text x="231" y="408" class="tiny">Terminal</text>
+  <rect x="299" y="394" width="88" height="20" rx="4" fill="#14243a" stroke="#426a91"/><text x="310" y="408" class="tiny accent bold">Instrução</text>
+
+  <text x="17" y="450" class="label accent">AO VIVO</text>
+  <text x="17" y="472" font-size="15" font-weight="700">Atividade dos agentes</text>
+  <text x="352" y="470" class="tiny faint">3 eventos</text>
+  <text x="20" y="493" class="tiny muted" font-weight="700">Projeto</text>
+  <text x="220" y="493" class="tiny muted" font-weight="700">Atividade</text>
+  <rect x="14" y="499" width="190" height="34" rx="4" fill="#141821" stroke="#46536b"/><text x="25" y="521" class="small">Todos os projetos</text><path d="M185 513l5 5 5-5" fill="none" stroke="#9faac0"/>
+  <rect x="214" y="499" width="192" height="34" rx="4" fill="#141821" stroke="#46536b"/><text x="225" y="521" class="small">Todos os tipos</text><path d="M386 513l5 5 5-5" fill="none" stroke="#9faac0"/>
+
+  <text x="18" y="557" font-size="11" class="accent bold">AIOffice Web</text><rect x="377" y="542" width="21" height="20" rx="4" fill="#1a2030" stroke="#303a4b"/><text x="384" y="556" class="tiny">2</text><line x1="18" y1="565" x2="402" y2="565" stroke="#53627b"/>
+  <rect x="14" y="573" width="392" height="110" rx="5" fill="#141821" stroke="#303a4b"/>
+  <rect x="23" y="582" width="54" height="54" rx="4" fill="#1a2030" stroke="#354157"/>
+  <g shape-rendering="crispEdges"><rect x="39" y="588" width="22" height="8" fill="#38253a"/><rect x="35" y="595" width="30" height="12" fill="#633b2d"/><rect x="39" y="600" width="6" height="6" fill="#f0c6a4"/><rect x="55" y="600" width="6" height="6" fill="#f0c6a4"/><rect x="41" y="607" width="18" height="11" fill="#4a86d8"/><rect x="35" y="615" width="30" height="13" fill="#4a86d8"/><rect x="39" y="626" width="8" height="9" fill="#303a56"/><rect x="54" y="626" width="8" height="9" fill="#303a56"/></g>
+  <text x="87" y="590" font-size="11" font-weight="700">Luna</text><text x="375" y="590" class="tiny faint">1 min</text>
+  <text x="87" y="606" class="tiny accent bold">AIOffice Web</text><text x="160" y="606" class="tiny faint">· Codex</text><text x="206" y="606" class="tiny faint">· Trabalhando</text>
+  <text x="88" y="627" font-size="10" font-weight="700">›</text><text x="102" y="627" class="body">Executando testes do projeto</text>
+  <rect x="87" y="636" width="305" height="34" rx="3" fill="#1a2030"/><rect x="87" y="636" width="2" height="34" fill="#426a91"/><text x="97" y="651" class="tiny muted">npm test · 184 testes aprovados</text><text x="97" y="663" class="tiny faint">Resumo da atividade preparado pelo AIOffice</text>
+
+  <rect x="14" y="691" width="392" height="110" rx="5" fill="#141821" stroke="#303a4b"/>
+  <rect x="23" y="700" width="54" height="54" rx="4" fill="#1a2030" stroke="#354157"/>
+  <g shape-rendering="crispEdges"><rect x="39" y="706" width="22" height="8" fill="#24232c"/><rect x="35" y="713" width="30" height="12" fill="#805239"/><rect x="39" y="718" width="6" height="6" fill="#e8b996"/><rect x="55" y="718" width="6" height="6" fill="#e8b996"/><rect x="41" y="725" width="18" height="11" fill="#73458e"/><rect x="35" y="733" width="30" height="13" fill="#73458e"/><rect x="39" y="744" width="8" height="9" fill="#303044"/><rect x="54" y="744" width="8" height="9" fill="#303044"/></g>
+  <text x="87" y="708" font-size="11" font-weight="700">Ravi</text><text x="375" y="708" class="tiny faint">3 min</text>
+  <text x="87" y="724" class="tiny accent bold">AIOffice Web</text><text x="160" y="724" class="tiny faint">· Claude Code</text><text x="236" y="724" class="tiny faint">· Aguardando</text>
+  <text x="88" y="745" font-size="10" font-weight="700">✎</text><text x="102" y="745" class="body">Atualizou a documentação da API</text>
+  <rect x="87" y="754" width="305" height="34" rx="3" fill="#1a2030"/><rect x="87" y="754" width="2" height="34" fill="#426a91"/><text x="97" y="775" class="tiny muted">docs/api/README.md</text>
+
+  <text x="18" y="832" font-size="11" class="accent bold">Automação Demo</text><rect x="377" y="817" width="21" height="20" rx="4" fill="#1a2030" stroke="#303a4b"/><text x="384" y="831" class="tiny">1</text><line x1="18" y1="840" x2="402" y2="840" stroke="#53627b"/>
+  <rect x="14" y="848" width="392" height="110" rx="5" fill="#141821" stroke="#303a4b"/>
+  <rect x="23" y="857" width="54" height="54" rx="4" fill="#1a2030" stroke="#354157"/>
+  <g shape-rendering="crispEdges"><rect x="39" y="863" width="22" height="8" fill="#332339"/><rect x="35" y="870" width="30" height="12" fill="#b77550"/><rect x="39" y="875" width="6" height="6" fill="#f1c49f"/><rect x="55" y="875" width="6" height="6" fill="#f1c49f"/><rect x="41" y="882" width="18" height="11" fill="#3fb3a0"/><rect x="35" y="890" width="30" height="13" fill="#3fb3a0"/><rect x="39" y="901" width="8" height="9" fill="#263b45"/><rect x="54" y="901" width="8" height="9" fill="#263b45"/></g>
+  <text x="87" y="865" font-size="11" font-weight="700">Jo</text><text x="375" y="865" class="tiny faint">7 min</text>
+  <text x="87" y="881" class="tiny accent bold">Automação Demo</text><text x="190" y="881" class="tiny faint">· Codex</text><text x="237" y="881" class="tiny faint">· Comando</text>
+  <text x="88" y="902" font-size="10" font-weight="700">✓</text><text x="102" y="902" class="body">Validou o fluxo de notificações</text>
+  <rect x="87" y="911" width="305" height="34" rx="3" fill="#1a2030"/><rect x="87" y="911" width="2" height="34" fill="#426a91"/><text x="97" y="932" class="tiny muted">npm run extension:test</text>
+
+  <rect x="14" y="971" width="392" height="59" rx="6" fill="#141821" stroke="#303a4b"/>
+  <text x="27" y="994" class="label accent">PREFERÊNCIAS</text><text x="27" y="1012" font-size="11" font-weight="700">Notificações e privacidade</text><path d="M384 993l5 5 5-5" fill="none" stroke="#b3bdd0" stroke-width="1.5"/>
+  <text x="18" y="1066" class="tiny faint">AIOffice 2.4.4</text><text x="319" y="1066" class="tiny" fill="#ff7f86">Encerrar serviço</text>
+</svg>

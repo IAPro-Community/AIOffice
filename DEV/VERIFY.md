@@ -1,5 +1,19 @@
 # VERIFY — AIOffice
 
+## Candidata v2.4.4 — extensão Chrome — verificação local concluída
+
+| Verificação | Resultado local |
+|---|---|
+| `npm run desktop:verify` | Aprovado: typechecks e build, 22 testes raiz, 1.279 testes web (10 ignorados), 36 desktop, i18n, 23 testes da extensão, validador (23 categorias e 5 permissões), Go host e sintaxe. |
+| ZIP da extensão | `package-extension.ps1` aprovado; 18 arquivos na raiz, 98.184 bytes, SHA-256 local `a73a7191ee6b0b7f5c19aa4dc90501bb54ee32f197abaf092ed148d03f56d65a`. Validado após empacotar. |
+| Setup Windows | Gerado com Native Messaging host Go de 6.479.360 bytes; framing smoke passou. Instalador `AIOffice-Setup.exe`: 124.432.231 bytes, SHA-256 local `96bb11316e6325a22bbf2802b8633f13ee153d429d8e070541af240037869563`. |
+| Smoke do desktop | `node scripts/desktop-smoke.mjs windows` passou: serviços locais iniciaram e interface carregou no app empacotado. |
+| Dry run e diff | `npm run release -- --dry-run` gerou as notas `v2.4.4`; `git diff --check` passou. |
+| GitHub Actions | Ainda pendente: executar após push/tag. Exige exatamente cinco assets com nomes, tamanhos e SHA-256 remotos verificados. Mac e `latest-mac.yml` ausentes intencionalmente. |
+| README | Referência SVG existe; a imagem é identificada como prévia ilustrativa, com dados sintéticos, e as instruções explicam baixar, extrair e carregar a extensão unpacked. |
+
+Os hashes acima são dos pacotes produzidos localmente no Windows; os digests dos assets de release serão registrados após o workflow do GitHub.
+
 ## Refresh Windows/Linux na release existente — 2026-10-15
 
 | Verificação | Resultado |

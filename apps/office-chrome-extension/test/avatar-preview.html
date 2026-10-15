@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Prévia de avatares do AIOffice</title>
+    <link rel="stylesheet" href="../sidepanel.css">
+    <style>
+      body { width: min(100%, 380px); min-height: 100vh; padding: 20px; }
+      main { display: grid; gap: 12px; }
+      h1 { margin: 0 0 4px; font-size: 16px; }
+      p { margin: 0; color: var(--muted); }
+      .feed-item { min-height: 76px; align-items: center; }
+      .feed-avatar { width: 56px; height: 56px; }
+    </style>
+  </head>
+  <body>
+    <main aria-label="Prévia dos avatares 2D">
+      <header>
+        <h1>Aparência dos agentes</h1>
+        <p>Com snapshot e com identidade recuperada do evento</p>
+        <p id="avatar-qa-status" aria-live="polite">Renderizando avatares…</p>
+      </header>
+      <ol class="feed-list">
+        <li class="feed-item">
+          <img id="official-avatar" class="feed-avatar" alt="">
+          <div class="feed-main"><p class="feed-title">Clara</p><p class="feed-meta">Aparência oficial</p></div>
+        </li>
+        <li class="feed-item">
+          <img id="fallback-avatar" class="feed-avatar" alt="">
+          <div class="feed-main"><p class="feed-title">Jonas</p><p class="feed-meta">Fallback estável do evento</p></div>
+        </li>
+      </ol>
+    </main>
+    <script src="../avatar-renderer.js"></script>
+    <script type="module">
+      import { avatarSourceAgent } from '../avatar-fallback.js';
+      const official = avatarSourceAgent({ id: 'agent:clara', name: 'Clara', seed: 23, look: 'f' });
+      const recovered = avatarSourceAgent(undefined, { id: 'codex:jonas-42', name: 'Jonas' });
+      const images = [document.querySelector('#official-avatar'), document.querySelector('#fallback-avatar')];
+      images[0].src = globalThis.AIOfficeAvatar.render(official);
+      images[1].src = globalThis.AIOfficeAvatar.render(recovered);
+      await Promise.all(images.map((image) => image.decode()));
+      document.querySelector('#avatar-qa-status').textContent = images.every((image) => image.naturalWidth > 0)
+        ? '2 avatares 2D carregados'
+        : 'Falha ao carregar os avatares';
+    </script>
+  </body>
+</html>

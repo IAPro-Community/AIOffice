@@ -4,7 +4,7 @@
   "main": "apps/office-desktop/bootstrap.cjs",
   "private": true,
   "type": "module",
-  "version": "2.4.3",
+  "version": "2.4.4",
   "description": "AIOffice - Virtual AI Office & Studio unindo Orquestrador-Maestro, OpenOrq, Habblaud, oh-my-pi e replica-skill",
   "license": "MIT",
   "repository": {
@@ -33,7 +33,7 @@
     "desktop:package:linux": "npm run build:office && electron-builder --config apps/office-desktop/electron-builder.config.cjs --linux AppImage deb --x64 --publish never",
     "desktop:test": "node --test apps/office-desktop/test/*.test.mjs",
     "desktop:doctor": "node apps/office-desktop/doctor.mjs",
-    "desktop:verify": "npm run typecheck && npm --prefix apps/office-web run typecheck && npm run build && npm test && npm --prefix apps/office-web run i18n:check && npm --prefix apps/office-web run test -- --testTimeout=15000 && npm run desktop:test && node --check apps/office-desktop/bootstrap.cjs && node --check apps/office-desktop/main.mjs && node --check apps/office-desktop/service.mjs && node --check apps/office-desktop/preload.cjs && node --check apps/office-web/mod/antigravity/hook.mjs && node --check scripts/desktop-smoke.mjs && node --check scripts/release-aioffice.mjs && node --check scripts/create-desktop-update-manifests.mjs",
+    "desktop:verify": "npm run typecheck && npm --prefix apps/office-web run typecheck && npm run build && npm test && npm --prefix apps/office-web run i18n:check && npm --prefix apps/office-web run test -- --testTimeout=15000 && npm run desktop:test && node --check apps/office-desktop/bootstrap.cjs && node --check apps/office-desktop/main.mjs && node --check apps/office-desktop/service.mjs && node --check apps/office-desktop/preload.cjs && node --check apps/office-web/mod/antigravity/hook.mjs && node --check scripts/desktop-smoke.mjs && node --check scripts/release-aioffice.mjs && node --check scripts/create-desktop-update-manifests.mjs && npm run extension:build && npm run extension:test && npm run extension:validate && npm run desktop:native-host:test && node --check apps/office-desktop/native-messaging-protocol.mjs && node --check apps/office-desktop/scripts/build-native-host.mjs && node --check apps/office-desktop/scripts/test-native-host-framing.mjs",
     "typecheck": "tsc --build",
     "clean": "tsc --build --clean",
     "test": "node --experimental-strip-types --test \"packages/*/test/*.test.ts\" \"apps/office-cli/test/*.test.ts\"",
@@ -47,7 +47,11 @@
     "check:habblaud-upstream": "node scripts/check-habblaud-upstream.mjs",
     "release": "node scripts/release-aioffice.mjs",
     "install:mcp": "node scripts/install-mcp-bridges.mjs",
-    "verify": "npm run build && npm test"
+    "verify": "npm run build && npm test",
+    "extension:test": "node --test apps/office-chrome-extension/test/*.test.mjs",
+    "extension:build": "node apps/office-chrome-extension/build-avatar.mjs",
+    "extension:validate": "node apps/office-chrome-extension/validate.mjs",
+    "desktop:native-host:test": "go -C apps/office-desktop/native-host test ./..."
   },
   "devDependencies": {
     "@types/node": "^22.10.5",
