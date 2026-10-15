@@ -93,7 +93,7 @@ jobs:
           "AIOFFICE_WINDOWS_PUBLISHER_NAME=$env:WIN_CERTIFICATE_PUBLISHER" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           'AIOFFICE_REQUIRE_SIGNING=1' | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
-      - name: Configure optional Apple signing and notarization
+      - name: Require Apple signing and notarization
         if: matrix.id == 'macos-arm64' || matrix.id == 'macos-x64'
         shell: bash
         env:
@@ -108,8 +108,8 @@ jobs:
             if [[ -n "$value" ]]; then provided=$((provided + 1)); fi
           done
           if [[ "$provided" -eq 0 ]]; then
-            echo 'Apple signing is not configured. This release will contain unsigned macOS downloads; Gatekeeper may require manual approval.'
-            exit 0
+            echo 'Cannot publish macOS installers without Apple Developer ID signing and notarization. Configure AIOFFICE_MAC_CERTIFICATE_BASE64, AIOFFICE_MAC_CERTIFICATE_PASSWORD, AIOFFICE_APPLE_API_KEY_P8_BASE64, AIOFFICE_APPLE_API_KEY_ID, and AIOFFICE_APPLE_API_ISSUER first.' >&2
+            exit 1
           fi
           if [[ "$provided" -ne 5 ]]; then
             echo 'Configure all five Apple signing secrets together; partial signing configuration is not supported.' >&2
@@ -136,9 +136,15 @@ jobs:
       - name: Build macOS Apple silicon installers
         if: matrix.id == 'macos-arm64'
         run: npm run desktop:package:mac:arm64
+      - name: Verify signed and notarized macOS assets
+        if: matrix.id == 'macos-arm64'
+        run: bash scripts/verify-macos-release.sh dist/installers/AIOffice-Setup-macOS-arm64.dmg dist/installers/AIOffice-Setup-macOS-arm64.zip
       - name: Build macOS Intel installers
         if: matrix.id == 'macos-x64'
         run: npm run desktop:package:mac:x64
+      - name: Verify signed and notarized macOS assets
+        if: matrix.id == 'macos-x64'
+        run: bash scripts/verify-macos-release.sh dist/installers/AIOffice-Setup-macOS-x64.dmg dist/installers/AIOffice-Setup-macOS-x64.zip
       - name: Build Linux x64 installers
         if: matrix.id == 'linux-x64'
         run: npm run desktop:package:linux

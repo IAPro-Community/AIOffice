@@ -65,7 +65,7 @@ O setup é estático e instala a versão incluída nele. O atualizador Windows b
 
 ### Artefatos atualmente publicados
 
-A release oficial atual é [`v2.3.0`](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.3.0), publicada pelo workflow após aprovação dos builds Windows x64, macOS Intel/Apple silicon e Linux x64, dos manifestos e dos nove assets. Os downloads estáveis ficam no [README público](../README.md#downloads) e na página [releases](https://github.com/IAPro-Community/AIOffice/releases/latest). Os pacotes macOS desta release não estão assinados/notarizados; veja a limitação do Gatekeeper abaixo.
+A release oficial atual é [`v2.4.3`](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.4.3), publicada pelo workflow após aprovação dos builds Windows x64, macOS Intel/Apple silicon e Linux x64, dos manifestos e dos nove assets. Os quatro pacotes macOS dessa release foram publicados sem assinatura/notarização e o Gatekeeper os rejeita como danificados ou modificados. Os downloads macOS estão temporariamente indisponíveis no [README público](../README.md#downloads) até a próxima release assinada.
 
 `.deb` não usa o atualizador AppImage: **Ajuda → Verificar atualizações** orienta abrir GitHub Releases para baixar o próximo `.deb` e atualizá-lo pelo gerenciador do sistema. Isso respeita a elevação de privilégios e o banco de pacotes da distribuição. A desinstalação NSIS declara que não apaga `userData`.
 
@@ -86,18 +86,18 @@ Configure estes valores nas configurações do repositório **antes** de enviar 
 | Secret | `AIOFFICE_WINDOWS_CERTIFICATE_BASE64` | Certificado Authenticode PFX/P12 codificado em Base64 (opcional). |
 | Secret | `AIOFFICE_WINDOWS_CERTIFICATE_PASSWORD` | Senha do certificado Windows (opcional). |
 | Variable | `AIOFFICE_WINDOWS_PUBLISHER_NAME` | Nome da entidade exatamente como aparece no certificado Authenticode (opcional). |
-| Secret | `AIOFFICE_MAC_CERTIFICATE_BASE64` | Certificado Developer ID P12 codificado em Base64 (opcional). |
-| Secret | `AIOFFICE_MAC_CERTIFICATE_PASSWORD` | Senha do certificado Developer ID (opcional). |
-| Secret | `AIOFFICE_APPLE_API_KEY_P8_BASE64` | Chave App Store Connect P8 codificada em Base64 (opcional). |
-| Secret | `AIOFFICE_APPLE_API_KEY_ID` | ID da chave App Store Connect (opcional). |
-| Secret | `AIOFFICE_APPLE_API_ISSUER` | Issuer ID da chave App Store Connect (opcional). |
+| Secret | `AIOFFICE_MAC_CERTIFICATE_BASE64` | Certificado **Developer ID Application** P12 codificado em Base64 (obrigatório para macOS). |
+| Secret | `AIOFFICE_MAC_CERTIFICATE_PASSWORD` | Senha do certificado Developer ID (obrigatório para macOS). |
+| Secret | `AIOFFICE_APPLE_API_KEY_P8_BASE64` | Chave App Store Connect P8 codificada em Base64 (obrigatório para macOS). |
+| Secret | `AIOFFICE_APPLE_API_KEY_ID` | ID da chave App Store Connect (obrigatório para macOS). |
+| Secret | `AIOFFICE_APPLE_API_ISSUER` | Issuer ID da chave App Store Connect (obrigatório para macOS). |
 
-Cada plataforma exige todas as configurações de assinatura correspondentes ou nenhuma; configuração parcial falha. No macOS, assinatura Developer ID e notarização são necessárias para remover a restrição de atualização automática e reduzir avisos do Gatekeeper. Até configurar os cinco segredos Apple, os downloads macOS permanecem unsigned e instalação manual. Não coloque certificados/senhas em arquivos versionados.
+Assinatura Windows continua opcional. Os cinco segredos Apple são obrigatórios: o workflow falha antes do empacotamento se estiverem ausentes ou parciais. A compilação valida, no `.dmg` e `.zip`, a assinatura Developer ID, a aceitação pelo Gatekeeper (`spctl`) e o ticket de notarização (`stapler`). Gere um certificado **Developer ID Application** na conta Apple Developer, exporte-o em P12 e codifique-o em Base64; crie uma chave App Store Connect e codifique o arquivo P8 em Base64. Configure os cinco valores como GitHub Actions secrets, sem colocar certificados/senhas em arquivos versionados ou enviá-los no chat. Depois disso, publique uma nova versão; a tag `v2.4.3` não deve ser movida.
 
 Passos do mantenedor:
 
 1. Atualize `version` no `package.json` raiz e escreva as notas de `CHANGELOG.md`.
-2. Execute `npm run desktop:verify` e acione manualmente **Actions → AIOffice Desktop Release** na `main` para validar os quatro runners sem publicar uma versão.
+2. Execute `npm run desktop:verify`, confirme que os cinco segredos Apple estão configurados e acione manualmente **Actions → AIOffice Desktop Release** na `main` para validar os quatro runners sem publicar uma versão. Os jobs macOS também têm que passar por `codesign`, `spctl` e `stapler`.
 3. Depois que todos os jobs nativos passarem, envie a tag correspondente (`vX.Y.Z`) pela rotina `npm run release -- --publish`.
 4. Acompanhe **Actions → AIOffice Desktop Release**; a publicação depende do sucesso de todos os builds e manifestos.
 5. Confirme os nove assets, checksums e URLs da release; teste atualização Windows e AppImage, além da instalação manual `.dmg`/`.deb`.

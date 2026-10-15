@@ -2,7 +2,7 @@
 
 ## 1. Identificação do Projeto
 - **Nome**: AIOffice
-- **Status**: release estável v2.4.3 publicada com os deltas desde v2.3.0: arte oficial nos ícones, integração Antigravity, instalação privada dos CLIs oficiais Codex/Claude Code/OMP no desktop, diagnóstico e builds nativos. O usuário aprovou oferecer instalação; o login continua sob controle explícito do usuário. Não adicionar refresh integral automático. CI validou os quatro alvos e publicou os nove assets.
+- **Status**: release estável v2.4.3 publicada com os deltas desde v2.3.0. Diagnóstico posterior confirmou que os builds macOS foram publicados sem assinatura Apple (CI não encontrou identidade Developer ID), e o Gatekeeper os rejeita como danificados/modificados. O workflow agora exige as cinco credenciais Apple e valida assinatura, Gatekeeper e notarização antes de aceitar os pacotes; a publicação de uma correção aguarda esses secrets no GitHub. Não mover a tag v2.4.3 nem orientar a contornar o Gatekeeper.
 - **Localização**: Repositório AIOffice
 
 ## 2. Pilares de Integração

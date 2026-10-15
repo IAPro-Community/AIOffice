@@ -1,5 +1,10 @@
 # WORKLOG — AIOffice
 
+## 2026-10-15 — Gatekeeper rejeita os pacotes macOS v2.4.3
+- **Causa:** job `38676380641` não recebeu credenciais Apple; o Electron Builder reportou zero identidades e pulou assinatura. Os assets foram publicados unsigned, e o Gatekeeper os apresenta como danificados/modificados.
+- **Proteção:** pipeline exige os cinco secrets de assinatura/notarização e valida `codesign`, `spctl` e `stapler` em ambos `.dmg`/`.zip`; README deixa de oferecer os links macOS até haver uma build assinada.
+- **Validação/pendência:** `git diff --check`, `bash -n scripts/verify-macos-release.sh` e parse YAML passaram. A checagem funcional exige runner macOS. Não há credenciais Apple disponíveis; geração e publicação de nova versão continuam bloqueadas até cadastrá-las no GitHub.
+
 ## 2026-10-15 — Release multiplataforma v2.4.3 publicada
 - **Escopo**: consolidar os deltas locais posteriores à v2.3.0 em um clone de publicação limpo, preservando o checkout original com merge aberto.
 - **Desktop instalado**: oferecer instalar/atualizar CLIs oficiais Codex, Claude Code e OMP em pasta privada do AIOffice; progresso/cancelamento pela UI; autenticação em terminal oficial e reinício somente após confirmação.
