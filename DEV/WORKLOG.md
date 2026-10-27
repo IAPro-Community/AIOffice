@@ -1,5 +1,10 @@
 # WORKLOG — AIOffice
 
+## 2026-10-26 — Tema V2 e organização do mapa
+- **Mudança**: tornei V2 o padrão, mantive V1 selecionável e reorganizei recepção, copa, lounge e salas de projeto. Separei o pingue-pongue do sofá e cada posto de trabalho; adicionei 17 variantes de quadros/pôsteres derivadas dos assets originais.
+- **Verificação**: gerador das artes, build e typecheck aprovados; comparação visual V1/V2 com bonequinhos ativos. Testes automatizados não executados.
+- **Distribuição**: alteração de código; não foi criada uma release.
+
 ## 2026-10-15 — Release v2.4.4 publicada: extensão Chrome
 - **Pedido:** melhorar a extensão instalada para refletir o escritório AIOffice, separar agentes por projeto, habilitar filtros, personagens 2D, terminal e envio de comandos/instruções; documentar e entregar ZIP pelo GitHub.
 - **Produto:** painel lateral com agrupamento por projeto, filtros por projeto/tipo, avatares sem imagens quebradas, feed de atividades, preferências por tipo de notificação, visualização de terminal e envio à fila local do agente.

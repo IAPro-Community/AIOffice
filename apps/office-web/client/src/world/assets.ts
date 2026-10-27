@@ -1,3 +1,5 @@
+import type { MapThemeId } from '../art/api';
+
 // Assets opcionais gerados por IA (quadros, pôsteres e a placa da recepção).
 // GET /assets/manifest.json -> { wallArt: [{ id, kind, file, w, h, tiles, variant?, framed? }], brand: { signage?, mark? } }.
 // Se o manifesto não existir (ou falhar), o mundo segue só com a arte procedural.
@@ -14,6 +16,8 @@ export interface WallArtAsset {
   variant?: string;
   /** Versão com moldura pronta (desenhada no lugar do quadro procedural, em tamanho nativo). */
   framed?: BrandAsset;
+  /** Skin do mapa que pode usar este asset; ausente = arte compartilhada com a V1. */
+  mapTheme?: MapThemeId;
 }
 
 export interface BrandAsset {
@@ -35,7 +39,7 @@ interface ManifestFile {
 }
 
 interface Manifest {
-  wallArt?: (ManifestFile & { id: string; kind: string; tiles?: number; variant?: string; framed?: ManifestFile })[];
+  wallArt?: (ManifestFile & { id: string; kind: string; tiles?: number; variant?: string; framed?: ManifestFile; mapTheme?: string })[];
   brand?: { signage?: ManifestFile; mark?: ManifestFile };
 }
 
@@ -81,6 +85,7 @@ export async function loadWorldAssets(signal?: AbortSignal): Promise<WorldAssets
         tiles,
         variant: typeof a.variant === 'string' ? a.variant : undefined,
         framed: f ? { img: f, w: f.naturalWidth, h: f.naturalHeight } : undefined,
+        mapTheme: a.mapTheme === 'v1' || a.mapTheme === 'v2' ? a.mapTheme : undefined,
       });
     });
     const brand = async (f: ManifestFile | undefined): Promise<BrandAsset | undefined> => {

@@ -1,6 +1,7 @@
 // Preferências da interface, persistidas em localStorage ('habblaud:prefs').
 // Puro: o armazenamento é injetado (testável em node).
 import { DEFAULT_SOUND_SETTINGS, sanitizeSoundSettings, type SoundSettings } from '../audio/scheduler';
+import type { MapThemeId } from '../art/api';
 import type { DaylightMode, ThemeSchedule, ThemeTimeSlot, WorldOptions } from '../world/api';
 import { DEFAULT_THEME_SCHEDULE, DEFAULT_WORLD_OPTIONS } from '../world/api';
 
@@ -16,6 +17,8 @@ export interface UiPrefs {
   daylight: DaylightMode;
   /** Paleta dos painéis da interface; independente do cenário do escritório. */
   uiPalette: UiPalette;
+  /** Skin visual do mapa; V1 mantém a arte original. */
+  mapTheme: MapThemeId;
   theme: NonNullable<WorldOptions['theme']>;
   /** Temas comemorativos com datas avaliadas no calendário local. */
   holidayThemes: boolean;
@@ -39,6 +42,7 @@ export const DEFAULT_PREFS: UiPrefs = {
   liveliness: DEFAULT_WORLD_OPTIONS.liveliness,
   daylight: 'auto',
   uiPalette: 'midnight',
+  mapTheme: DEFAULT_WORLD_OPTIONS.mapTheme ?? 'v2',
   theme: 'auto',
   holidayThemes: true,
   themeSchedule: DEFAULT_THEME_SCHEDULE.map((slot) => ({ ...slot })) as ThemeSchedule,
@@ -94,6 +98,7 @@ export function sanitizePrefs(raw: unknown): UiPrefs {
     // preferências antigas: o interruptor "dia e noite" desligado vira "sempre dia"
     daylight: oneOf(o.daylight, ['auto', 'day', 'night'] as const, o.dayNight === false ? 'day' : d.daylight),
     uiPalette: oneOf(o.uiPalette, ['midnight', 'forest', 'ember', 'high-contrast'] as const, d.uiPalette),
+    mapTheme: oneOf(o.mapTheme, ['v1', 'v2'] as const, d.mapTheme),
     theme: oneOf(o.theme, ['auto', ...SEASONAL_THEMES] as const, d.theme),
     holidayThemes: bool(o.holidayThemes, d.holidayThemes),
     themeSchedule: sanitizeThemeSchedule(o.themeSchedule),
@@ -128,6 +133,7 @@ export function savePrefs(storage: StorageLike | null, prefs: UiPrefs): void {
 /** Parte das preferências que o mundo (canvas) consome. */
 export function worldOptionsFrom(p: UiPrefs, includeAutomaticSettings = false): Partial<WorldOptions> {
   const options: Partial<WorldOptions> = { showNames: p.showNames, bubbles: p.bubbles, liveliness: p.liveliness, dayNight: p.daylight !== 'day', daylight: p.daylight, theme: p.theme };
+  if (includeAutomaticSettings || p.mapTheme !== 'v2') options.mapTheme = p.mapTheme;
   if (includeAutomaticSettings || p.themeSchedule.some((slot, index) => slot.start !== DEFAULT_THEME_SCHEDULE[index].start || slot.theme !== DEFAULT_THEME_SCHEDULE[index].theme)) {
     options.themeSchedule = p.themeSchedule;
   }

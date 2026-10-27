@@ -1,5 +1,12 @@
 # HANDOFF — AIOffice
 
+## Mapa V2 de escritório — 2026-10-26
+
+- V2 é o cenário padrão e V1 continua disponível em **Configurações → Aparência → Tema do mapa**. O lounge separa pingue-pongue, área do sofá e fliperamas; salas de projeto têm três postos isolados e corredor para reunião.
+- Os móveis usam os sprites pixel art existentes. O gerador deriva 17 quadros e pôsteres V2 da arte original, sem alterar a composição dos pixels.
+- `npm run build` e o typecheck web passaram na base v2.4.4. A prévia local foi comparada em V1/V2 com os bonequinhos ativos. Testes automatizados não foram executados nesta mudança.
+- Não foi criada uma release; esta atualização é código da branch principal e precisa de release posterior para chegar aos instaladores publicados.
+
 ## Release v2.4.4 publicada — extensão Chrome — 2026-10-15
 
 - **Pedido:** documentar a extensão, incluir a imagem no README, criar uma atualização versionada e publicar no GitHub.

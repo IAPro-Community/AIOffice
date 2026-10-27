@@ -2,9 +2,13 @@
 // Implementação: client/src/world/index.ts -> createWorld().
 // Regra: mudanças aqui devem ser ADITIVAS.
 
+import type { MapThemeId } from '../art/api';
+
 export type Selection = { type: 'agent'; id: string } | { type: 'room'; id: string } | null;
 
 export interface WorldOptions {
+  /** Aparência do mapa; não altera a planta nem a simulação. */
+  mapTheme?: MapThemeId;
   /** Mostrar etiquetas com os nomes dos personagens. */
   showNames: boolean;
   /** Balões de atividade: todos, só importantes (precisa de você, selecionado, mudanças recentes) ou nenhum. */
@@ -242,6 +246,7 @@ export interface ViewInsets {
 }
 
 export const DEFAULT_WORLD_OPTIONS: WorldOptions = {
+  mapTheme: 'v2',
   showNames: true,
   bubbles: 'important',
   liveliness: 'normal',

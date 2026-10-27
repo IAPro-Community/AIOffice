@@ -1,5 +1,11 @@
 # ESPECIFICAÇÃO ATIVA — AIOffice
 
+## Tema V2 do mapa de escritório — 2026-10-26
+- **Status**: implementação concluída; V2 é o padrão e V1 mantém a composição original, selecionável em Configurações → Aparência.
+- **Direção**: preservar o estilo pixel art e os sprites existentes. O V2 organiza recepção, copa, lounge e salas de projeto em zonas de uso; os quadros e pôsteres são variantes pixel art derivadas das referências originais.
+- **Compatibilidade**: manter lugares, IDs e vínculos de assentos/pontos de interação, com simulação e movimento dos bonequinhos ativos em ambos os temas.
+- **Aceite**: diferença de layout visível entre V1 e V2; lounge com espaço entre pingue-pongue e sofá; postos de projeto separados; build e typecheck aprovados.
+
 ## 1. Identificação do Projeto
 - **Nome**: AIOffice
 - **Status**: release estável latest [`v2.4.4`](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.4.4), publicada a partir do commit `6720cc69a7ab34b5b53369e1949bc5c4e4201433`; workflow `38818251334` aprovou verificação, builds Windows/Linux, smokes, cinco assets e digests. A extensão Chrome, Native Messaging host e tutorial foram publicados. macOS permanece sem pacote até assinatura/notarização Apple verificadas; não orientar a contornar o Gatekeeper.

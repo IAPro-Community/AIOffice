@@ -1,5 +1,5 @@
 // Núcleo do prédio (colunas 0 e 1): recepção com elevadores, banheiros, copa e lounge.
-import type { WallStyle } from '../../art/api';
+import type { MapThemeId, WallStyle } from '../../art/api';
 import { COL_W, NORTH_Y, ROOM_H, SOUTH_Y, TILE } from '../constants';
 import { AreaBuilder, SEATED_SORT_BIAS } from './builder';
 import type { AreaLayout } from './types';
@@ -22,12 +22,18 @@ export const CORE_WALLS = {
 /** Centros (em tiles locais) dos dois elevadores na face norte da recepção. */
 export const ELEVATOR_CX = [3, 6.5] as const;
 
-export function layoutReception(): AreaLayout {
+export function layoutReception(mapTheme: MapThemeId = 'v1'): AreaLayout {
   const b = new AreaBuilder(RECEPTION_ID, 'reception', { x: 0, y: NORTH_Y, w: COL_W, h: ROOM_H });
   const wall = CORE_WALLS.reception;
   b.floor('marble', 0, 0, 16, 12, 101);
-  b.rug(1.5, 2.2, 6.5, 2.6, '#3d5a80', 102);
-  b.rug(8.6, 6.4, 5.2, 3.2, '#b65f3a', 103);
+  if (mapTheme === 'v2') {
+    b.floor('wood', 6, 4.5, 8.5, 6, 104);
+    b.rug(1.2, 6.3, 4.5, 3.2, '#477a68', 102);
+    b.rug(9.5, 6.5, 5.2, 3.2, '#c57b48', 103);
+  } else {
+    b.rug(1.5, 2.2, 6.5, 2.6, '#3d5a80', 102);
+    b.rug(8.6, 6.4, 5.2, 3.2, '#b65f3a', 103);
+  }
   b.face(0.5, 15, wall);
   b.cap(0, 0, 0.5, 12, wall);
   b.cap(15.5, 0, 0.5, 12, wall);
@@ -44,19 +50,21 @@ export function layoutReception(): AreaLayout {
 
   b.furn('plant_tall', 1, 2, 'monstera', { order: 0.2 });
   b.furn('plant_tall', 14, 4, 'ficus', { order: 0.21 });
-  b.furn('reception_desk', 9, 5, undefined, { order: 0.4 });
-  b.furn('plant_small', 12, 5, 'flower', { order: 0.45 });
-  b.furn('filing_cabinet', 8, 5, undefined, { order: 0.42 });
+  b.furn('reception_desk', mapTheme === 'v2' ? 6 : 9, 5, undefined, { order: 0.4 });
+  b.furn('plant_small', mapTheme === 'v2' ? 11 : 12, 5, 'flower', { order: 0.45 });
+  b.furn('filing_cabinet', mapTheme === 'v2' ? 9 : 8, 5, undefined, { order: 0.42 });
   // cantinho de espera com poltronas
-  b.seat('armchair', 'armchair', 9, 8, 'right', 'right', { order: 0.6 });
-  b.furn('coffee_table', 10, 8, undefined, { order: 0.58 });
-  b.seat('armchair', 'armchair', 12, 8, 'left', 'left', { order: 0.61 });
+  b.seat('armchair', 'armchair', mapTheme === 'v2' ? 10 : 9, 8, 'right', 'right', { order: 0.6 });
+  b.furn('coffee_table', mapTheme === 'v2' ? 11 : 10, 8, undefined, { order: 0.58 });
+  b.seat('armchair', 'armchair', mapTheme === 'v2' ? 13 : 12, 8, 'left', 'left', { order: 0.61 });
   b.furn('plant_tall', 14, 9, 'palm', { order: 0.22 });
 
   // banco de espera (olhando para baixo)
-  const bench = b.furn('bench', 2, 7, undefined, { order: 0.5 });
-  for (let i = 0; i < 2; i++) b.seat('bench', 'bench', 2 + i, 7, 'down', undefined, { noFurniture: true, furnitureId: bench });
-  b.furn('plant_small', 4, 7, 'fern', { order: 0.52 });
+  const benchX = 2;
+  const benchY = mapTheme === 'v2' ? 8 : 7;
+  const bench = b.furn('bench', benchX, benchY, undefined, { order: 0.5 });
+  for (let i = 0; i < 2; i++) b.seat('bench', 'bench', benchX + i, benchY, 'down', undefined, { noFurniture: true, furnitureId: bench });
+  b.furn('plant_small', mapTheme === 'v2' ? 5 : 4, mapTheme === 'v2' ? 8 : 7, 'fern', { order: 0.52 });
   b.furn('water_cooler', 1, 7, undefined, { order: 0.53 });
   b.spot('water', 1, 8, 'up', { dy: -3 });
 
@@ -71,12 +79,13 @@ export function layoutReception(): AreaLayout {
   return a;
 }
 
-export function layoutRestroom(): AreaLayout {
+export function layoutRestroom(mapTheme: MapThemeId = 'v1'): AreaLayout {
   const b = new AreaBuilder(RESTROOM_ID, 'restroom', { x: 0, y: SOUTH_Y, w: COL_W, h: ROOM_H });
   const wall = CORE_WALLS.restroom;
   b.floor('tile_white', 0, 0, 16, 12, 201);
   // tapetinho só na frente das pias (nada de tapete grande no meio do banheiro)
-  b.rug(2, 3.15, 3, 0.85, '#6fa3b8', 202);
+  b.rug(mapTheme === 'v2' ? 1.5 : 2, 3.15, mapTheme === 'v2' ? 4 : 3, 0.85, '#6fa3b8', 202);
+  if (mapTheme === 'v2') b.floor('tile_check', 1.5, 2.5, 4, 1.5, 204);
   b.face(0.5, 15, wall, [{ lx: 7, w: 2 }]);
   b.wall('door_frame', 8, undefined, { order: 0.05 });
   b.south(0.5, 15, 11, { ...wall, exterior: true });
@@ -106,16 +115,17 @@ export function layoutRestroom(): AreaLayout {
   b.furn('plant_small', 14, 6, 'succulent', { order: 0.2 });
   b.furn('plant_tall', 1, 10, 'ficus', { order: 0.21 });
   b.furn('plant_tall', 14, 10, 'monstera', { order: 0.22 });
-  const bench = b.furn('bench', 3, 9, undefined, { order: 0.5 });
-  for (let i = 0; i < 2; i++) b.seat('bench', 'bench', 3 + i, 9, 'down', undefined, { noFurniture: true, furnitureId: bench });
+  const benchX = mapTheme === 'v2' ? 5 : 3;
+  const bench = b.furn('bench', benchX, 9, undefined, { order: 0.5 });
+  for (let i = 0; i < 2; i++) b.seat('bench', 'bench', benchX + i, 9, 'down', undefined, { noFurniture: true, furnitureId: bench });
   b.furn('trash_bin', 9, 10, undefined, { order: 0.6 });
-  b.rug(2.5, 9.9, 3, 0.9, '#9cc3cf', 203);
+  b.rug(mapTheme === 'v2' ? 4.5 : 2.5, 9.9, 3, 0.9, '#9cc3cf', 203);
   b.furn('plant_small', 1, 6, 'flower', { order: 0.24 });
   b.furn('plant_small', 12, 10, 'fern', { order: 0.25 });
   return b.build();
 }
 
-export function layoutCafe(): AreaLayout {
+export function layoutCafe(mapTheme: MapThemeId = 'v1'): AreaLayout {
   const b = new AreaBuilder(CAFE_ID, 'cafe', { x: COL_W, y: NORTH_Y, w: COL_W, h: ROOM_H });
   const wall = CORE_WALLS.cafe;
   b.floor('tile_check', 0, 0, 16, 12, 301);
@@ -154,15 +164,21 @@ export function layoutCafe(): AreaLayout {
   b.spot('window', 13, 2, 'up', { dx: 12, dy: 1 });
 
   // mesa comunitária comprida no centro, sobre um tapete, com cadeiras dos dois lados
-  b.rug(2.6, 4.15, 8.8, 3.7, '#b98a5e', 302);
-  b.furn('meeting_table', 4, 5, undefined, { order: 0.5 });
-  b.furn('meeting_table', 7, 5, undefined, { order: 0.51 });
+  if (mapTheme === 'v2') {
+    b.floor('wood', 2.5, 4, 9.5, 4.5, 303);
+    b.rug(2.5, 4.1, 4.5, 3.9, '#8f785c', 302);
+    b.rug(7.5, 4.1, 4.5, 3.9, '#a88762', 304);
+  } else {
+    b.rug(2.6, 4.15, 8.8, 3.7, '#b98a5e', 302);
+  }
+  b.furn('meeting_table', mapTheme === 'v2' ? 3 : 4, 5, undefined, { order: 0.5 });
+  b.furn('meeting_table', mapTheme === 'v2' ? 8 : 7, 5, undefined, { order: 0.51 });
   for (let i = 0; i < 6; i++) {
-    const lx = 4 + i;
+    const lx = mapTheme === 'v2' ? [3, 4, 5, 8, 9, 10][i] : 4 + i;
     b.seat('cafe_seat', 'cafe_chair', lx, 4, 'down', 'down', { order: 0.55 + i * 0.01 });
     b.seat('cafe_seat', 'cafe_chair', lx, 7, 'up', 'up', { order: 0.62 + i * 0.01 });
   }
-  b.furn('plant_small', 3, 5, 'flower', { order: 0.52 });
+  b.furn('plant_small', mapTheme === 'v2' ? 6 : 3, 5, 'flower', { order: 0.52 });
 
   // mesinhas bistrô junto às janelas
   for (const [lx, ly, i] of [
@@ -186,15 +202,21 @@ export function layoutCafe(): AreaLayout {
   return b.build();
 }
 
-export function layoutLounge(): AreaLayout {
+export function layoutLounge(mapTheme: MapThemeId = 'v1'): AreaLayout {
   const b = new AreaBuilder(LOUNGE_ID, 'lounge', { x: COL_W, y: SOUTH_Y, w: COL_W, h: ROOM_H });
   const wall = CORE_WALLS.lounge;
   b.floor('wood', 0, 0, 16, 12, 401);
-  b.rug(1.5, 3.2, 7, 5.2, '#4f8a5b', 402);
-  b.rug(9.2, 4.6, 5.6, 4.4, '#d7c8a8', 403);
+  if (mapTheme === 'v2') {
+    // Zonas sem sobreposição: jogo a oeste, convivência ao centro/leste e fliperamas no fundo.
+    b.rug(0.7, 4.4, 4.8, 4.8, '#c68c4d', 402);
+    b.rug(6.5, 3.3, 6.4, 6.2, '#527e69', 403);
+  } else {
+    b.rug(1.5, 3.2, 7, 5.2, '#4f8a5b', 402);
+    b.rug(9.2, 4.6, 5.6, 4.4, '#d7c8a8', 403);
+  }
   // parede com TV a oeste; vidro a leste; passagem larga no meio
-  b.face(0.5, 6.5, wall);
-  b.face(10, 5.5, CORE_WALLS.glass);
+  b.face(0.5, mapTheme === 'v2' ? 11.5 : 6.5, wall);
+  b.face(mapTheme === 'v2' ? 12.5 : 10, mapTheme === 'v2' ? 3 : 5.5, CORE_WALLS.glass);
   b.south(0.5, 15, 11, { ...wall, exterior: true });
   b.cap(0, 0, 0.5, 12, wall);
   b.cap(15.5, 0, 0.5, 12, wall);
@@ -202,23 +224,25 @@ export function layoutLounge(): AreaLayout {
   b.walk(7, 0, 3, 2);
   b.area.door = { x: COL_W + 7, y: SOUTH_Y, w: 3, h: 2 };
 
-  b.wall('tv', 4.5, undefined, { order: 0.4 });
+  b.wall('tv', mapTheme === 'v2' ? 10.5 : 4.5, undefined, { order: 0.4 });
   b.wall('painting', 1.75, undefined, { order: 0.5 });
 
   // sofá de costas para a câmera, de frente para a TV
-  const sofa = b.furn('sofa', 3, 6, 'up', { order: 0.5 });
-  for (let i = 0; i < 3; i++) b.seat('sofa', 'sofa', 3 + i, 6, 'up', 'up', { noFurniture: true, furnitureId: sofa });
-  b.furn('coffee_table', 3, 4, undefined, { dx: TILE / 2, order: 0.45 });
-  b.block(5, 4, 1, 1);
-  b.seat('armchair', 'armchair', 2, 4, 'right', 'right', { order: 0.55 });
-  b.seat('armchair', 'armchair', 6, 4, 'left', 'left', { order: 0.56 });
+  const sofaX = mapTheme === 'v2' ? 9 : 3;
+  const sofa = b.furn('sofa', sofaX, 6, 'up', { order: 0.5 });
+  for (let i = 0; i < 3; i++) b.seat('sofa', 'sofa', sofaX + i, 6, 'up', 'up', { noFurniture: true, furnitureId: sofa });
+  b.furn('coffee_table', mapTheme === 'v2' ? 9 : 3, 4, undefined, { dx: TILE / 2, order: 0.45 });
+  b.block(mapTheme === 'v2' ? 11 : 5, 4, 1, 1);
+  b.seat('armchair', 'armchair', mapTheme === 'v2' ? 8 : 2, 4, 'right', 'right', { order: 0.55 });
+  b.seat('armchair', 'armchair', mapTheme === 'v2' ? 12 : 6, 4, 'left', 'left', { order: 0.56 });
 
   // ping-pong (jogadores nas pontas oeste/leste)
-  b.furn('pingpong_table', 10, 6, undefined, { order: 0.4 });
+  const pingX = mapTheme === 'v2' ? 2 : 10;
+  b.furn('pingpong_table', pingX, 6, undefined, { order: 0.4 });
   const ppY = b.py(7) + 5;
   const ppSort = b.py(8) + SEATED_SORT_BIAS;
-  b.spot('pingpong', 9, 7, 'right', { x: b.px(10) - 8, y: ppY, group: 'pingpong', sortY: ppSort });
-  b.spot('pingpong', 13, 7, 'left', { x: b.px(13) + 8, y: ppY, group: 'pingpong', sortY: ppSort });
+  b.spot('pingpong', pingX - 1, 7, 'right', { x: b.px(pingX) - 8, y: ppY, group: 'pingpong', sortY: ppSort });
+  b.spot('pingpong', pingX + 3, 7, 'left', { x: b.px(pingX + 3) + 8, y: ppY, group: 'pingpong', sortY: ppSort });
 
   // fliperamas e estantes
   for (const lx of [13, 14]) {
@@ -232,17 +256,18 @@ export function layoutLounge(): AreaLayout {
   b.furn('plant_small', 1, 2, 'fern', { order: 0.2 });
   b.furn('plant_tall', 6, 2, 'palm', { order: 0.21 });
   b.furn('printer', 1, 10, undefined, { order: 0.3 });
-  b.furn('floor_lamp', 1, 7, undefined, { order: 0.32 });
+  b.furn('floor_lamp', mapTheme === 'v2' ? 6 : 1, 7, undefined, { order: 0.32 });
   b.furn('plant_tall', 14, 10, 'monstera', { order: 0.22 });
 
   // puffs
   (['red', 'blue', 'yellow'] as const).forEach((c, i) => {
-    b.seat('beanbag', 'beanbag', 6 + i * 2, 9, 'down', c, { order: 0.6 + i * 0.02 });
+    const lx = mapTheme === 'v2' ? 8 + i * 2 : 6 + i * 2;
+    b.seat('beanbag', 'beanbag', lx, 9, 'down', c, { order: 0.6 + i * 0.02 });
   });
-  b.spot('talk', 11, 9, 'right', { group: 'talk:lounge', dx: -1 });
-  b.spot('talk', 12, 9, 'left', { group: 'talk:lounge', dx: 1 });
+  b.spot('talk', mapTheme === 'v2' ? 7 : 11, 9, 'right', { group: 'talk:lounge', dx: -1 });
+  b.spot('talk', mapTheme === 'v2' ? 13 : 12, 9, 'left', { group: 'talk:lounge', dx: 1 });
   // torcida do ping-pong: atrás da mesa, de frente para a câmera
-  b.spot('watch', 10, 5, 'down', { group: 'watch:pingpong', dx: 2 });
-  b.spot('watch', 12, 5, 'down', { group: 'watch:pingpong', dx: -2 });
+  b.spot('watch', mapTheme === 'v2' ? 1 : 10, 5, 'down', { group: 'watch:pingpong', dx: 2 });
+  b.spot('watch', mapTheme === 'v2' ? 3 : 12, 5, 'down', { group: 'watch:pingpong', dx: -2 });
   return b.build();
 }

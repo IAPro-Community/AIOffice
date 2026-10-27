@@ -15,6 +15,7 @@ import {
   type FurnitureKind,
   type FurnitureSprites,
   type IconName,
+  type MapThemeId,
   type Pose,
   type RoomTheme,
   type Sprite,
@@ -147,8 +148,8 @@ export function iconSprite(name: IconName): Sprite {
   return iconCache.get(name, () => toSprite(renderIcon(name)));
 }
 
-export function roomTheme(seed: number): RoomTheme {
-  return roomThemePure(seed);
+export function roomTheme(seed: number, mapTheme: MapThemeId = 'v1'): RoomTheme {
+  return roomThemePure(seed, mapTheme);
 }
 
 // ------------------------------------------------------------------ pisos, tapetes e paredes

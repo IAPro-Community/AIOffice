@@ -243,7 +243,7 @@ export function createWorld(canvas: HTMLCanvasElement, store: OfficeStore): Worl
         if (!playback) for (const e of events) for (const cb of socialCbs) cb(e);
         events.length = 0;
       }
-      renderer.sync(seasonalThemeFor(options.theme, new Date(now), options));
+      renderer.sync(seasonalThemeFor(options.theme, new Date(now), options), options.mapTheme ?? 'v1');
       if (sim.building.cols !== lastCols) {
         lastCols = sim.building.cols;
         updateBounds();
@@ -362,7 +362,9 @@ export function createWorld(canvas: HTMLCanvasElement, store: OfficeStore): Worl
     },
     getOptions: () => ({ ...options }),
     setOptions: (o) => {
+      const mapThemeChanged = o.mapTheme !== undefined && o.mapTheme !== options.mapTheme;
       options = { ...options, ...o };
+      if (mapThemeChanged) sim.setMapTheme();
       if (o.followSelected !== undefined) camera.follow = o.followSelected && selection?.type === 'agent' ? selection.id : null;
     },
     setViewInsets: (ins) => {

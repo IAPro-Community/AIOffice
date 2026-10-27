@@ -1,5 +1,15 @@
 # VERIFY — AIOffice
 
+## Mapa V2 de escritório — 2026-10-26
+
+| Verificação | Evidência |
+|---|---|
+| `npm run build` | Aprovado na base v2.4.4 com V2; cliente e servidor compilaram. Permanece o aviso de chunk do cliente acima de 500 kB. |
+| `npm --prefix apps/office-web run typecheck` | Aprovado; TypeScript de cliente e servidor sem erros. |
+| Gerador de assets | `python -E scripts/assets/map_v2.py` gerou as 17 variantes e atualizou o manifesto, preservando o estilo e encaixe pixel art. |
+| QA visual | Comparei a prévia local em V1 e V2; V1 mantém o cenário original, V2 separa lounge e estações, e os bonequinhos continuam ativos. |
+| Testes automatizados | Não executados nesta mudança. |
+
 ## Release v2.4.4 — extensão Chrome — publicada e conferida
 
 | Verificação | Evidência |

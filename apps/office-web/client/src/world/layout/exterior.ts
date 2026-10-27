@@ -1,5 +1,5 @@
 // Área externa: grama, árvores, calçada e rua; pátio/jardim nos slots sem sala.
-import type { WallStyle } from '../../art/api';
+import type { MapThemeId, WallStyle } from '../../art/api';
 import { mulberry32 } from '../../../../shared/hash';
 import { BUILDING_H, COL_W, CORE_COLS, CORRIDOR_Y, EXT_EAST, EXT_NORTH, EXT_SOUTH, EXT_WEST, SOUTH_Y, TILE } from '../constants';
 import { cellRect, slotAt, slotColumn, slotSide } from './geometry';
@@ -29,7 +29,7 @@ export interface SlotShell {
   props: ExteriorProp[];
 }
 
-export function layoutExterior(cols: number): ExteriorLayout {
+export function layoutExterior(cols: number, mapTheme: MapThemeId = 'v1'): ExteriorLayout {
   const w = cols * COL_W;
   const bounds: TileRect = { x: -EXT_WEST, y: -EXT_NORTH, w: w + EXT_WEST + EXT_EAST, h: BUILDING_H + EXT_NORTH + EXT_SOUTH };
   const px = (t: number) => t * TILE;
@@ -95,6 +95,14 @@ export function layoutExterior(cols: number): ExteriorLayout {
 
   const streetY = px(south + 4);
   const streetH = px(5);
+  if (mapTheme === 'v2') {
+    for (const floor of floors) {
+      floor.tint = floor.kind === 'grass' ? '#477056'
+        : floor.kind === 'sidewalk' ? '#a5b3aa'
+          : floor.kind === 'street' ? '#46515c'
+            : '#8a9a8f';
+    }
+  }
   return {
     bounds,
     floors,
@@ -109,7 +117,7 @@ export function layoutExterior(cols: number): ExteriorLayout {
 }
 
 /** Parede externa + jardim de um slot vazio: deck de madeira com mesas e guarda-sóis, canteiros e caminho. */
-export function slotShell(slot: number, lastColumn: boolean): SlotShell {
+export function slotShell(slot: number, lastColumn: boolean, mapTheme: MapThemeId = 'v1'): SlotShell {
   const col = slotColumn(slot);
   const side = slotSide(slot);
   const rect = cellRect(col, side);
@@ -119,6 +127,9 @@ export function slotShell(slot: number, lastColumn: boolean): SlotShell {
   const windows: WallItemPlacement[] = [];
   const floors: FloorPatch[] = [];
   const props: ExteriorProp[] = [];
+  const shellWall: WallStyle = mapTheme === 'v2'
+    ? { ...EXTERIOR_WALL, base: '#60786f', trim: '#38574f' }
+    : EXTERIOR_WALL;
   const W = COL_W * TILE;
   const T = (n: number) => n * TILE;
   const seed = () => Math.floor(rng() * 1e9);
@@ -131,11 +142,11 @@ export function slotShell(slot: number, lastColumn: boolean): SlotShell {
   if (side === 'north') {
     // fachada com janelas fechando o corredor (linhas 10–11)
     const fy = (CORRIDOR_Y - 2) * TILE;
-    walls.push({ kind: 'face', x: x0, y: fy, w: W, style: EXTERIOR_WALL });
+    walls.push({ kind: 'face', x: x0, y: fy, w: W, style: shellWall });
     [3, 8, 13].forEach((cx, i) =>
       windows.push({ id: `shell:${slot}:janela${i}`, kind: 'window', cx: x0 + cx * TILE, baseY: CORRIDOR_Y * TILE, on: 'face', order: 0 }),
     );
-    if (lastColumn) walls.push({ kind: 'cap', x: x0 + W - TILE / 2, y: fy, w: TILE / 2, h: 2 * TILE, style: EXTERIOR_WALL });
+    if (lastColumn) walls.push({ kind: 'cap', x: x0 + W - TILE / 2, y: fy, w: TILE / 2, h: 2 * TILE, style: shellWall });
     // caminho do gramado até o deck, deck no meio e canteiros sob as janelas
     floors.push({ kind: 'sidewalk', x: x0 + T(7), y: T(rect.y), w: T(2), h: T(3), seed: slot });
     deck(3, 3, 10, 5);
@@ -150,8 +161,8 @@ export function slotShell(slot: number, lastColumn: boolean): SlotShell {
     props.push({ kind: 'bush', x: x0 + T(15) - 8, y: T(rect.y + 8), seed: seed(), slot });
   } else {
     // mureta externa fechando o corredor (linha 17) e jardim abaixo, ligado à calçada da rua
-    walls.push({ kind: 'south', x: x0, y: SOUTH_Y * TILE, w: W, style: EXTERIOR_WALL });
-    if (lastColumn) walls.push({ kind: 'cap', x: x0 + W - TILE / 2, y: SOUTH_Y * TILE, w: TILE / 2, h: TILE, style: EXTERIOR_WALL });
+    walls.push({ kind: 'south', x: x0, y: SOUTH_Y * TILE, w: W, style: shellWall });
+    if (lastColumn) walls.push({ kind: 'cap', x: x0 + W - TILE / 2, y: SOUTH_Y * TILE, w: TILE / 2, h: TILE, style: shellWall });
     floors.push({ kind: 'sidewalk', x: x0 + T(7), y: T(rect.y + 1), w: T(2), h: T(rect.h - 1), seed: slot });
     // trecho entre a fachada e a calçada: só existe enquanto o slot está vazio (a cerca viva fecha)
     props.push({ kind: 'paving', x: x0 + T(7), y: T(BUILDING_H), seed: slot, slot });

@@ -8,8 +8,9 @@
 // de frente), quadro kanban, placa com o nome e decoração. Para as salas não ficarem idênticas,
 // a semente da sala escolhe: o lado da ilha (layout espelhado), o tipo de canto de reunião
 // (mesa retangular, mesinhas redondas ou recanto com poltronas), os "cantos" da parte de baixo
-// (descanso, impressão, verde, mesa de pé) e a coluna de apoio junto à parede.
-import { FURNITURE, type Dir, type FurnitureKind, type RoomTheme, type WallStyle } from '../../art/api';
+// (descanso, impressão, verde, mesa de pé) e a coluna de apoio junto à parede. Na V2, as mesas
+// viram estações separadas, com um corredor entre trabalho e colaboração.
+import { FURNITURE, type Dir, type FurnitureKind, type MapThemeId, type RoomTheme, type WallStyle } from '../../art/api';
 import { mulberry32 } from '../../../../shared/hash';
 import { DOOR_W, DOOR_X, TILE } from '../constants';
 import { AreaBuilder, type SpotOpts } from './builder';
@@ -26,6 +27,10 @@ const PLANTS_TALL = ['palm', 'ficus', 'monstera', 'bonsai'] as const;
 const PLANTS_SMALL = ['fern', 'succulent', 'flower'] as const;
 const POSTERS = ['code', 'coffee', 'rocket', 'cat', 'bug', 'ship_it'] as const;
 const BEANBAGS = ['red', 'blue', 'yellow', 'green'] as const;
+const WORKSTATION_FURNITURE = new Set<FurnitureKind>(['desk', 'desk_back', 'office_chair', 'office_chair_front']);
+const MEETING_FURNITURE = new Set<FurnitureKind>([
+  'meeting_table', 'cafe_table', 'coffee_table', 'stool', 'armchair', 'beanbag', 'plant_small', 'trash_bin',
+]);
 
 /** Canto de reunião (assentos extras para subagentes). */
 export type MeetingStyle = 'table' | 'round' | 'lounge';
@@ -66,7 +71,7 @@ export function roomVariant(seed: number): RoomVariant {
   return { mirror, meeting, left, right };
 }
 
-export function layoutProjectRoom(room: RoomInput, theme: RoomTheme): AreaLayout {
+export function layoutProjectRoom(room: RoomInput, theme: RoomTheme, mapTheme: MapThemeId = 'v1'): AreaLayout {
   const rect = slotRect(room.slot);
   const side = slotSide(room.slot);
   const rng = mulberry32(room.seed ^ 0x5eed);
@@ -80,24 +85,55 @@ export function layoutProjectRoom(room: RoomInput, theme: RoomTheme): AreaLayout
   const door = { lx: DOOR_X, w: DOOR_W };
 
   // ---- espelhamento (coordenadas locais pensadas com a ilha à esquerda)
-  const mir = v.mirror;
+  const mir = mapTheme === 'v2' ? false : v.mirror;
   const fx = (lx: number, w = 1) => (mir ? 16 - lx - w : lx);
   const fdir = (d: Dir): Dir => (mir && (d === 'left' || d === 'right') ? (d === 'left' ? 'right' : 'left') : d);
   const fdx = (dx: number | undefined) => (dx === undefined ? undefined : mir ? -dx : dx);
+  const sceneX = (lx: number, w: number, zone: 'work' | 'meeting' | 'default' = 'default') => {
+    const composed = mapTheme === 'v2'
+      ? zone === 'work' ? lx + 7 : zone === 'meeting' ? lx - 8 : lx
+      : lx;
+    return fx(composed, w);
+  };
+  const workstationX = (lx: number, w: number, zone: 'work' | 'meeting' | 'default') => {
+    if (mapTheme !== 'v2' || zone !== 'work') return sceneX(lx, w, zone);
+    const podX = lx === 2 ? 7 : lx === 4 ? 10 : lx === 6 ? 13 : lx + 7;
+    return fx(podX, w);
+  };
+  const furnitureZone = (kind: FurnitureKind, lx: number, ly: number): 'work' | 'meeting' | 'default' => {
+    if (mapTheme === 'v2' && WORKSTATION_FURNITURE.has(kind)) return 'work';
+    if (mapTheme === 'v2' && MEETING_FURNITURE.has(kind) && lx >= 9 && lx <= 13 && ly >= 3 && ly <= 7) return 'meeting';
+    return 'default';
+  };
   const furn = (kind: FurnitureKind, lx: number, ly: number, variant?: string, o: { dx?: number; dy?: number; order?: number; seat?: string } = {}) =>
-    b.furn(kind, fx(lx, FURNITURE[kind].footprint.w), ly, variant, { ...o, dx: fdx(o.dx) });
+    b.furn(kind, workstationX(lx, FURNITURE[kind].footprint.w, furnitureZone(kind, lx, ly)), ly, variant, { ...o, dx: fdx(o.dx) });
   const spot = (kind: SpotKind, lx: number, ly: number, dir: Dir, o: SpotOpts = {}): SpotDef => b.spot(kind, fx(lx), ly, fdir(dir), { ...o, dx: fdx(o.dx) });
   /** Assento; `dirVariant` = a variante do móvel é a própria direção (poltrona, cadeira de café). */
   const seat = (kind: SpotKind, fk: FurnitureKind, lx: number, ly: number, dir: Dir, variant?: string, o: SpotOpts & { order?: number } = {}, dirVariant = false): SpotDef =>
-    b.seat(kind, fk, fx(lx), ly, fdir(dir), dirVariant ? fdir(dir) : variant, { ...o, dx: fdx(o.dx) });
+    b.seat(kind, fk, workstationX(lx, FURNITURE[fk].footprint.w, furnitureZone(fk, lx, ly)), ly, fdir(dir), dirVariant ? fdir(dir) : variant, { ...o, dx: fdx(o.dx) });
   const wallItem = (kind: FurnitureKind, cx: number, variant?: string, o: { ly?: number; on?: 'face' | 'south'; order?: number } = {}) => b.wall(kind, mir ? 16 - cx : cx, variant, o);
-  const rug = (lx: number, ly: number, w: number, h: number, color: string, seed: number) => b.rug(fx(lx, w), ly, w, h, color, seed);
+  const rug = (lx: number, ly: number, w: number, h: number, color: string, seed: number, zone: 'work' | 'meeting' | 'default' = 'default') =>
+    b.rug(sceneX(lx, w, zone), ly, w, h, color, seed);
 
   // ---- piso: porcelanato claro (o banheiro é que usa azulejo); leve tom do tema dá identidade
   b.floor('marble', 0, 0, 16, 12, room.seed);
   area.floorTint = theme.carpet;
+  if (mapTheme === 'v2') {
+    // A V2 reserva o lado da reunião para um segundo material de piso, como uma zona de estúdio.
+    // O espelhamento acompanha o canto escolhido pela própria sala e não altera a grade caminhável.
+    const zoneX = sceneX(9, 6, 'meeting');
+    const surface = ((room.seed % 3) + 3) % 3;
+    if (surface === 0) b.floor('wood', zoneX, 2.5, 6, 6.5, room.seed ^ 0x2a71);
+    else if (surface === 1) b.floor('carpet', zoneX, 2.5, 6, 6.5, room.seed ^ 0x2a71, theme.carpet2, theme.carpet);
+    else b.floor('tile_check', zoneX, 2.5, 6, 6.5, room.seed ^ 0x2a71);
+  }
   // tapete na cor do tema sob a ilha (identidade da sala)
-  rug(1.5, 3.25, 7, 5.5, theme.carpet, room.seed);
+  if (mapTheme === 'v2') {
+    // Um tapete por estação mantém a área de foco legível e deixa o piso/corredor aparecer entre elas.
+    for (const [i, x] of [6.8, 9.8, 12.8].entries()) rug(x, 3.25, 2.4, 5.5, theme.carpet, room.seed + i);
+  } else {
+    rug(1.5, 3.25, 7, 5.5, theme.carpet, room.seed);
+  }
   // tapetinho na entrada
   rug(DOOR_X - 0.25, north ? 9.5 : 2, DOOR_W + 0.5, 1.25, shade(theme.carpet2, -0.1), room.seed + 1);
 
@@ -170,7 +206,8 @@ export function layoutProjectRoom(room: RoomInput, theme: RoomTheme): AreaLayout
     furn('plant_small', 12, 5, pick(PLANTS_SMALL), { order: 0.47 });
   } else {
     // recanto com poltronas e puffs em volta de uma mesa de centro (sem mesa de reunião)
-    rug(9.6, 3.7, 4.8, 4.6, shade(theme.carpet2, 0.25), room.seed + 2);
+    if (mapTheme === 'v2') rug(9.6, 3.7, 4.8, 4.6, shade(theme.carpet2, 0.25), room.seed + 2, 'meeting');
+    else rug(9.6, 3.7, 4.8, 4.6, shade(theme.carpet2, 0.25), room.seed + 2);
     furn('coffee_table', 10, 5, undefined, { order: 0.45 });
     seat('nook', 'armchair', 9, 5, 'right', undefined, { order: 0.65 }, true);
     seat('nook', 'armchair', 12, 5, 'left', undefined, { order: 0.66 }, true);
@@ -261,6 +298,15 @@ export function layoutProjectRoom(room: RoomInput, theme: RoomTheme): AreaLayout
   spot('stand', 9, 3, 'left');
   spot('stand', 1, 7, 'right');
   spot('stand', 13, 9, 'up', { dy: -2 });
+
+  // Uma segunda peça de arte identifica as salas de estúdio; adicionada no fim para manter
+  // estáveis os IDs dos móveis e pontos que a simulação já usa.
+  if (mapTheme === 'v2') {
+    wallItem('painting', north ? 1.7 : 5, undefined, { order: 0.55 });
+    // Uma divisória curta marca a área de foco e mantém passagens livres por cima,
+    // por baixo e pelo vão central.
+    for (const y of [3, 4, 5, 7, 8]) furn('glass_partition', 6, y, 'v', { order: 0.15 });
+  }
 
   // ---- sombreamento quando a luz está apagada (salas ao norte: a mureta sul fica clara)
   const p = { x: rect.x * TILE, y: rect.y * TILE, w: rect.w * TILE, h: rect.h * TILE };

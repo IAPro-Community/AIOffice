@@ -26,6 +26,9 @@ import type { AppearanceParts } from '../../../shared/appearance';
 
 export const TILE = 16;
 
+/** Skin visual do mapa; V1 mantém a arte original e V2 adiciona a nova coleção. */
+export type MapThemeId = 'v1' | 'v2';
+
 export type Dir = 'down' | 'up' | 'left' | 'right';
 
 /**
@@ -364,7 +367,7 @@ export interface ArtModule {
   /** Céu + horizonte visto pela janela conforme a hora local (0–24, fracionária). */
   drawWindowView(ctx: CanvasRenderingContext2D, r: Rect, hour: number, t: number, seed: number): void;
   drawClock(ctx: CanvasRenderingContext2D, r: Rect, date: Date): void;
-  roomTheme(seed: number): RoomTheme;
+  roomTheme(seed: number, mapTheme?: MapThemeId): RoomTheme;
   iconSprite(name: IconName): Sprite;
   /**
    * (Opcional, aditivo) Lance do futebol de drawScreen('show') com seed % 3 === 0, no instante `t`:

@@ -1,6 +1,6 @@
 // Representação visual das áreas: caches estáticos (piso, paredes, itens de parede fixos) e
 // listas de móveis/itens dinâmicos prontos para o desenho por frame.
-import { FURNITURE, TILE, type ArtModule, type FurnitureKind, type FurnitureSprites, type Sprite } from '../../art/api';
+import { FURNITURE, TILE, type ArtModule, type FurnitureKind, type FurnitureSprites, type MapThemeId, type Sprite } from '../../art/api';
 import { hash32 } from '../../../../shared/hash';
 import type { AreaLayout, WallItemPlacement, WallSegment } from '../layout/types';
 import type { RoomState } from '../sim/room-state';
@@ -151,9 +151,11 @@ const WALL_ART_TOP = 28;
  * Arte gerada por IA para um quadro/pôster: só do tamanho do lugar (quadros de 2 tiles nunca
  * recebem as pinturas largas); pôsteres preferem a mesma variante do procedural. Puro.
  */
-export function pickWallArt(assets: WorldAssets | null, kind: 'painting' | 'poster', tiles: number, variant: string | undefined, seed: number): WallArtAsset | null {
+export function pickWallArt(assets: WorldAssets | null, kind: 'painting' | 'poster', tiles: number, variant: string | undefined, seed: number, mapTheme: MapThemeId = 'v1'): WallArtAsset | null {
   if (!assets) return null;
-  let pool = assets.wallArt.filter((a) => a.kind === kind && a.tiles === tiles);
+  const candidates = assets.wallArt.filter((a) => a.kind === kind && a.tiles === tiles);
+  const themed = candidates.filter((a) => a.mapTheme === mapTheme);
+  let pool = themed.length ? themed : candidates.filter((a) => !a.mapTheme);
   if (kind === 'poster' && variant) {
     const same = pool.filter((a) => a.variant === variant);
     if (same.length) pool = same;
@@ -194,13 +196,12 @@ function drawRawPainting(ctx: CanvasRenderingContext2D, s: Sprite, ox: number, o
   ctx.drawImage(a.img, sx, sy, sw, sh, ox + r.x + Math.floor((r.w - sw) / 2), oy + r.y + Math.floor((r.h - sh) / 2), sw, sh);
 }
 
-/** Tom leve da sala sobre o piso (multiplicação: mantém veios e rejunte). */
-function tintFloor(ctx: CanvasRenderingContext2D, px: { x: number; y: number; w: number; h: number }, color: string): void {
+/** Tom da sala sobre o piso (multiplicação: mantém veios e rejunte). */
+function tintFloor(ctx: CanvasRenderingContext2D, px: { x: number; y: number; w: number; h: number }, color: string, strength: number): void {
   const m = /^#?([0-9a-f]{6})$/i.exec(color.trim());
   if (!m) return;
   const n = parseInt(m[1], 16);
-  // mistura 10% da cor com branco: só um sopro de cor
-  const k = 0.1;
+  const k = strength;
   const ch = (v: number) => Math.round(255 + (v - 255) * k);
   ctx.save();
   ctx.globalCompositeOperation = 'multiply';
@@ -209,7 +210,7 @@ function tintFloor(ctx: CanvasRenderingContext2D, px: { x: number; y: number; w:
   ctx.restore();
 }
 
-export function buildAreaVis(art: ArtModule, layout: AreaLayout, room: RoomState | undefined, assets: WorldAssets | null, theme: SeasonalTheme = 'none'): AreaVis {
+export function buildAreaVis(art: ArtModule, layout: AreaLayout, room: RoomState | undefined, assets: WorldAssets | null, theme: SeasonalTheme = 'none', mapTheme: MapThemeId = 'v1'): AreaVis {
   const r = layout.rect;
   const px = { x: r.x * TILE, y: r.y * TILE, w: r.w * TILE, h: r.h * TILE };
 
@@ -224,7 +225,7 @@ export function buildAreaVis(art: ArtModule, layout: AreaLayout, room: RoomState
       fctx.fillRect(f.x, f.y, f.w, f.h);
     }
   }
-  if (layout.floorTint) tintFloor(fctx, px, layout.floorTint);
+  if (layout.floorTint) tintFloor(fctx, px, layout.floorTint, mapTheme === 'v2' ? 0.32 : 0.1);
   for (const rug of layout.rugs) {
     const color = seasonalRugColor(theme, rug.color);
     try {
@@ -252,8 +253,8 @@ export function buildAreaVis(art: ArtModule, layout: AreaLayout, room: RoomState
       else wallItems.push(vis);
       continue;
     }
-    // quadros e pôsteres: arte de IA pronta (quando houver) no lugar do procedural
-    const ai = it.kind === 'painting' || it.kind === 'poster' ? pickWallArt(assets, it.kind, it.kind === 'poster' ? 1 : it.variant === 'wide' ? 4 : 2, it.variant, vis.seed) : null;
+    // quadros e pôsteres: usa a variante pronta do tema no lugar da arte procedural
+    const ai = it.kind === 'painting' || it.kind === 'poster' ? pickWallArt(assets, it.kind, it.kind === 'poster' ? 1 : it.variant === 'wide' ? 4 : 2, it.variant, vis.seed, mapTheme) : null;
     if (ai && vis.on === 'face' && drawWallArtAsset(wctx, vis, ai)) continue;
     const s = wallSprites(art, it.kind, it.variant === 'wide' ? undefined : it.variant, 0, vis.seed);
     if (!s) continue;

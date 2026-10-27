@@ -361,7 +361,14 @@ def main() -> int:
         else:
             entry["framed"] = {"file": f"art/framed/{Path(asset['out']).name}",
                                "w": asset["post"]["w"] + 6, "h": asset["post"]["h"] + 6}
+        if asset.get("mapTheme"):
+            entry["mapTheme"] = asset["mapTheme"]
         wall_art.append(entry)
+
+    # A coleção V2 deriva a forma e a posição dos pixels dos mesmos assets da V1.
+    from map_v2 import build_map_v2_variants
+
+    wall_art.extend(build_map_v2_variants(out_root, specs))
 
     manifest = {"version": 1, "brand": brand, "illustrations": illustrations, "wallArt": wall_art, "og": og}
     (out_root / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")

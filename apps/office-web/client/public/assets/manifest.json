@@ -256,6 +256,237 @@
       "tiles": 1,
       "title": "Ship it!",
       "variant": "ship_it"
+    },
+    {
+      "id": "map-v2-painting-mountains",
+      "kind": "painting",
+      "file": "art/map-v2/painting-mountains.png",
+      "w": 26,
+      "h": 16,
+      "tiles": 2,
+      "title": "Montanhas ao amanhecer",
+      "mapTheme": "v2",
+      "framed": {
+        "file": "art/map-v2/framed/painting-mountains.png",
+        "w": 32,
+        "h": 22
+      }
+    },
+    {
+      "id": "map-v2-painting-beach",
+      "kind": "painting",
+      "file": "art/map-v2/painting-beach.png",
+      "w": 26,
+      "h": 16,
+      "tiles": 2,
+      "title": "Praia tropical",
+      "mapTheme": "v2",
+      "framed": {
+        "file": "art/map-v2/framed/painting-beach.png",
+        "w": 32,
+        "h": 22
+      }
+    },
+    {
+      "id": "map-v2-painting-city-night",
+      "kind": "painting",
+      "file": "art/map-v2/painting-city-night.png",
+      "w": 26,
+      "h": 16,
+      "tiles": 2,
+      "title": "Cidade à noite",
+      "mapTheme": "v2",
+      "framed": {
+        "file": "art/map-v2/framed/painting-city-night.png",
+        "w": 32,
+        "h": 22
+      }
+    },
+    {
+      "id": "map-v2-painting-abstract",
+      "kind": "painting",
+      "file": "art/map-v2/painting-abstract.png",
+      "w": 26,
+      "h": 16,
+      "tiles": 2,
+      "title": "Formas e cores",
+      "mapTheme": "v2",
+      "framed": {
+        "file": "art/map-v2/framed/painting-abstract.png",
+        "w": 32,
+        "h": 22
+      }
+    },
+    {
+      "id": "map-v2-painting-cat",
+      "kind": "painting",
+      "file": "art/map-v2/painting-cat.png",
+      "w": 26,
+      "h": 16,
+      "tiles": 2,
+      "title": "Retrato de gato",
+      "mapTheme": "v2",
+      "framed": {
+        "file": "art/map-v2/framed/painting-cat.png",
+        "w": 32,
+        "h": 22
+      }
+    },
+    {
+      "id": "map-v2-painting-wave",
+      "kind": "painting",
+      "file": "art/map-v2/painting-wave.png",
+      "w": 26,
+      "h": 16,
+      "tiles": 2,
+      "title": "A grande onda",
+      "mapTheme": "v2",
+      "framed": {
+        "file": "art/map-v2/framed/painting-wave.png",
+        "w": 32,
+        "h": 22
+      }
+    },
+    {
+      "id": "map-v2-painting-sunflowers",
+      "kind": "painting",
+      "file": "art/map-v2/painting-sunflowers.png",
+      "w": 26,
+      "h": 16,
+      "tiles": 2,
+      "title": "Girassóis",
+      "mapTheme": "v2",
+      "framed": {
+        "file": "art/map-v2/framed/painting-sunflowers.png",
+        "w": 32,
+        "h": 22
+      }
+    },
+    {
+      "id": "map-v2-painting-rio",
+      "kind": "painting",
+      "file": "art/map-v2/painting-rio.png",
+      "w": 26,
+      "h": 16,
+      "tiles": 2,
+      "title": "Pão de Açúcar",
+      "mapTheme": "v2",
+      "framed": {
+        "file": "art/map-v2/framed/painting-rio.png",
+        "w": 32,
+        "h": 22
+      }
+    },
+    {
+      "id": "map-v2-painting-wide-forest-lake",
+      "kind": "painting",
+      "file": "art/map-v2/painting-wide-forest-lake.png",
+      "w": 58,
+      "h": 24,
+      "tiles": 4,
+      "title": "Lago na floresta",
+      "mapTheme": "v2",
+      "framed": {
+        "file": "art/map-v2/framed/painting-wide-forest-lake.png",
+        "w": 64,
+        "h": 30
+      }
+    },
+    {
+      "id": "map-v2-painting-wide-color-fields",
+      "kind": "painting",
+      "file": "art/map-v2/painting-wide-color-fields.png",
+      "w": 58,
+      "h": 24,
+      "tiles": 4,
+      "title": "Campos de cor",
+      "mapTheme": "v2",
+      "framed": {
+        "file": "art/map-v2/framed/painting-wide-color-fields.png",
+        "w": 64,
+        "h": 30
+      }
+    },
+    {
+      "id": "map-v2-painting-wide-aurora",
+      "kind": "painting",
+      "file": "art/map-v2/painting-wide-aurora.png",
+      "w": 58,
+      "h": 24,
+      "tiles": 4,
+      "title": "Aurora boreal",
+      "mapTheme": "v2",
+      "framed": {
+        "file": "art/map-v2/framed/painting-wide-aurora.png",
+        "w": 64,
+        "h": 30
+      }
+    },
+    {
+      "id": "map-v2-poster-coffee",
+      "kind": "poster",
+      "file": "art/map-v2/poster-coffee.png",
+      "w": 12,
+      "h": 16,
+      "tiles": 1,
+      "title": "Café",
+      "mapTheme": "v2",
+      "variant": "coffee"
+    },
+    {
+      "id": "map-v2-poster-rocket",
+      "kind": "poster",
+      "file": "art/map-v2/poster-rocket.png",
+      "w": 12,
+      "h": 16,
+      "tiles": 1,
+      "title": "Foguete",
+      "mapTheme": "v2",
+      "variant": "rocket"
+    },
+    {
+      "id": "map-v2-poster-code",
+      "kind": "poster",
+      "file": "art/map-v2/poster-code.png",
+      "w": 12,
+      "h": 16,
+      "tiles": 1,
+      "title": "Código",
+      "mapTheme": "v2",
+      "variant": "code"
+    },
+    {
+      "id": "map-v2-poster-cat",
+      "kind": "poster",
+      "file": "art/map-v2/poster-cat.png",
+      "w": 12,
+      "h": 16,
+      "tiles": 1,
+      "title": "Gato",
+      "mapTheme": "v2",
+      "variant": "cat"
+    },
+    {
+      "id": "map-v2-poster-bug",
+      "kind": "poster",
+      "file": "art/map-v2/poster-bug.png",
+      "w": 12,
+      "h": 16,
+      "tiles": 1,
+      "title": "Sem bugs",
+      "mapTheme": "v2",
+      "variant": "bug"
+    },
+    {
+      "id": "map-v2-poster-ship-it",
+      "kind": "poster",
+      "file": "art/map-v2/poster-ship-it.png",
+      "w": 12,
+      "h": 16,
+      "tiles": 1,
+      "title": "Ship it!",
+      "mapTheme": "v2",
+      "variant": "ship_it"
     }
   ],
   "og": "og-image.png"

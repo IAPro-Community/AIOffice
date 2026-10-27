@@ -1,5 +1,9 @@
 # CONTEXTO — AIOffice
 
+## Temas do mapa
+- `v2` é o tema padrão e reorganiza as salas em zonas de trabalho, colaboração e lazer com os assets pixel art do projeto. `v1` preserva a composição original e pode ser selecionado em Configurações → Aparência.
+- As 17 artes de parede V2 são geradas a partir dos quadros e pôsteres pixel art originais. A preferência de mapa é independente dos cenários sazonais; personagens, lugares e animações continuam ativos nos dois temas.
+
 ## 1. Visão Geral
 O **AIOffice** é uma plataforma integrada de engenharia de software assistida por IA local-first. Ele une cinco iniciativas complementares:
 1. **Orquestrador-Maestro** (`IAPro-Community/Orquestrador-Maestro`): protocolo de governança, constituição (`rules.md`, `maestro.md`, `PERSISTENCE.md`), roteamento de skills e ciclo de evidência/handoff.

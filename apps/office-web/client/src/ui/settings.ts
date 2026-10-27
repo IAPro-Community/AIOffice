@@ -10,6 +10,7 @@ import { AboutGroup } from './version';
 import { MaestroUpdateGroup } from './maestro-update';
 import { ChromeExtensionSettingsGroup } from './settings-chrome-extension';
 import { intlLocale, LOCALE_STORAGE_KEY, LOCALES, normalizeLocale, tr, type Locale } from '../../../shared/i18n';
+import type { MapThemeId } from '../art/api';
 import { DEFAULT_THEME_SCHEDULE, type SeasonalTheme, type ThemeSchedule } from '../world/api';
 
 type LanguageChoice = 'auto' | Locale;
@@ -106,6 +107,7 @@ export class SettingsPopover implements UiComponent {
   private liveliness: ReturnType<typeof segmented<UiPrefs['liveliness']>>;
   private daylight: ReturnType<typeof segmented<UiPrefs['daylight']>>;
   private uiPalette: ReturnType<typeof segmented<UiPrefs['uiPalette']>>;
+  private mapTheme: ReturnType<typeof segmented<MapThemeId>>;
   private theme: ReturnType<typeof segmented<UiPrefs['theme']>>;
   private holidayThemesRow: HTMLElement;
   private themeScheduleGroup: HTMLElement;
@@ -172,6 +174,16 @@ export class SettingsPopover implements UiComponent {
     );
     this.uiPalette.row.classList.add('ui-set--palette');
     this.uiPalette.row.append(h('span', { class: 'ui-set__hint', text: tr('A paleta muda os painéis e destaques. Ela é independente do cenário do escritório.') }));
+    this.mapTheme = segmented<MapThemeId>(
+      tr('Tema do mapa'),
+      [
+        ['v1', tr('Original · V1')],
+        ['v2', tr('Estúdio AIOffice · V2')],
+      ],
+      (v) => ctx.updatePrefs({ mapTheme: v }),
+    );
+    this.mapTheme.row.classList.add('ui-set--map-theme');
+    this.mapTheme.row.append(h('span', { class: 'ui-set__hint', text: tr('V2 é o padrão. V1 restaura o visual original do escritório.') }));
     this.theme = segmented<UiPrefs['theme']>(
       tr('Cenário do escritório'),
       [
@@ -261,7 +273,7 @@ export class SettingsPopover implements UiComponent {
       'div',
       { class: 'ui-popover ui-settings', role: 'dialog', tabIndex: -1, attrs: { 'aria-label': tr('Configurações'), id: 'ui-settings', popover: 'auto' } },
       h('div', { class: 'ui-popover__head' }, h('h2', { text: tr('Configurações') }), close),
-      h('div', { class: 'ui-set-group' }, h('h3', { text: tr('Aparência') }), this.uiPalette.row, this.theme.row, this.holidayThemesRow, this.themeScheduleGroup),
+      h('div', { class: 'ui-set-group' }, h('h3', { text: tr('Aparência') }), this.uiPalette.row, this.mapTheme.row, this.theme.row, this.holidayThemesRow, this.themeScheduleGroup),
       h(
         'div',
         { class: 'ui-set-group' },
@@ -345,6 +357,7 @@ export class SettingsPopover implements UiComponent {
     this.liveliness.set(p.liveliness);
     this.daylight.set(p.daylight);
     this.uiPalette.set(p.uiPalette);
+    this.mapTheme.set(p.mapTheme);
     this.theme.set(p.theme);
     setHidden(this.holidayThemesRow, p.theme !== 'auto');
     setHidden(this.themeScheduleGroup, p.theme !== 'auto');

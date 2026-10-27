@@ -1,7 +1,7 @@
 // Desenho do mundo por frame: camada externa -> pisos -> paredes/itens de parede -> entidades
 // ordenadas por profundidade -> luz/escuridão -> ícones. A passada em espaço de tela (texto
 // nítido) fica em overlay.ts.
-import { TILE, type ArtModule, type CharacterFrameRequest, type IconName, type ScreenMode, type Sprite } from '../../art/api';
+import { TILE, type ArtModule, type CharacterFrameRequest, type IconName, type MapThemeId, type ScreenMode, type Sprite } from '../../art/api';
 import type { SeasonalTheme, WorldOptions } from '../api';
 import type { WorldAssets } from '../assets';
 import type { Camera } from '../camera';
@@ -116,6 +116,7 @@ export class Renderer {
   private clearColor = '#7fae62';
   private grass: CanvasPattern | null = null;
   private theme: SeasonalTheme = 'none';
+  private mapTheme: MapThemeId = 'v1';
 
   constructor(
     readonly canvas: HTMLCanvasElement,
@@ -136,11 +137,13 @@ export class Renderer {
   // =================================================================== sincronização com a simulação
 
   /** Mantém caches e visuais coerentes com o prédio atual. */
-  sync(theme: SeasonalTheme = 'none'): void {
+  sync(theme: SeasonalTheme = 'none', mapTheme: MapThemeId = 'v1'): void {
     const sim = this.sim;
     const themeChanged = theme !== this.theme;
+    const mapThemeChanged = mapTheme !== this.mapTheme;
     this.theme = theme;
-    const assetsChanged = this.builtAssetsVersion !== this.assetsVersion || themeChanged;
+    this.mapTheme = mapTheme;
+    const assetsChanged = this.builtAssetsVersion !== this.assetsVersion || themeChanged || mapThemeChanged;
     if (this.baseCols !== sim.building.cols || assetsChanged) this.buildBase();
     if (this.layoutVersion !== sim.layoutVersion || assetsChanged) {
       this.layoutVersion = sim.layoutVersion;
@@ -148,7 +151,7 @@ export class Renderer {
       for (const a of [...sim.building.core, sim.building.corridor]) {
         want.add(a.id);
         const cur = this.areas.get(a.id);
-        if (!cur || cur.layout !== a || assetsChanged) this.areas.set(a.id, buildAreaVis(this.art, a, undefined, this.assets, theme));
+        if (!cur || cur.layout !== a || assetsChanged) this.areas.set(a.id, buildAreaVis(this.art, a, undefined, this.assets, theme, mapTheme));
       }
       for (const room of sim.rooms.values()) {
         if (!room.present) continue;
@@ -164,7 +167,7 @@ export class Renderer {
       this.occupiedSlots.add(room.slot);
       const cur = this.areas.get(room.id);
       if (!cur || cur.layout !== room.layout || cur.version !== room.version || assetsChanged) {
-        this.areas.set(room.id, buildAreaVis(this.art, room.layout, room, this.assets, theme));
+        this.areas.set(room.id, buildAreaVis(this.art, room.layout, room, this.assets, theme, mapTheme));
       } else cur.room = room;
     }
     for (const [id, vis] of this.areas) if (vis.room && !vis.room.present) this.areas.delete(id);
@@ -175,7 +178,7 @@ export class Renderer {
   private buildBase(): void {
     const cols = this.sim.building.cols;
     this.baseCols = cols;
-    this.exterior = layoutExterior(cols);
+    this.exterior = layoutExterior(cols, this.mapTheme);
     const b = this.exterior.bounds;
     this.baseX = b.x * TILE;
     this.baseY = b.y * TILE;
@@ -194,7 +197,7 @@ export class Renderer {
     this.shellWindows = [];
     for (let col = CORE_COLS; col < cols; col++) {
       for (const side of ['north', 'south'] as const) {
-        const sh = slotShell(slotAt(col, side), col === cols - 1);
+        const sh = slotShell(slotAt(col, side), col === cols - 1, this.mapTheme);
         this.shells.push(sh);
         paintShell(this.art, ctx, sh.floors, sh.walls);
         for (const w of sh.windows) this.shellWindows.push(toWallVis(w, `shell:${sh.slot}`));

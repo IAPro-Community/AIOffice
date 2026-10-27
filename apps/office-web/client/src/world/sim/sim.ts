@@ -127,7 +127,7 @@ export class Sim {
     storage: StorageLike | null = browserStorage(),
   ) {
     this.social = new Social(this, storage);
-    this.building = assembleBuilding(columnsFor([]), [], 0);
+    this.building = assembleBuilding(columnsFor([]), [], 0, this.options().mapTheme ?? 'v1');
     this.finder = new PathFinder(this.building.grid);
     this.spots.setSpots(this.building.spots);
     for (const s of this.spots.ofKind('elevator')) this.elevators.push(new Elevator(this.elevators.length, s.id));
@@ -227,13 +227,13 @@ export class Sim {
   private createRoom(r: RoomInfo, first: boolean, now: number): RoomState {
     let theme = FALLBACK_THEME;
     try {
-      theme = this.art.roomTheme(r.seed) ?? FALLBACK_THEME;
+      theme = this.art.roomTheme(r.seed, this.options().mapTheme ?? 'v1') ?? FALLBACK_THEME;
     } catch {
       theme = FALLBACK_THEME;
     }
     // a primeira vaga livre do prédio (o slot do servidor só dá a ordem de chegada)
     const slot = this.freeSlot();
-    const layout = layoutProjectRoom({ id: r.id, slot, seed: r.seed }, theme);
+    const layout = layoutProjectRoom({ id: r.id, slot, seed: r.seed }, theme, this.options().mapTheme ?? 'v1');
     const rs = new RoomState(r, theme, layout, first ? 'ready' : 'building', now, first, slot);
     this.rooms.set(r.id, rs);
     return rs;
@@ -489,6 +489,21 @@ export class Sim {
 
   // =================================================================== layout
 
+  /** Recria a arte do mapa sem trocar posições, IDs de salas ou pontos usados pelos agentes. */
+  setMapTheme(): void {
+    const mapTheme = this.options().mapTheme ?? 'v1';
+    for (const room of this.rooms.values()) {
+      try {
+        room.theme = this.art.roomTheme(room.seed, mapTheme) ?? FALLBACK_THEME;
+      } catch {
+        room.theme = FALLBACK_THEME;
+      }
+      room.layout = layoutProjectRoom({ id: room.id, slot: room.slot, seed: room.seed }, room.theme, mapTheme);
+      room.version++;
+    }
+    this.relayout();
+  }
+
   /** Recalcula o prédio (largura, grade, spots) a partir das salas presentes. */
   relayout(force = false): void {
     const present = [...this.rooms.values()].filter((r) => r.present);
@@ -506,6 +521,7 @@ export class Sim {
       cols,
       present.map((r) => r.layout),
       this.layoutVersion + 1,
+      this.options().mapTheme ?? 'v1',
     );
     this.building = building;
     this.layoutVersion++;
@@ -643,7 +659,8 @@ export class Sim {
   moveRoom(room: RoomState, slot: number, now: number): void {
     const before = room.layout;
     const ghostId = `${room.id}#mudança${++this.moveSeq}`;
-    const ghostLayout = layoutProjectRoom({ id: ghostId, slot: room.slot, seed: room.seed }, room.theme);
+    const mapTheme = this.options().mapTheme ?? 'v1';
+    const ghostLayout = layoutProjectRoom({ id: ghostId, slot: room.slot, seed: room.seed }, room.theme, mapTheme);
     const ghost = new RoomState({ ...room.info, id: ghostId, seed: room.seed }, room.theme, ghostLayout, 'ready', now, false, room.slot);
     ghost.ghost = true;
     ghost.listed = false;
@@ -659,7 +676,7 @@ export class Sim {
     });
 
     room.slot = slot;
-    room.layout = layoutProjectRoom({ id: room.id, slot, seed: room.seed }, room.theme);
+    room.layout = layoutProjectRoom({ id: room.id, slot, seed: room.seed }, room.theme, mapTheme);
     room.setPhase('building', now);
     room.lightOn = false;
     room.lightAt = -1e9;
