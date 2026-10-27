@@ -11,7 +11,7 @@
 | QA visual | Prévia local `?mock=1`: logos conferidos nos chips, filtros, etiquetas do mapa e ajuda. |
 | Diff | `git diff --check` aprovado. |
 | Testes automatizados | Não executados nesta mudança. |
-| Publicação | Commit versionado enviado a `main`; nenhuma tag/release de instaladores criada. |
+| Publicação | Commit `91dbfd1` enviado a `main`; `git ls-remote` confirmou o mesmo SHA remoto. Nenhuma tag/release de instaladores criada. |
 
 ## Mapa V2 de escritório — 2026-10-26
 

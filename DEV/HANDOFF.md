@@ -5,7 +5,7 @@
 - A cobertura inclui topo, cartões de uso/atividade, ajuda, integrações, histórico e filtros da barra lateral. Fontes dos assets e licença do SVG OMP estão registradas em `apps/office-web/client/public/assets/providers/README.md`.
 - Base visual: componentes locais preservados porque a solicitação foi substituir os marcadores por letras no painel existente; não há Design Profile central configurado.
 - Typechecks, build e `git diff --check` aprovados; conferência visual da prévia local concluída. `i18n:check` retornou sucesso com quatro traduções ausentes preexistentes na configuração V2 do mapa. Testes automatizados não executados.
-- O commit da mudança foi preparado para envio à branch principal conforme solicitado; não foi criada tag/release de instaladores.
+- **Publicação:** commit `91dbfd1` enviado para `main`; `git ls-remote origin refs/heads/main` confirmou o mesmo SHA. Não houve tag/release de instaladores.
 
 ## Mapa V2 de escritório — 2026-10-26
 
