@@ -4,7 +4,7 @@
   "main": "apps/office-desktop/bootstrap.cjs",
   "private": true,
   "type": "module",
-  "version": "2.4.5",
+  "version": "2.4.6",
   "description": "AIOffice - Virtual AI Office & Studio unindo Orquestrador-Maestro, OpenOrq, Habblaud, oh-my-pi e replica-skill",
   "license": "MIT",
   "repository": {

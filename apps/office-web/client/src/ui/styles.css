@@ -482,6 +482,7 @@
 
 .ui-prov__logo {
   display: block;
+  order: -1;
   width: 10px;
   height: 10px;
   object-fit: contain;

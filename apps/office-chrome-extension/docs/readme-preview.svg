@@ -17,10 +17,10 @@
   <text x="68" y="49" font-size="19" font-weight="750">AIOffice</text>
   <rect x="305" y="25" width="96" height="23" rx="12" fill="#12251f" stroke="#28543f"/>
   <circle cx="318" cy="36.5" r="3.5" fill="#4fd18b"/>
-  <text x="328" y="40" font-size="9" class="green" font-weight="700">Conectado 2.4.5</text>
+  <text x="328" y="40" font-size="9" class="green" font-weight="700">Conectado 2.4.6</text>
 
   <rect x="14" y="69" width="392" height="105" rx="7" fill="#141821" stroke="#303a4b"/>
-  <text x="29" y="95" font-size="14" font-weight="700">AIOffice 2.4.5 conectado</text>
+  <text x="29" y="95" font-size="14" font-weight="700">AIOffice 2.4.6 conectado</text>
   <text x="29" y="114" class="small muted">Feed ao vivo ativo neste navegador.</text>
   <rect x="29" y="132" width="82" height="27" rx="4" fill="#163a30" stroke="#28664c"/>
   <text x="49" y="150" class="small green" font-weight="700">Conectado</text>
@@ -99,5 +99,5 @@
 
   <rect x="14" y="971" width="392" height="59" rx="6" fill="#141821" stroke="#303a4b"/>
   <text x="27" y="994" class="label accent">PREFERÊNCIAS</text><text x="27" y="1012" font-size="11" font-weight="700">Notificações e privacidade</text><path d="M384 993l5 5 5-5" fill="none" stroke="#b3bdd0" stroke-width="1.5"/>
-  <text x="18" y="1066" class="tiny faint">AIOffice 2.4.5</text><text x="319" y="1066" class="tiny" fill="#ff7f86">Encerrar serviço</text>
+  <text x="18" y="1066" class="tiny faint">AIOffice 2.4.6</text><text x="319" y="1066" class="tiny" fill="#ff7f86">Encerrar serviço</text>
 </svg>

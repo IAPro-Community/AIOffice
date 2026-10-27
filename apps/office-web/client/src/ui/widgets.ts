@@ -19,7 +19,7 @@ export function createProviderLogo(provider: Provider, className = 'ui-provider-
   if (!src) return null;
   const image = document.createElement('img');
   image.className = className;
-  image.src = src;
+  image.setAttribute('src', src);
   image.alt = '';
   image.setAttribute('aria-hidden', 'true');
   image.decoding = 'async';
@@ -36,12 +36,17 @@ export function createAccountChip(size: 'sm' | 'md' | 'lg' = 'sm'): HTMLElement 
 export function updateAccountChip(chip: HTMLElement, account: AccountInfo | undefined, fallbackId = '', provider?: Provider): void {
   const p = accountProvider(account, fallbackId, provider);
   const logoSrc = PROVIDER_LOGOS[p];
-  const existingLogo = chip.querySelector<HTMLImageElement>('.ui-acc-chip__logo');
+  const existingLogo = chip.querySelector<HTMLImageElement>('img');
   if (logoSrc) {
-    if (existingLogo?.getAttribute('src') !== logoSrc) chip.replaceChildren(createProviderLogo(p, 'ui-acc-chip__logo')!);
+    if (existingLogo?.getAttribute('src') !== logoSrc) {
+      existingLogo?.remove();
+      setText(chip, '');
+      chip.append(createProviderLogo(p, 'ui-acc-chip__logo')!);
+    }
   } else {
+    existingLogo?.remove();
     const short = account?.short ?? fallbackShort(fallbackId, p);
-    if (existingLogo || chip.textContent !== short) setText(chip, short);
+    setText(chip, short);
   }
   setStyleVar(chip, '--acc', account?.color ?? '#8b98b3');
   setAttr(chip, 'data-provider', p);
@@ -59,17 +64,17 @@ export function createProviderTag(extra = ''): HTMLElement {
 /** Mostra logo e nome do provedor sem repetir o provedor que já aparece no nome da conta. */
 export function updateProviderTag(tag: HTMLElement, provider: Provider, accountName = ''): void {
   const src = PROVIDER_LOGOS[provider];
-  const existingLogo = tag.querySelector<HTMLImageElement>('.ui-prov__logo');
+  const existingLogo = tag.querySelector<HTMLImageElement>('img');
   if (src) {
     if (existingLogo?.getAttribute('src') !== src) {
+      existingLogo?.remove();
       const logo = createProviderLogo(provider, 'ui-prov__logo')!;
-      if (existingLogo) existingLogo.replaceWith(logo);
-      else tag.prepend(logo);
+      tag.append(logo);
     }
   } else {
     existingLogo?.remove();
   }
-  let label = tag.querySelector<HTMLElement>('.ui-prov__label');
+  let label = tag.querySelector<HTMLElement>('span');
   if (!label) {
     label = h('span', { class: 'ui-prov__label' });
     tag.append(label);

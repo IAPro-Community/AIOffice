@@ -158,6 +158,10 @@
   object-fit: contain;
 }
 
+.ui-integrations__inactive-name > .ui-integrations__provider-logo {
+  order: -1;
+}
+
 .ui-integrations .ui-integrations__source-status {
   font-size: 11px;
   color: var(--ui-muted);

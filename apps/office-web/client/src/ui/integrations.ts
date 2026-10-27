@@ -48,9 +48,11 @@ export class IntegrationsCenter implements UiComponent {
     this.snapshotState = h('p', { class: 'ui-integrations__hint' });
     this.closeButton = iconButton(ICONS.close, tr('Fechar integrações'), () => this.close());
     const inactive = h('ul', { class: 'ui-integrations__inactive' }, ...INACTIVE_PROVIDERS.map((provider) => {
-      const name = h('strong', { class: 'ui-integrations__inactive-name', text: PROVIDER_NAME[provider] });
-      const logo = createProviderLogo(provider, 'ui-integrations__provider-logo');
-      if (logo) name.prepend(logo);
+      const name = h(
+        'strong',
+        { class: 'ui-integrations__inactive-name', text: PROVIDER_NAME[provider] },
+        createProviderLogo(provider, 'ui-integrations__provider-logo'),
+      );
       return h('li', {}, name, h('span', { text: tr('Adaptador inativo · cobertura incompleta') }));
     }));
     this.el = h('dialog', { class: 'ui-integrations', attrs: { 'aria-labelledby': `${id}-title`, 'aria-describedby': `${id}-intro` } },
