@@ -5,6 +5,16 @@ All notable changes to AIOffice will be documented in this file.
 ## [Não lançado]
 Nenhuma mudança registrada.
 
+## [v2.4.5] - 2026-10-27
+
+### Adicionado
+- Tema V2 como cenário padrão do escritório, com recepção, copa, lounge e salas de projeto reorganizados; V1 continua disponível nas configurações. Foram adicionados 17 quadros e pôsteres pixel art derivados dos assets existentes.
+- Logos vetoriais de Claude, Codex, OMP e OpenCode nas referências de conta e provedor, incluindo chips, filtros, etiquetas do mapa, cartões, histórico, integrações e ajuda.
+
+### Alterado
+- O mapa usa os mesmos assets V2 e preserva lugares, interações e movimento dos agentes. Cores de borda continuam diferenciando contas, e os chips mantêm nomes acessíveis.
+- Os SVGs dos provedores são servidos localmente; origens e licença estão documentadas junto aos arquivos.
+
 ## [v2.4.4] - 2026-10-15
 
 ### Adicionado
@@ -174,7 +184,9 @@ Nenhuma mudança registrada.
 ### Security
 - None
 
-[Não lançado]: https://github.com/IAPro-Community/AIOffice/compare/v2.2.1...HEAD
+[Não lançado]: https://github.com/IAPro-Community/AIOffice/compare/v2.4.5...HEAD
+[v2.4.5]: https://github.com/IAPro-Community/AIOffice/compare/v2.4.4...v2.4.5
+[v2.4.4]: https://github.com/IAPro-Community/AIOffice/compare/v2.4.3...v2.4.4
 [v2.2.1]: https://github.com/IAPro-Community/AIOffice/releases/tag/v2.2.1
 [v2.1.0]: https://github.com/IAPro-Community/AIOffice/releases/tag/v2.1.0
 [v2.0.0]: https://github.com/IAPro-Community/AIOffice/releases/tag/v2.0.0
