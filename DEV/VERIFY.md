@@ -1,5 +1,18 @@
 # VERIFY — AIOffice
 
+## Logos dos provedores — 2026-10-27
+
+| Verificação | Evidência |
+|---|---|
+| Descoberta visual | Resultado `unresolved` (confidence 0): o repositório não configura biblioteca/perfil de design central. O escopo solicitado preserva os componentes locais e troca somente as marcas das ferramentas. |
+| Root e app typecheck | `npm run typecheck` e `npm --prefix apps/office-web run typecheck` aprovados. |
+| Build | `npm run build` aprovado; cliente e servidor compilados. O aviso existente de chunk acima de 500 kB permanece. |
+| Traduções | `npm --prefix apps/office-web run i18n:check` terminou com código 0; reportou quatro traduções V2 do mapa já ausentes antes da mudança. |
+| QA visual | Prévia local `?mock=1`: logos conferidos nos chips, filtros, etiquetas do mapa e ajuda. |
+| Diff | `git diff --check` aprovado. |
+| Testes automatizados | Não executados nesta mudança. |
+| Publicação | Commit versionado enviado a `main`; nenhuma tag/release de instaladores criada. |
+
 ## Mapa V2 de escritório — 2026-10-26
 
 | Verificação | Evidência |

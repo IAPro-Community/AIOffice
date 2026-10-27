@@ -1,4 +1,4 @@
-// Peças visuais reutilizadas pelos painéis: chip de conta (e o selo "Codex"), ponto de status, selo de papel, barra
+// Peças visuais reutilizadas pelos painéis: identidade de conta/provedor, ponto de status, selo de papel, barra
 // de progresso.
 import type { AccountInfo, Activity, AgentInfo, AgentStatus, Provider } from '../../../shared/types';
 import { h, setAttr, setHidden, setStyleVar, setText, setTitle, setVariant } from './dom';
@@ -6,10 +6,28 @@ import { shellDoneKind, shellLine, shellStage, statusLabel, type ShellWait } fro
 import { accountChipLabel, accountProvider, fallbackShort, PROVIDER_NAME, showsProviderTag } from './provider';
 import { tr } from '../../../shared/i18n';
 
-/**
- * Chip quadrado com a letra curta da conta ("C", "D") na cor da conta. Conta do Codex: o chip fica vazado (fundo
- * escuro, borda e letra na cor da conta, cantos em degrau): `data-provider="codex"`.
- */
+const PROVIDER_LOGOS: Partial<Record<Provider, string>> = {
+  claude: '/assets/providers/claude.svg',
+  codex: '/assets/providers/codex.svg',
+  omp: '/assets/providers/omp.svg',
+  opencode: '/assets/providers/opencode.svg',
+};
+
+/** Marca local do provedor; provedores sem asset continuam usando o rótulo curto da conta. */
+export function createProviderLogo(provider: Provider, className = 'ui-provider-logo'): HTMLImageElement | null {
+  const src = PROVIDER_LOGOS[provider];
+  if (!src) return null;
+  const image = document.createElement('img');
+  image.className = className;
+  image.src = src;
+  image.alt = '';
+  image.setAttribute('aria-hidden', 'true');
+  image.decoding = 'async';
+  image.draggable = false;
+  return image;
+}
+
+/** Chip quadrado com a marca do provedor; a borda colorida diferencia contas do mesmo provedor. */
 export function createAccountChip(size: 'sm' | 'md' | 'lg' = 'sm'): HTMLElement {
   return h('span', { class: `ui-acc-chip ui-acc-chip--${size}` });
 }
@@ -17,22 +35,46 @@ export function createAccountChip(size: 'sm' | 'md' | 'lg' = 'sm'): HTMLElement 
 /** `provider` = dica para quando a conta não está no snapshot (ex.: a sessão do histórico diz de que ferramenta é). */
 export function updateAccountChip(chip: HTMLElement, account: AccountInfo | undefined, fallbackId = '', provider?: Provider): void {
   const p = accountProvider(account, fallbackId, provider);
-  setText(chip, account?.short ?? fallbackShort(fallbackId, p));
+  const logoSrc = PROVIDER_LOGOS[p];
+  const existingLogo = chip.querySelector<HTMLImageElement>('.ui-acc-chip__logo');
+  if (logoSrc) {
+    if (existingLogo?.getAttribute('src') !== logoSrc) chip.replaceChildren(createProviderLogo(p, 'ui-acc-chip__logo')!);
+  } else {
+    const short = account?.short ?? fallbackShort(fallbackId, p);
+    if (existingLogo || chip.textContent !== short) setText(chip, short);
+  }
   setStyleVar(chip, '--acc', account?.color ?? '#8b98b3');
-  setAttr(chip, 'data-provider', p === 'claude' ? null : p);
+  setAttr(chip, 'data-provider', p);
   const label = accountChipLabel(account, fallbackId, p);
-  setTitle(chip, label);
-  setAttr(chip, 'aria-label', label);
+  const accessibleLabel = label.toLowerCase().includes(PROVIDER_NAME[p].toLowerCase()) ? label : `${PROVIDER_NAME[p]} · ${label}`;
+  setTitle(chip, accessibleLabel);
+  setAttr(chip, 'aria-label', accessibleLabel);
 }
 
-/** Selo de texto "Codex" ao lado do nome da conta (onde há espaço: gaveta, terminal, cartão de uso, dica). */
+/** Selo com logo e nome do provedor ao lado da conta, quando o nome não o identifica por si só. */
 export function createProviderTag(extra = ''): HTMLElement {
-  return h('span', { class: `ui-prov${extra ? ` ${extra}` : ''}`, text: 'Codex', hidden: true, title: tr('Agente do Codex (OpenAI)') });
+  return h('span', { class: `ui-prov${extra ? ` ${extra}` : ''}`, hidden: true });
 }
 
-/** Mostra o selo só para o Codex (e não repete quando o nome da conta já diz "Codex"). */
+/** Mostra logo e nome do provedor sem repetir o provedor que já aparece no nome da conta. */
 export function updateProviderTag(tag: HTMLElement, provider: Provider, accountName = ''): void {
-  setText(tag, provider === 'omp' ? 'OMP' : PROVIDER_NAME[provider]);
+  const src = PROVIDER_LOGOS[provider];
+  const existingLogo = tag.querySelector<HTMLImageElement>('.ui-prov__logo');
+  if (src) {
+    if (existingLogo?.getAttribute('src') !== src) {
+      const logo = createProviderLogo(provider, 'ui-prov__logo')!;
+      if (existingLogo) existingLogo.replaceWith(logo);
+      else tag.prepend(logo);
+    }
+  } else {
+    existingLogo?.remove();
+  }
+  let label = tag.querySelector<HTMLElement>('.ui-prov__label');
+  if (!label) {
+    label = h('span', { class: 'ui-prov__label' });
+    tag.append(label);
+  }
+  setText(label, provider === 'omp' ? 'OMP' : PROVIDER_NAME[provider]);
   setTitle(tag, provider === 'omp' ? 'Agente oh-my-pi' : `Agente ${PROVIDER_NAME[provider]}`);
   setHidden(tag, !showsProviderTag(provider, accountName));
 }

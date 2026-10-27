@@ -14,6 +14,7 @@ import type { Sim } from '../sim/sim';
 import { buildAnim } from './anim';
 import { drawFxBanner } from './github-fx';
 import type { HeadInfo, Renderer } from './renderer';
+import type { Provider } from '../../../../shared/types';
 import { tr } from '../../../../shared/i18n';
 
 // A Pixelify Sans tem o "C" maiúsculo quase fechado (lê-se "Oopa" em vez de "Copa") em qualquer
@@ -104,10 +105,53 @@ interface Label {
 type Item = Bubble | Label;
 
 /** Luminância relativa de uma cor hex (0..1). */
-/** Fundo do chip vazado das contas do Codex (o mesmo dos painéis). */
-const CODEX_CHIP_BG = '#161b26';
+/** Fundo dos chips de provedor no mapa (o mesmo dos painéis). */
+const PROVIDER_CHIP_BG = '#161b26';
 /** Selo "CODEX" das etiquetas: discreto (vidro claro), sem a cor de ninguém. */
 const CODEX_BADGE = 'CODEX';
+const PROVIDER_LOGOS: Partial<Record<Provider, string>> = {
+  claude: '/assets/providers/claude.svg',
+  codex: '/assets/providers/codex.svg',
+  omp: '/assets/providers/omp.svg',
+  opencode: '/assets/providers/opencode.svg',
+};
+const providerLogoCache = new Map<Provider, HTMLImageElement>();
+
+function supportsProviderLogo(provider: string | undefined): provider is Provider {
+  return !!provider && Object.hasOwn(PROVIDER_LOGOS, provider);
+}
+
+/** Retorna a marca quando o SVG local já carregou; a próxima pintura a inclui no mapa. */
+function loadedProviderLogo(provider: string | undefined): HTMLImageElement | null {
+  if (!supportsProviderLogo(provider)) return null;
+  let image = providerLogoCache.get(provider);
+  if (!image) {
+    const src = PROVIDER_LOGOS[provider];
+    if (!src) return null;
+    image = new Image();
+    image.src = src;
+    providerLogoCache.set(provider, image);
+  }
+  return image.complete && image.naturalWidth > 0 ? image : null;
+}
+
+function drawAccountMark(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, acc: { color: string; provider?: string }): boolean {
+  if (!supportsProviderLogo(acc.provider)) return false;
+  const logo = loadedProviderLogo(acc.provider);
+  const step = Math.max(1, size * 0.18);
+  ctx.save();
+  ctx.fillStyle = PROVIDER_CHIP_BG;
+  steppedRect(ctx, x, y, size, size, step);
+  ctx.fill();
+  ctx.lineWidth = Math.max(1, size * 0.12);
+  ctx.strokeStyle = acc.color;
+  steppedRect(ctx, x + ctx.lineWidth / 2, y + ctx.lineWidth / 2, size - ctx.lineWidth, size - ctx.lineWidth, step);
+  ctx.stroke();
+  const inset = Math.max(1, size * 0.16);
+  if (logo) ctx.drawImage(logo, x + inset, y + inset, size - inset * 2, size - inset * 2);
+  ctx.restore();
+  return true;
+}
 
 /** Octógono "em degrau" (um quadrado de cantos cortados, como um pixel arredondado). */
 function steppedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, s: number): void {
@@ -124,14 +168,15 @@ function steppedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: num
 }
 
 /**
- * Bolinha de uma conta (placas e pílulas das salas): cheia no Claude Code; vazada (anel na cor da conta) no Codex,
- * como o chip dos painéis.
+ * Marcador de uma conta (placas e pílulas das salas): usa logo e contorno colorido quando há uma marca local.
  */
 function accountDot(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, acc: { color: string; provider?: string }): void {
+  const markSize = Math.max(8, r * 2.4);
+  if (drawAccountMark(ctx, x - markSize / 2, y - markSize / 2, markSize, acc)) return;
   ctx.beginPath();
   ctx.arc(x, y, r, 0, Math.PI * 2);
   if (acc.provider === 'codex') {
-    ctx.fillStyle = CODEX_CHIP_BG;
+    ctx.fillStyle = PROVIDER_CHIP_BG;
     ctx.fill();
     ctx.lineWidth = Math.max(1.2, r * 0.55);
     ctx.strokeStyle = acc.color;
@@ -902,7 +947,6 @@ export class Overlay {
     const ch = l.ch;
     const acc = this.sim.accounts.get(ch.info.account);
     const sub = ch.info.kind === 'sub';
-    const codex = ch.info.provider === 'codex' || acc?.provider === 'codex';
     const { nameW, chipW, badgeW, codexW } = this.labelWidth(l);
     const { x, y, w, h } = l;
     const selected = sel.agent === ch.id;
@@ -911,31 +955,18 @@ export class Overlay {
     ctx.roundRect(x, y, w, h, 7.5);
     ctx.fill();
     let cx = x + 4;
-    if (acc && codex) {
-      // Codex: chip vazado de cantos em degrau (fundo escuro, borda e letra na cor da conta), como nos painéis.
-      steppedRect(ctx, cx, y + h / 2 - 5, 10, 10, 2);
-      ctx.fillStyle = CODEX_CHIP_BG;
-      ctx.fill();
-      ctx.lineWidth = 1.5;
-      ctx.strokeStyle = acc.color;
-      steppedRect(ctx, cx + 0.75, y + h / 2 - 4.25, 8.5, 8.5, 1.6);
-      ctx.stroke();
-      ctx.font = CHIP_FONT;
-      ctx.textAlign = 'center';
-      ctx.fillStyle = acc.color;
-      ctx.fillText(acc.short.slice(0, 1), cx + 5, y + h / 2 + 0.5);
-      ctx.textAlign = 'left';
-      cx += chipW;
-    } else if (acc) {
-      ctx.beginPath();
-      ctx.arc(cx + 5, y + h / 2, 5, 0, Math.PI * 2);
-      ctx.fillStyle = acc.color;
-      ctx.fill();
-      ctx.font = CHIP_FONT;
-      ctx.textAlign = 'center';
-      ctx.fillStyle = luminance(acc.color) > 0.62 ? '#1d2330' : '#ffffff';
-      ctx.fillText(acc.short.slice(0, 1), cx + 5, y + h / 2 + 0.5);
-      ctx.textAlign = 'left';
+    if (acc) {
+      if (!drawAccountMark(ctx, cx, y + h / 2 - 5, 10, acc)) {
+        ctx.beginPath();
+        ctx.arc(cx + 5, y + h / 2, 5, 0, Math.PI * 2);
+        ctx.fillStyle = acc.color;
+        ctx.fill();
+        ctx.font = CHIP_FONT;
+        ctx.textAlign = 'center';
+        ctx.fillStyle = luminance(acc.color) > 0.62 ? '#1d2330' : '#ffffff';
+        ctx.fillText(acc.short.slice(0, 1), cx + 5, y + h / 2 + 0.5);
+        ctx.textAlign = 'left';
+      }
       cx += chipW;
     }
     ctx.font = LABEL_FONT;

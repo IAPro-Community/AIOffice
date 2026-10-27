@@ -143,8 +143,19 @@
 }
 
 .ui-integrations .ui-integrations__provider h4 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   margin: 0;
   font: 700 14px/1.35 var(--font-ui);
+}
+
+.ui-integrations__provider-logo {
+  display: block;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
 }
 
 .ui-integrations .ui-integrations__source-status {
@@ -237,6 +248,12 @@
   display: flex;
   flex-wrap: wrap;
   gap: 3px 10px;
+}
+
+.ui-integrations .ui-integrations__inactive-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .ui-integrations .ui-integrations__inactive span {

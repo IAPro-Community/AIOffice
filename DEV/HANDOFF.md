@@ -1,5 +1,12 @@
 # HANDOFF — AIOffice
 
+## Logos dos provedores — 2026-10-27
+- Claude, Codex, OMP e OpenCode agora usam logos SVG locais nas contas, referências dos painéis e etiquetas do mapa; os rótulos acessíveis continuam disponíveis.
+- A cobertura inclui topo, cartões de uso/atividade, ajuda, integrações, histórico e filtros da barra lateral. Fontes dos assets e licença do SVG OMP estão registradas em `apps/office-web/client/public/assets/providers/README.md`.
+- Base visual: componentes locais preservados porque a solicitação foi substituir os marcadores por letras no painel existente; não há Design Profile central configurado.
+- Typechecks, build e `git diff --check` aprovados; conferência visual da prévia local concluída. `i18n:check` retornou sucesso com quatro traduções ausentes preexistentes na configuração V2 do mapa. Testes automatizados não executados.
+- O commit da mudança foi preparado para envio à branch principal conforme solicitado; não foi criada tag/release de instaladores.
+
 ## Mapa V2 de escritório — 2026-10-26
 
 - V2 é o cenário padrão e V1 continua disponível em **Configurações → Aparência → Tema do mapa**. O lounge separa pingue-pongue, área do sofá e fliperamas; salas de projeto têm três postos isolados e corredor para reunião.

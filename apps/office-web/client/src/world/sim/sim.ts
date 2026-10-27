@@ -103,7 +103,7 @@ export class Sim {
   /** Depuração: agentes forçados a encerrar e salas forçadas a sumir do snapshot. */
   readonly forcedOffline = new Set<string>();
   readonly hiddenRooms = new Set<string>();
-  /** Contas do snapshot (id -> cor/letra/ferramenta) para etiquetas: a do Codex ganha chip vazado e o selo. */
+  /** Contas do snapshot (id -> cor, nome e provedor) usadas nas etiquetas e marcadores do mapa. */
   accounts = new Map<string, { short: string; color: string; name: string; provider?: Provider }>();
   /** Depuração: salas/agentes extras mesclados a cada snapshot (sessões simuladas). */
   injected: { rooms: RoomInfo[]; agents: AgentInfo[] } = { rooms: [], agents: [] };
@@ -145,7 +145,7 @@ export class Sim {
     this.now = now;
     const first = !this.initialized;
     this.initialized = true;
-    this.accounts = new Map(snap.accounts.map((a) => [a.id, { short: a.short, color: a.color, name: a.name, ...(a.provider === 'codex' ? { provider: a.provider } : {}) }]));
+    this.accounts = new Map(snap.accounts.map((a) => [a.id, { short: a.short, color: a.color, name: a.name, provider: a.provider ?? 'claude' }]));
 
     // ---- salas
     let layoutDirty = false;

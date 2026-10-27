@@ -11,7 +11,7 @@ import { calendarDayDiff, formatClock, formatDateTime, normalizeSearch, plural, 
 import { ICONS } from './icons';
 import { PROVIDER_NAME } from './provider';
 import { sessionProjectName, TERMINAL_UNAVAILABLE_HINT, type TerminalControl } from './terminal';
-import { createAccountChip, updateAccountChip } from './widgets';
+import { createAccountChip, createProviderLogo, updateAccountChip } from './widgets';
 import { intlLocale, tr } from '../../../shared/i18n';
 import type { Provider } from '../../../shared/types';
 
@@ -326,10 +326,13 @@ export class HistoryPopover implements UiComponent {
     const live = s.open && !!s.agentId && !!this.ctx.agent(s.agentId);
     const provider = s.provider;
     const providerName = provider ? providerLabel(provider) : '';
+    const providerBadge = provider
+      ? h('span', { class: 'ui-prov ui-prov--xs' }, createProviderLogo(provider, 'ui-prov__logo'), h('span', { class: 'ui-prov__label', text: providerName }))
+      : null;
     const meta = h(
       'span',
       { class: 'ui-hist__meta' },
-      providerName ? h('span', { class: 'ui-prov ui-prov--xs', text: providerName }) : null,
+      providerBadge,
       h('span', { class: 'ui-hist__project', text: project }),
       h('span', { class: 'ui-hist__time', text: formatClock(s.lastAt, false) }),
     );

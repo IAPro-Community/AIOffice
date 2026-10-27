@@ -1,8 +1,7 @@
 // De qual ferramenta é cada coisa (Claude Code ou Codex) e os textos que mudam com ela. Puro (sem DOM): testado em
 // ui/provider.test.ts. No protocolo, `provider` ausente quer dizer Claude Code (shared/types.ts); aqui tudo cai nisso.
 //
-// Identidade visual do Codex (sem logotipo de ninguém): o chip da conta fica "vazado" (fundo escuro, borda e letra na
-// cor da conta, cantos em degrau) e, onde há espaço, um selo de texto "Codex" ao lado do nome.
+// Os chips e selos reutilizados pelos painéis usam as marcas locais dos provedores com suporte visual.
 import type { AccountInfo, OfficeSnapshot, Provider } from '../../../shared/types';
 import { shortcutHint } from './model';
 import { tr } from '../../../shared/i18n';
@@ -43,7 +42,7 @@ export function fallbackShort(id: string, provider: Provider = accountProvider(u
   const rest = id
     .replace(/^.*:/, '')
     .replace(/~\d+$/, '')
-    .replace(/^\.?(?:claude|codex|omp)(?=[-_.]|$)[-_.]?/i, '');
+    .replace(/^\.?(?:claude|codex|omp|opencode)(?=[-_.]|$)[-_.]?/i, '');
   const letter = /[\p{L}\p{N}]/u.exec(rest)?.[0];
   if (letter) return letter.toUpperCase();
   return provider === 'codex' || provider === 'freebuf' ? 'X' : '?';
@@ -64,8 +63,12 @@ export function showsProviderTag(provider: Provider, accountName = ''): boolean 
 
 /** Rótulo do chip da conta (dica e leitores de tela): "Conta C (dev@x.com)", "Codex · plano Team". */
 export function accountChipLabel(account: Pick<AccountInfo, 'name' | 'email' | 'plan' | 'provider'> | undefined, fallbackId: string, provider: Provider): string {
-  if (!account) return fallbackId ? `${fallbackId}${provider === 'codex' ? ' · Codex' : provider === 'omp' ? ' · OMP' : ''}` : tr('Conta desconhecida');
+  if (!account) return fallbackId ? `${fallbackId}${provider === 'codex' ? ' · Codex' : provider === 'omp' ? ' · OMP' : provider === 'opencode' ? ' · OpenCode' : ''}` : tr('Conta desconhecida');
   if (provider === 'omp') return `${account.name} · OMP`;
+  if (provider === 'opencode') {
+    const tag = showsProviderTag(provider, account.name) ? ` · ${PROVIDER_NAME[provider]}` : '';
+    return `${account.name}${tag}${account.email ? ` (${account.email})` : ''}`;
+  }
   if (provider !== 'codex') return `${account.name}${account.email ? ` (${account.email})` : ''}`;
   const tag = showsProviderTag(provider, account.name) ? ' · Codex' : '';
   return `${account.name}${tag}${account.plan ? tr(' · plano {0}', [account.plan]) : ''}`;

@@ -1,5 +1,13 @@
 # ESPECIFICAÇÃO ATIVA — AIOffice
 
+## Logos dos provedores no painel — 2026-10-27
+- **Status**: implementação concluída; chips e referências visuais de Claude, Codex, OMP e OpenCode usam as marcas SVG locais, inclusive no mapa.
+- **Escopo visual**: preservar os componentes e estilos existentes do painel e substituir os identificadores por letras pelos logos; sem redesenho global.
+- **Design system**: a descoberta automática não encontrou uma biblioteca/perfil central configurado. A solicitação do maestro restringe a mudança às referências já existentes, portanto os componentes locais atuais são a base adotada.
+- **Cobertura**: chips de conta, tags de provedor, filtros, ajuda, integrações, histórico, cartões de uso/atividade e marcadores do mapa.
+- **Aceite**: assets servidos localmente, nomes acessíveis preservados, build/typechecks/i18n e prévia visual aprovados. Testes automatizados não executados.
+- **Distribuição**: mudança versionada em commit na branch `main`; sem nova tag ou release de instaladores nesta etapa.
+
 ## Tema V2 do mapa de escritório — 2026-10-26
 - **Status**: implementação concluída; V2 é o padrão e V1 mantém a composição original, selecionável em Configurações → Aparência.
 - **Direção**: preservar o estilo pixel art e os sprites existentes. O V2 organiza recepção, copa, lounge e salas de projeto em zonas de uso; os quadros e pôsteres são variantes pixel art derivadas das referências originais.

@@ -59,7 +59,7 @@ const GITHUB_HELP: [string, string][] = [
 /** O Codex no escritório: o que muda em relação ao Claude Code (trechos `assim` viram código). */
 const CODEX_HELP: string[] = [
   tr('Cada projeto aberto no Codex (no terminal ou no app) vira uma sala: a mesma do Claude Code naquela pasta, e os dois dividem a sala.'),
-  tr('Os agentes do Codex têm o chip da conta vazado (só a borda na cor da conta) e o selo CODEX na etiqueta e nos detalhes.'),
+  tr('Os agentes do Codex mostram a logo do Codex no chip da conta; o selo CODEX continua na etiqueta e nos detalhes.'),
   tr('{0} Sem os hooks, o escritório lê os arquivos de sessão do Codex: cada passo aparece quando termina.', [CODEX_LIVE_HINT]),
   tr('Aprovar pelo escritório: no Codex, a aprovação só aparece no terminal depois que você responder aqui ou o prazo acabar (alguns segundos). Não há “não perguntar de novo” nem “interromper”, e recusar pede um motivo.'),
   tr('Mensagens do Codex entram na fila da sessão e viram o próximo prompt quando ela fica ociosa. O aplicativo instalado usa a CLI local; no Docker, o auxiliar roda no host.'),
@@ -258,8 +258,14 @@ export class HelpDialog {
       h(
         'ul',
         { class: 'ui-help__list' },
-        h('li', { text: tr('O chip colorido identifica a conta e a ferramenta do agente: C para Claude Code, X para Codex e O para oh-my-pi.') }),
-        h('li', {}, accountSample('C', '#f08a3c'), accountSample('X', '#a77bf3', 'codex'), accountSample('O', '#52d6b4', 'omp'), h('span', { text: tr('Claude Code, Codex e oh-my-pi.') })),
+        h('li', { text: tr('O chip mostra a logo do provedor; a cor da borda identifica a conta.') }),
+        h('li', {},
+          accountSample('C', '#f08a3c', 'claude'),
+          accountSample('X', '#a77bf3', 'codex'),
+          accountSample('O', '#52d6b4', 'omp'),
+          accountSample('O', '#a6b2c8', 'opencode'),
+          h('span', { text: tr('Claude Code, Codex, oh-my-pi e OpenCode.') }),
+        ),
         h('li', {
           text: tr('No topo, Claude Code e Codex mostram o uso da sessão de 5 horas e da semana quando os dados existem. O oh-my-pi ainda não fornece esses números ao Habblaud.'),
         }),
@@ -303,7 +309,7 @@ export class HelpDialog {
 /** Um chip de conta de exemplo (legenda). */
 function accountSample(short: string, color: string, provider?: Provider): HTMLElement {
   const chip = createAccountChip('sm');
-  const name = provider === 'codex' ? 'Codex' : provider === 'omp' ? 'oh-my-pi' : tr('Conta {0}', [short]);
+  const name = provider === 'codex' ? 'Codex' : provider === 'omp' ? 'oh-my-pi' : provider === 'opencode' ? 'OpenCode' : tr('Conta {0}', [short]);
   updateAccountChip(chip, { id: short, short, name, color, configDir: '', sessions: 0, usageStatus: 'disabled', ...(provider ? { provider } : {}) });
   chip.setAttribute('aria-hidden', 'true');
   return chip;

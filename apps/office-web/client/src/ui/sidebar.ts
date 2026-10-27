@@ -11,7 +11,7 @@ import { groupRooms, type AgentNode, type RoomGroup } from './model';
 import { officeIsEmpty } from './overlays';
 import { PROVIDER_NAME } from './provider';
 import { createAgentRow, updateAgentRow } from './rows';
-import { createAccountChip, createProgress, updateAccountChip, updateProgress } from './widgets';
+import { createAccountChip, createProviderLogo, createProgress, updateAccountChip, updateProgress } from './widgets';
 import { tr } from '../../../shared/i18n';
 
 interface RoomRefs {
@@ -111,7 +111,12 @@ export class Sidebar implements UiComponent {
       animate: false,
       key: (provider) => provider,
       create: (provider) => {
-        const button = h('button', { class: 'ui-acc-filter ui-provider-filter', type: 'button', text: PROVIDER_NAME[provider] });
+        const button = h(
+          'button',
+          { class: 'ui-acc-filter ui-provider-filter', type: 'button' },
+          createProviderLogo(provider, 'ui-provider-filter__logo'),
+          h('span', { class: 'ui-provider-filter__name', text: PROVIDER_NAME[provider] }),
+        );
         button.dataset.provider = provider;
         button.addEventListener('click', () => this.toggleProvider(provider));
         return button;

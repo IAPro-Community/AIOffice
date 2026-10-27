@@ -44,6 +44,7 @@ import {
 import { formatClock } from './format';
 import { ICONS } from './icons';
 import { accountProvider } from './provider';
+import { createAccountChip, updateAccountChip } from './widgets';
 import { tr } from '../../../shared/i18n';
 
 const REFRESH_MS = 30_000;
@@ -574,9 +575,11 @@ export class DayPanel implements UiComponent {
     const list = h('ol', { class: 'ui-day__waits' });
     for (const w of rows) {
       const acc = accounts.get(w.account);
-      const chip = h('span', { class: 'ui-acc-chip', text: acc?.short ?? '?', title: acc?.name ?? w.account });
+      const account = this.ctx.account(w.account);
+      const chip = createAccountChip('sm');
+      updateAccountChip(chip, account, w.account, this.isCodexAccount(w.account) ? 'codex' : undefined);
+      setAttr(chip, 'aria-hidden', 'true');
       setStyleVar(chip, '--acc', acc?.color ?? '#8b98b3');
-      if (this.isCodexAccount(w.account)) chip.dataset.provider = 'codex';
       list.append(
         h(
           'li',
@@ -618,7 +621,11 @@ export class DayPanel implements UiComponent {
     }
     const grid = h('div', { class: 'ui-day__accounts' });
     for (const a of cards) {
-      const chip = h('span', { class: 'ui-acc-chip ui-acc-chip--md', text: a.short, attrs: { 'aria-hidden': 'true', ...(a.codex ? { 'data-provider': 'codex' } : {}) } });
+      const account = this.ctx.account(a.id);
+      const provider = a.codex ? 'codex' : accountProvider(account, a.id);
+      const chip = createAccountChip('md');
+      updateAccountChip(chip, account, a.id, provider);
+      setAttr(chip, 'aria-hidden', 'true');
       setStyleVar(chip, '--acc', a.color);
       const meter = h(
         'span',

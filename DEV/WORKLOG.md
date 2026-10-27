@@ -1,5 +1,11 @@
 # WORKLOG — AIOffice
 
+## 2026-10-27 — Logos dos provedores no painel
+- **Mudança**: substituí os marcadores de conta por letras por logos locais de Claude, Codex, OMP e OpenCode em chips, tags, filtros, histórico, ajuda, integrações, uso e mapa. Registrei as fontes dos vetores e a licença do ícone OMP junto aos assets.
+- **Motivo**: identificar cada ferramenta pelo próprio símbolo nas referências do painel.
+- **Verificação**: typecheck raiz e web, build, `i18n:check`, diff sem whitespace inválido e inspeção visual da prévia local aprovados. `i18n:check` ainda lista quatro traduções de configurações V2 do mapa ausentes, anteriores a esta mudança. Testes automatizados não executados.
+- **Publicação**: atualização versionada em commit e enviada à branch `main` conforme pedido; sem tag ou release de instaladores.
+
 ## 2026-10-26 — Tema V2 e organização do mapa
 - **Mudança**: tornei V2 o padrão, mantive V1 selecionável e reorganizei recepção, copa, lounge e salas de projeto. Separei o pingue-pongue do sofá e cada posto de trabalho; adicionei 17 variantes de quadros/pôsteres derivadas dos assets originais.
 - **Verificação**: gerador das artes, build e typecheck aprovados; comparação visual V1/V2 com bonequinhos ativos. Testes automatizados não executados.

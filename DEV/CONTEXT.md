@@ -1,5 +1,10 @@
 # CONTEXTO — AIOffice
 
+## Identificação visual dos provedores
+- Claude, Codex, OMP (oh-my-pi) e OpenCode têm SVGs locais reutilizados em chips de conta, selos, filtros e referências do mapa. Assim, o painel identifica a ferramenta pelo logo e mantém a cor da borda para diferenciar contas.
+- O README da pasta dos assets registra a origem dos logos; o ícone upstream do OMP mantém sua licença MIT ao lado do arquivo.
+- Não há Design Profile central configurado no repositório; a interface segue os componentes locais existentes.
+
 ## Temas do mapa
 - `v2` é o tema padrão e reorganiza as salas em zonas de trabalho, colaboração e lazer com os assets pixel art do projeto. `v1` preserva a composição original e pode ser selecionado em Configurações → Aparência.
 - As 17 artes de parede V2 são geradas a partir dos quadros e pôsteres pixel art originais. A preferência de mapa é independente dos cenários sazonais; personagens, lugares e animações continuam ativos nos dois temas.

@@ -4,6 +4,7 @@ import type { UiComponent, UiContext } from './context';
 import { h, iconButton, setText } from './dom';
 import { ICONS } from './icons';
 import { PROVIDER_NAME, providerOf } from './provider';
+import { createProviderLogo } from './widgets';
 import { tr } from '../../../shared/i18n';
 import './integrations.css';
 
@@ -46,9 +47,12 @@ export class IntegrationsCenter implements UiComponent {
     this.connection = h('span', { class: 'ui-integrations__connection', role: 'status', attrs: { 'aria-live': 'polite', 'aria-atomic': 'true' } });
     this.snapshotState = h('p', { class: 'ui-integrations__hint' });
     this.closeButton = iconButton(ICONS.close, tr('Fechar integrações'), () => this.close());
-    const inactive = h('ul', { class: 'ui-integrations__inactive' }, ...INACTIVE_PROVIDERS.map((provider) =>
-      h('li', {}, h('strong', { text: PROVIDER_NAME[provider] }), h('span', { text: tr('Adaptador inativo · cobertura incompleta') })),
-    ));
+    const inactive = h('ul', { class: 'ui-integrations__inactive' }, ...INACTIVE_PROVIDERS.map((provider) => {
+      const name = h('strong', { class: 'ui-integrations__inactive-name', text: PROVIDER_NAME[provider] });
+      const logo = createProviderLogo(provider, 'ui-integrations__provider-logo');
+      if (logo) name.prepend(logo);
+      return h('li', {}, name, h('span', { text: tr('Adaptador inativo · cobertura incompleta') }));
+    }));
     this.el = h('dialog', { class: 'ui-integrations', attrs: { 'aria-labelledby': `${id}-title`, 'aria-describedby': `${id}-intro` } },
       h('header', { class: 'ui-integrations__head' },
         h('div', {}, h('span', { class: 'ui-integrations__eyebrow', text: tr('Integrações') }), h('h2', { text: tr('O que cada fonte oferece'), attrs: { id: `${id}-title` } })),
@@ -173,7 +177,7 @@ export class IntegrationsCenter implements UiComponent {
         ? tr('Mensagens exigem o entregador configurado. Aprovações exigem os hooks locais. Uso depende dos rate_limits gravados nas sessões; números antigos continuam identificados como antigos.')
         : tr('Mensagens exigem o plugin consultando a caixa de entrada. Aprovações exigem o hook de permissões. Uso depende do statusline ou cache local. Claude Desktop Chat/Cowork usa a bridge MCP descrita abaixo.');
     return h('article', { class: 'ui-integrations__provider', attrs: { 'data-provider': provider } },
-      h('div', { class: 'ui-integrations__provider-head' }, h('h4', { text: PROVIDER_NAME[provider] }), status),
+      h('div', { class: 'ui-integrations__provider-head' }, h('h4', {}, createProviderLogo(provider, 'ui-integrations__provider-logo'), h('span', { text: PROVIDER_NAME[provider] })), status),
       sessions, coverage,
       h('details', { class: 'ui-integrations__details' }, h('summary', { text: tr('Fontes configuradas e requisitos') }), sources, h('p', { class: 'ui-integrations__hint', text: notes })),
     );
