@@ -1,10 +1,17 @@
 # WORKLOG — AIOffice
 
+## 2026-10-27 — Release AIOffice v2.4.6 publicada
+- **Escopo**: consolidar desde a v2.4.4 o mapa V2 como cenário padrão com V1 selecionável, novas artes pixel art e logos vetoriais de Claude, Codex, OMP e OpenCode nas referências do painel e mapa.
+- **Versão**: `package.json` e lockfile em `2.4.6`; `CHANGELOG.md` registra todas as mudanças desde a última release publicada. A prévia ilustrativa da extensão também mostra 2.4.6.
+- **Validação local**: root/web typechecks, build, `npm run release -- --dry-run` e `git diff --check` passaram. O build mantém o aviso conhecido de chunk acima de 500 kB.
+- **Publicação**: tag `v2.4.6` no commit `d04d4b1`; workflow [40508543768](https://github.com/IAPro-Community/AIOffice/actions/runs/40508543768) aprovou `desktop:verify`, Windows/Linux, smokes e hashes dos cinco assets. Release publicada como latest.
+- **Tentativa v2.4.5**: tag não reutilizada; workflow [40507831663](https://github.com/IAPro-Community/AIOffice/actions/runs/40507831663) falhou em `desktop:verify` por mocks DOM mínimos. A correção entrou na v2.4.6; nenhum asset/release foi publicado sob v2.4.5.
+
 ## 2026-10-27 — Logos dos provedores no painel
 - **Mudança**: substituí os marcadores de conta por letras por logos locais de Claude, Codex, OMP e OpenCode em chips, tags, filtros, histórico, ajuda, integrações, uso e mapa. Registrei as fontes dos vetores e a licença do ícone OMP junto aos assets.
 - **Motivo**: identificar cada ferramenta pelo próprio símbolo nas referências do painel.
 - **Verificação**: typecheck raiz e web, build, `i18n:check`, diff sem whitespace inválido e inspeção visual da prévia local aprovados. `i18n:check` ainda lista quatro traduções de configurações V2 do mapa ausentes, anteriores a esta mudança. Testes automatizados não executados.
-- **Publicação**: atualização versionada em commit e enviada à branch `main` conforme pedido; sem tag ou release de instaladores.
+- **Publicação**: commit inicial enviado a `main`; depois incluído na release `v2.4.6` com o mapa V2. Não houve tag na etapa inicial.
 
 ## 2026-10-26 — Tema V2 e organização do mapa
 - **Mudança**: tornei V2 o padrão, mantive V1 selecionável e reorganizei recepção, copa, lounge e salas de projeto. Separei o pingue-pongue do sofá e cada posto de trabalho; adicionei 17 variantes de quadros/pôsteres derivadas dos assets originais.

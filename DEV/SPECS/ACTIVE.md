@@ -5,8 +5,8 @@
 - **Escopo visual**: preservar os componentes e estilos existentes do painel e substituir os identificadores por letras pelos logos; sem redesenho global.
 - **Design system**: a descoberta automática não encontrou uma biblioteca/perfil central configurado. A solicitação do maestro restringe a mudança às referências já existentes, portanto os componentes locais atuais são a base adotada.
 - **Cobertura**: chips de conta, tags de provedor, filtros, ajuda, integrações, histórico, cartões de uso/atividade e marcadores do mapa.
-- **Aceite**: assets servidos localmente, nomes acessíveis preservados, build/typechecks/i18n e prévia visual aprovados. Testes automatizados não executados.
-- **Distribuição**: mudança versionada em commit na branch `main`; sem nova tag ou release de instaladores nesta etapa.
+- **Aceite**: assets servidos localmente, nomes acessíveis preservados, build/typechecks/i18n e prévia visual aprovados. A suíte automatizada passou no gate `desktop:verify` da CI para a release v2.4.6, após a correção dos mocks DOM.
+- **Distribuição**: incluída na release `v2.4.6`; tag e instaladores publicados no GitHub.
 
 ## Tema V2 do mapa de escritório — 2026-10-26
 - **Status**: implementação concluída; V2 é o padrão e V1 mantém a composição original, selecionável em Configurações → Aparência.
@@ -16,7 +16,7 @@
 
 ## 1. Identificação do Projeto
 - **Nome**: AIOffice
-- **Status**: release estável latest [`v2.4.4`](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.4.4), publicada a partir do commit `6720cc69a7ab34b5b53369e1949bc5c4e4201433`; workflow `38818251334` aprovou verificação, builds Windows/Linux, smokes, cinco assets e digests. A extensão Chrome, Native Messaging host e tutorial foram publicados. macOS permanece sem pacote até assinatura/notarização Apple verificadas; não orientar a contornar o Gatekeeper.
+- **Status**: release estável latest [`v2.4.6`](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.4.6), publicada no commit `d04d4b1c9d825a8dde5d55a533bc756e107a339a`; workflow `40508543768` aprovou verificação, builds/smokes Windows/Linux, cinco assets e digests. A extensão Chrome, Native Messaging host e tutorial foram publicados. macOS permanece sem pacote até assinatura/notarização Apple verificadas; não orientar a contornar o Gatekeeper.
 - **Localização**: Repositório AIOffice
 
 ## 2. Pilares de Integração

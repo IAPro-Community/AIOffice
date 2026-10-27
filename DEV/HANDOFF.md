@@ -1,5 +1,12 @@
 # HANDOFF — AIOffice
 
+## Release AIOffice v2.4.6 — 2026-10-27
+- **Escopo desde v2.4.4**: mapa V2 como padrão com V1 selecionável, reorganização do escritório e 17 quadros/pôsteres pixel art; logos de Claude, Codex, OMP e OpenCode nas referências de conta, filtros, cartões, histórico, integrações, ajuda e mapa.
+- **Publicação**: tag `v2.4.6` no commit `d04d4b1c9d825a8dde5d55a533bc756e107a339a`; [release latest](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.4.6). Workflow [40508543768](https://github.com/IAPro-Community/AIOffice/actions/runs/40508543768) concluiu com sucesso.
+- **Validação**: `desktop:verify`, builds Windows/Linux, smokes empacotados e conferência remota dos cinco assets (nomes, tamanhos e SHA-256) aprovados. Detalhes em `DEV/VERIFY.md`.
+- **v2.4.5**: a tag foi enviada, mas o workflow [40507831663](https://github.com/IAPro-Community/AIOffice/actions/runs/40507831663) falhou em `desktop:verify` por chamadas DOM não suportadas pelos mocks dos testes. Não houve release; a tag foi mantida e a correção foi incluída na v2.4.6.
+- **Plataformas**: release contém Windows e Linux, além do ZIP da extensão. macOS continua suspenso até haver assinatura e notarização válidas.
+
 ## Logos dos provedores — 2026-10-27
 - Claude, Codex, OMP e OpenCode agora usam logos SVG locais nas contas, referências dos painéis e etiquetas do mapa; os rótulos acessíveis continuam disponíveis.
 - A cobertura inclui topo, cartões de uso/atividade, ajuda, integrações, histórico e filtros da barra lateral. Fontes dos assets e licença do SVG OMP estão registradas em `apps/office-web/client/public/assets/providers/README.md`.

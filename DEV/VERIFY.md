@@ -1,5 +1,23 @@
 # VERIFY — AIOffice
 
+## Release v2.4.6 — publicada em 2026-10-27
+
+| Verificação | Evidência |
+|---|---|
+| Versão e changelog | `package.json`/`package-lock.json` em `2.4.6`; `npm run release -- --dry-run` gerou notas cobrindo o intervalo desde a v2.4.4. |
+| Typechecks/build locais | `npm run typecheck`, `npm --prefix apps/office-web run typecheck` e `npm run build` aprovados. O cliente mantém o aviso de chunk acima de 500 kB. |
+| GitHub Actions | [Run 40508543768](https://github.com/IAPro-Community/AIOffice/actions/runs/40508543768) `success`: `desktop:verify`, empacotamento e smoke Windows/Linux, manifesto e conferência dos nomes, tamanhos e SHA-256. |
+| Release pública | [AIOffice v2.4.6](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.4.6), publicada como latest; tag aponta para `d04d4b1c9d825a8dde5d55a533bc756e107a339a`. |
+| Tag v2.4.5 | [Run 40507831663](https://github.com/IAPro-Community/AIOffice/actions/runs/40507831663) falhou em `desktop:verify` porque mocks DOM não implementam `prepend`/`replaceChildren`. A tag foi mantida; não houve release nem assets. A correção passou no run v2.4.6. |
+
+| Asset público | Bytes | SHA-256 GitHub |
+|---|---:|---|
+| `AIOffice-Setup.exe` | 124610238 | `87032b11d25a2a8550f92efe25984cddc1973107b2fd7910f549a0a95d92eac8` |
+| `AIOffice-Chrome-Extension.zip` | 98338 | `9fe7cd4094c9e87d73c94ebd8718a5985b479f6aec0d59460f654e20c0a44e29` |
+| `AIOffice-Setup-Linux-x64.AppImage` | 133800425 | `c5b5dfbce842634eadf152e6339b579289f480f7ae406f5fcc78575ac14bfef3` |
+| `AIOffice-Setup-Linux-x64.deb` | 106595652 | `5f6ed2976bcc3b13ab85f1047b7f1fe93a1c0a2a6d138105bac99206a910fd9f` |
+| `latest-linux.yml` | 371 | `97d6ffba1cef76dfd8b92db4072f32d3ef8159501cf3bf027af55e1147e2f37d` |
+
 ## Logos dos provedores — 2026-10-27
 
 | Verificação | Evidência |
@@ -10,8 +28,8 @@
 | Traduções | `npm --prefix apps/office-web run i18n:check` terminou com código 0; reportou quatro traduções V2 do mapa já ausentes antes da mudança. |
 | QA visual | Prévia local `?mock=1`: logos conferidos nos chips, filtros, etiquetas do mapa e ajuda. |
 | Diff | `git diff --check` aprovado. |
-| Testes automatizados | Não executados nesta mudança. |
-| Publicação | Commit `91dbfd1` enviado a `main`; `git ls-remote` confirmou o mesmo SHA remoto. Nenhuma tag/release de instaladores criada. |
+| Testes automatizados | Não executados localmente na etapa inicial; `desktop:verify` passou na CI da v2.4.6 depois da correção dos mocks DOM. |
+| Publicação | A mudança entrou na tag/release `v2.4.6`; workflow e digests estão na seção inicial. O commit `91dbfd1` foi a etapa inicial sem release.
 
 ## Mapa V2 de escritório — 2026-10-26
 
