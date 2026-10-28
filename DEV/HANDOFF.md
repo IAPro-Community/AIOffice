@@ -1,5 +1,13 @@
 # HANDOFF — AIOffice
 
+## Cotas de uso no companion Chrome — v2.4.7 em preparação
+- O painel lateral passa a exibir cotas individuais Claude Code e Codex, com janelas de sessão e semana, limites por modelo quando fornecidos, leitura recente/antiga e previsão de renovação. Janelas já renovadas mostram uso desconhecido.
+- O filtro Native Messaging preserva apenas identificador, nome, provedor, plano, sessões, cor e janelas de uso validadas; campos de perfil e credenciais continuam fora do snapshot.
+- Versão raiz e lockfile em 2.4.7; versão do manifesto Chrome em 0.1.1.
+- npm ci, npm run desktop:verify e npm run release -- --dry-run aprovados. O preflight executou typechecks, build, testes raiz/web/desktop/extensão, i18n e testes do host nativo. A extensão passou 23 testes; web, 1.279 testes com 10 ignorados; desktop, 36 testes.
+- QA visual pendente: a prévia do painel no Chrome ainda precisa ser conferida; a automação de desktop interrompeu a inspeção anterior por não identificar a URL ativa com segurança.
+- Próxima ação: commit e push fast-forward para main, depois publicar a tag v2.4.7; o workflow GitHub valida e monta os assets Windows/Linux e ZIP da extensão.
+
 ## Release AIOffice v2.4.6 — 2026-10-27
 - **Escopo desde v2.4.4**: mapa V2 como padrão com V1 selecionável, reorganização do escritório e 17 quadros/pôsteres pixel art; logos de Claude, Codex, OMP e OpenCode nas referências de conta, filtros, cartões, histórico, integrações, ajuda e mapa.
 - **Publicação**: tag `v2.4.6` no commit `d04d4b1c9d825a8dde5d55a533bc756e107a339a`; [release latest](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.4.6). Workflow [40508543768](https://github.com/IAPro-Community/AIOffice/actions/runs/40508543768) concluiu com sucesso.

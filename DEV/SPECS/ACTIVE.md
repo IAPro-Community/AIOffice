@@ -1,5 +1,11 @@
 # ESPECIFICAÇÃO ATIVA — AIOffice
 
+## Cotas do companion Chrome — versão v2.4.7
+- Status: implementação e preflight local aprovados; publicação no GitHub e QA visual do painel pendentes.
+- Comportamento: exibir contas detectadas com janelas de cinco horas, semana e limites por modelo quando fornecidos. Indicar atualização, renovação e dados antigos; janela renovada não pode ser apresentada como 0%.
+- Confiança/privacidade: validar a lista permitida no snapshot Native Messaging; ignorar token, e-mail, caminhos e demais campos privados.
+- Aceite técnico: 23 testes da extensão, validação de 23 categorias/5 permissões, desktop:verify e changelog dry-run aprovados. QA visual em Chrome permanece pendente.
+
 ## Logos dos provedores no painel — 2026-10-27
 - **Status**: implementação concluída; chips e referências visuais de Claude, Codex, OMP e OpenCode usam as marcas SVG locais, inclusive no mapa.
 - **Escopo visual**: preservar os componentes e estilos existentes do painel e substituir os identificadores por letras pelos logos; sem redesenho global.

@@ -22,6 +22,10 @@ O feed agrupa eventos pelo projeto/sala do AIOffice e oferece filtros independen
 
 **Terminal** abre o histórico recente da sessão e acompanha mensagens, ferramentas, comandos e resultados ao vivo. **Dar uma instrução ao agente** envia o texto para a fila local já existente do AIOffice; a confirmação informa que entrou na fila, não que o agente já a executou. A extensão só encaminha as ações fixas validadas pelo host Native Messaging.
 
+## Cotas de uso
+
+O painel exibe as janelas de 5 horas e semanal enviadas pelo AIOffice para contas Claude Code e Codex, incluindo as janelas por modelo quando disponíveis. Cada cartão informa quando os números foram lidos e quando a janela deve reiniciar. Uma leitura antiga é marcada; se a janela já reiniciou, o uso atual aparece como desconhecido em vez de ser tratado como zero. Provedores que ainda não enviam limites mostram esse estado sem inventar percentuais.
+
 ## Instalação para desenvolvimento
 
 1. Instale uma build Windows do AIOffice que inclua o host Native Messaging. A instalação é por usuário, registra o host no HKCU e não exige instalar Go. Confira a versão antes de executar um setup de piloto: não substitua um Desktop mais novo por uma build experimental mais antiga.
@@ -43,7 +47,7 @@ A extensão não solicita acesso geral a sites, abas, cookies ou scripts de cont
 
 ## Preferências e privacidade
 
-Todos os tipos `ActivityKind` são habilitados inicialmente. Cada tipo pode ser alterado no painel. “Conectar ao abrir o Chrome” fica ligado por padrão para retomar as notificações e pode ser desligado nas preferências. “Detalhes nas notificações” fica desligado por padrão; o feed do painel sempre mostra o resumo e o detalhe da ação. Avisos do escritório podem ser controlados separadamente. Preferências e IDs recentes ficam no armazenamento local do Chrome; transcript ao vivo não é persistido pela extensão e o conteúdo dos eventos não é enviado a serviços remotos por ela.
+Todos os tipos `ActivityKind` são habilitados inicialmente. Cada tipo pode ser alterado no painel. “Conectar ao abrir o Chrome” fica ligado por padrão para retomar as notificações e pode ser desligado nas preferências. “Detalhes nas notificações” fica desligado por padrão; o feed do painel sempre mostra o resumo e o detalhe da ação. Avisos do escritório podem ser controlados separadamente. Preferências, contas detectadas, leituras de uso e IDs recentes ficam no armazenamento local do Chrome; transcript ao vivo não é persistido pela extensão e esses dados não são enviados a serviços remotos por ela.
 
 Ao reabrir o Chrome, a extensão recupera notificações dos eventos ainda presentes no feed local do AIOffice. O endpoint envia até 50 eventos recentes. Se o cursor anterior já tiver saído desse conjunto, o painel mostra um aviso de lacuna; eventos que aconteceram enquanto o serviço estava parado não podem ser reconstruídos.
 

@@ -105,9 +105,11 @@ test('keeps only the supported minimal office snapshot fields', () => {
     rooms: [{ name: 'Build\nRoom', path: 'ignored' }, { name: '' }],
     meta: { terminal: true, messages: true, build: 'ignored' },
     agents: [{ id: 'agent:1', name: 'Agent\u0000 One', roomName: 'Build Room', status: 'working', provider: 'codex', kind: 'main', seed: 73, look: 'f', parts: { hair: '#d9dbe0', script: 'ignored' }, canMessage: true, token: 'ignored' }],
+    accounts: [{ id: '.codex', short: 'X', name: 'Conta Codex', provider: 'codex', plan: 'Pro', sessions: 2, usageStatus: 'ok', color: '#4fd18b', email: 'ignored', configDir: 'ignored', usage: { source: 'codex', fetchedAt: 1_700_000_000_000, fiveHour: { utilization: 42, resetsAt: 1_700_000_300_000 }, token: 'ignored' } }, null, { id: '../invalid', name: 'Ignored' }],
   }), {
     rooms: [{ name: 'Build Room' }],
     agents: [{ id: 'agent:1', name: 'Agent One', roomName: 'Build Room', status: 'working', provider: 'codex', kind: 'main', seed: 73, look: 'f', parts: { hair: '#d9dbe0' }, canMessage: true }],
+    accounts: [{ id: '.codex', short: 'X', name: 'Conta Codex', sessions: 2, usageStatus: 'ok', provider: 'codex', plan: 'Pro', color: '#4fd18b', usage: { source: 'codex', fetchedAt: 1_700_000_000_000, fiveHour: { utilization: 42, resetsAt: 1_700_000_300_000 } } }],
     meta: { terminal: true, messages: true },
   });
 });
@@ -361,12 +363,14 @@ test('native snapshots are minimized, persisted, and available to the side panel
       rooms: [{ name: 'Build' }],
       meta: { terminal: true, messages: true, build: 'private' },
       agents: [{ id: 'agent:codex', name: 'Codex', roomName: 'Build', status: 'working', provider: 'codex', kind: 'main', seed: 23, look: 'm', canMessage: true, prompt: 'private' }],
+      accounts: [{ id: '.codex', short: 'X', name: 'Codex pessoal', provider: 'codex', plan: 'Plus', sessions: 2, usageStatus: 'ok', email: 'private', usage: { source: 'codex', fetchedAt: 1_700_000_000_000, fiveHour: { utilization: 42, resetsAt: 1_700_000_300_000 } } }],
     },
   });
   await waitForWorkerTurn();
   assert.deepEqual(harness.storage.aiofficeSnapshot, {
     rooms: [{ name: 'Build' }],
     agents: [{ id: 'agent:codex', name: 'Codex', roomName: 'Build', status: 'working', provider: 'codex', kind: 'main', seed: 23, look: 'm', parts: undefined, canMessage: true }],
+    accounts: [{ id: '.codex', short: 'X', name: 'Codex pessoal', sessions: 2, usageStatus: 'ok', provider: 'codex', plan: 'Plus', usage: { source: 'codex', fetchedAt: 1_700_000_000_000, fiveHour: { utilization: 42, resetsAt: 1_700_000_300_000 } } }],
     meta: { terminal: true, messages: true },
   });
   assert.ok(harness.viewMessages.some((message) => message.type === 'snapshot'));

@@ -57,6 +57,54 @@ function safeParts(value) {
   return Object.keys(parts).length ? parts : undefined;
 }
 
+function safeUsageWindow(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const utilization = value.utilization;
+  if (typeof utilization !== 'number' || !Number.isFinite(utilization)) return undefined;
+  const window = { utilization: Math.max(0, Math.min(100, utilization)) };
+  const resetsAt = value.resetsAt;
+  if (typeof resetsAt === 'number' && Number.isFinite(resetsAt) && resetsAt > 0) window.resetsAt = resetsAt;
+  return window;
+}
+
+function safeUsage(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const sources = new Set(['cache', 'statusline', 'codex']);
+  const vias = new Set(['mod', 'tap']);
+  const fetchedAt = value.fetchedAt;
+  if (!sources.has(value.source) || typeof fetchedAt !== 'number' || !Number.isFinite(fetchedAt) || fetchedAt <= 0) return undefined;
+  const usage = { source: value.source, fetchedAt };
+  for (const key of ['fiveHour', 'sevenDay', 'sevenDayOpus', 'sevenDaySonnet']) {
+    const window = safeUsageWindow(value[key]);
+    if (window) usage[key] = window;
+  }
+  if (vias.has(value.via)) usage.via = value.via;
+  if (value.noQuota === true) usage.noQuota = true;
+  return usage;
+}
+
+function safeAccount(value) {
+  const input = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  const id = safeAgentId(input.id);
+  if (!id) return undefined;
+  const statuses = new Set(['ok', 'stale', 'disabled']);
+  const account = {
+    id,
+    short: safeLabel(input.short),
+    name: safeLabel(input.name) || 'Conta',
+    sessions: Number.isInteger(input.sessions) ? Math.max(0, Math.min(999, input.sessions)) : 0,
+    usageStatus: statuses.has(input.usageStatus) ? input.usageStatus : 'disabled',
+  };
+  const provider = safeLabel(input.provider);
+  if (provider) account.provider = provider;
+  const plan = safeLabel(input.plan);
+  if (plan) account.plan = plan;
+  if (typeof input.color === 'string' && /^#[0-9a-f]{6}$/i.test(input.color)) account.color = input.color;
+  const usage = safeUsage(input.usage);
+  if (usage) account.usage = usage;
+  return account;
+}
+
 export function normalizeOfficeSnapshot(value) {
   const input = value && typeof value === 'object' ? value : {};
   const rooms = Array.isArray(input.rooms)
@@ -76,10 +124,14 @@ export function normalizeOfficeSnapshot(value) {
       canMessage: agent?.canMessage === true,
     })).filter((agent) => agent.name).slice(0, 300)
     : [];
+  const accounts = Array.isArray(input.accounts)
+    ? input.accounts.map(safeAccount).filter(Boolean).slice(0, 100)
+    : [];
   const meta = input.meta && typeof input.meta === 'object' ? input.meta : {};
   return {
     rooms,
     agents,
+    accounts,
     meta: { terminal: meta.terminal === true, messages: meta.messages === true },
   };
 }

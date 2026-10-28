@@ -5,6 +5,14 @@ All notable changes to AIOffice will be documented in this file.
 ## [Não lançado]
 Nenhuma mudança registrada.
 
+## [v2.4.7] - 2026-10-28
+
+### Adicionado
+- Cotas individuais de uso no painel lateral Chrome para contas Claude Code e Codex, com janelas de sessão, semana e por modelo, horário da leitura e previsão de renovação.
+
+### Corrigido
+- O companion preserva no snapshot somente os campos permitidos das contas e leituras de uso, permitindo que o painel receba os limites sem expor configurações ou credenciais.
+
 ## [v2.4.6] - 2026-10-27
 
 ### Adicionado

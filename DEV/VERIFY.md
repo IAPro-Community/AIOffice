@@ -1,5 +1,16 @@
 # VERIFY — AIOffice
 
+## Preflight local v2.4.7 — 2026-10-28
+
+| Verificação | Evidência |
+|---|---|
+| Versão e changelog | package.json/package-lock.json em 2.4.7; manifesto Chrome em 0.1.1; npm run release -- --dry-run gerou as notas de v2.4.7. |
+| Dependências | npm ci concluído. A instalação reportou 3 vulnerabilidades no conjunto de dependências já definido pelo lockfile (1 moderada e 2 altas); nenhuma dependência foi alterada nesta versão. |
+| desktop:verify | Aprovado: typechecks e builds raiz/web, testes raiz/web/desktop/extensão, i18n:check, validador da extensão e testes Go do host. Web: 1.279 aprovados, 10 ignorados; desktop: 36 aprovados; extensão: 23 aprovados. |
+| Extensão | node --check para sidepanel.js/host-state.js, npm run extension:validate (23 categorias, 5 permissões, identidade Native Messaging sincronizada) e git diff --check aprovados. |
+| Publicação | Pendente: push de commit fast-forward para main e envio da tag v2.4.7; CI do GitHub será o gate de montagem/publicação. |
+| QA visual do Chrome | Pendente; não registrar a interface como visualmente verificada até conferir o painel carregado. |
+
 ## Release v2.4.6 — publicada em 2026-10-27
 
 | Verificação | Evidência |

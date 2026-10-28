@@ -20,6 +20,10 @@ const els = {
   connectButton: $('#connect-button'),
   openButton: $('#open-button'),
   stopButton: $('#stop-button'),
+  quotaCount: $('#quota-count'),
+  quotaSync: $('#quota-sync'),
+  quotaEmpty: $('#quota-empty'),
+  quotaList: $('#quota-list'),
   roomList: $('#room-list'),
   rosterCount: $('#roster-count'),
   rosterEmpty: $('#roster-empty'),
@@ -54,12 +58,29 @@ const els = {
 let preferences = normalizePreferences();
 let feedItems = [];
 let notices = [];
-let officeSnapshot = { rooms: [], agents: [] };
+let officeSnapshot = { rooms: [], agents: [], accounts: [] };
+let quotaCardRefs = new Map();
 let currentState = { state: 'starting' };
 let feedbackTimer;
 let activeAgentId = null;
 let activeMessageRequestId = null;
 let renderedReadiness;
+
+const QUOTA_WINDOWS = [
+  { key: 'fiveHour', label: 'Sessão · 5 h', duration: 5 * 60 * 60 * 1000 },
+  { key: 'sevenDay', label: 'Semana', duration: 7 * 24 * 60 * 60 * 1000 },
+  { key: 'sevenDayOpus', label: 'Opus · semana', duration: 7 * 24 * 60 * 60 * 1000 },
+  { key: 'sevenDaySonnet', label: 'Sonnet · semana', duration: 7 * 24 * 60 * 60 * 1000 },
+];
+const PROVIDER_LABELS = {
+  claude: 'Claude Code',
+  codex: 'Codex',
+  omp: 'oh-my-pi',
+  opencode: 'OpenCode',
+  antigravity: 'Antigravity',
+};
+const PROVIDER_MARKS = { claude: 'C', codex: 'X', omp: 'P', opencode: 'O', antigravity: 'A' };
+const QUOTA_PROVIDER_LABELS = new Set(['claude', 'codex']);
 
 function send(type, extra = {}) {
   return chrome.runtime.sendMessage({ type, ...extra });
@@ -93,6 +114,7 @@ function renderState() {
   els.stopButton.disabled = !canStop;
   els.version.textContent = currentState.version ? `AIOffice ${currentState.version}` : 'AIOffice Desktop';
   els.onboarding.hidden = !(isError && (currentState.errorCode === 'native-host-missing' || looksLikeMissingHost(currentState.message)));
+  renderQuotaSync();
   if (currentState.gap && els.gap.hidden) showGap(currentState.gap);
   if (readinessChanged && els.roomList.children.length) renderOffice();
   if (readinessChanged) syncActiveAgentConsole();
@@ -139,9 +161,225 @@ function renderOffice() {
   els.rosterCount.textContent = `${agents.length} ${agents.length === 1 ? 'agente' : 'agentes'} · ${entries.length} ${entries.length === 1 ? 'sala' : 'salas'}`;
   els.rosterEmpty.hidden = entries.length > 0;
   els.roomList.replaceChildren(...entries.map(([roomName, roomAgents]) => renderRoom(roomName, roomAgents)));
+  renderQuotas();
   renderFilters();
   renderFeed();
   syncActiveAgentConsole();
+}
+
+function renderQuotaSync() {
+  const ready = currentState.state === 'ready';
+  const hasCachedAccounts = Array.isArray(officeSnapshot.accounts) && officeSnapshot.accounts.length > 0;
+  els.quotaSync.textContent = ready ? 'Conectado' : hasCachedAccounts ? 'Última leitura local' : 'Aguardando conexão';
+  els.quotaSync.dataset.state = ready ? 'ready' : hasCachedAccounts ? 'cached' : currentState.state || 'starting';
+}
+
+function providerInfo(account) {
+  const provider = account.provider || 'claude';
+  return {
+    provider,
+    label: PROVIDER_LABELS[provider] || provider,
+    mark: PROVIDER_MARKS[provider] || provider.slice(0, 1).toUpperCase() || 'IA',
+  };
+}
+
+function createQuotaMeter(label) {
+  const el = document.createElement('div');
+  el.className = 'quota-meter';
+
+  const head = document.createElement('div');
+  head.className = 'quota-meter__head';
+  const name = document.createElement('span');
+  name.className = 'quota-meter__name';
+  name.textContent = label;
+  const value = document.createElement('strong');
+  value.className = 'quota-meter__value';
+  head.append(name, value);
+
+  const track = document.createElement('div');
+  track.className = 'quota-meter__track';
+  track.setAttribute('role', 'progressbar');
+  track.setAttribute('aria-valuemin', '0');
+  track.setAttribute('aria-valuemax', '100');
+  const fill = document.createElement('span');
+  fill.className = 'quota-meter__fill';
+  track.append(fill);
+
+  const reset = document.createElement('span');
+  reset.className = 'quota-meter__reset';
+  el.append(head, track, reset);
+  return { el, name, value, track, fill, reset };
+}
+
+function createQuotaCard() {
+  const el = document.createElement('article');
+  el.className = 'quota-card';
+
+  const head = document.createElement('div');
+  head.className = 'quota-card__head';
+  const badge = document.createElement('span');
+  badge.className = 'quota-provider-badge';
+  badge.setAttribute('aria-hidden', 'true');
+  const identity = document.createElement('div');
+  identity.className = 'quota-card__identity';
+  const name = document.createElement('strong');
+  name.className = 'quota-card__name';
+  const subtitle = document.createElement('span');
+  subtitle.className = 'quota-card__subtitle';
+  identity.append(name, subtitle);
+  const state = document.createElement('span');
+  state.className = 'quota-card__state';
+  head.append(badge, identity, state);
+
+  const updated = document.createElement('p');
+  updated.className = 'quota-card__updated';
+  const meters = document.createElement('div');
+  meters.className = 'quota-meter-grid';
+  const meterRefs = new Map();
+  for (const spec of QUOTA_WINDOWS) {
+    const meter = createQuotaMeter(spec.label);
+    meterRefs.set(spec.key, meter);
+    meters.append(meter.el);
+  }
+  const note = document.createElement('p');
+  note.className = 'quota-card__note';
+  el.append(head, updated, meters, note);
+  return { el, badge, name, subtitle, state, updated, meters, meterRefs, note };
+}
+
+function quotaAge(fetchedAt, now) {
+  const delta = Math.max(0, now - fetchedAt);
+  if (delta < 60_000) return 'agora';
+  if (delta < 3_600_000) return `há ${Math.floor(delta / 60_000)} min`;
+  if (delta < 86_400_000) return `há ${Math.floor(delta / 3_600_000)} h`;
+  return `há ${Math.floor(delta / 86_400_000)} d`;
+}
+
+function quotaResetLabel(resetsAt, now) {
+  const delta = Math.max(0, resetsAt - now);
+  if (delta < 60_000) return 'menos de 1 min';
+  if (delta < 3_600_000) return `${Math.ceil(delta / 60_000)} min`;
+  if (delta < 86_400_000) {
+    const hours = Math.floor(delta / 3_600_000);
+    const minutes = Math.floor((delta % 3_600_000) / 60_000);
+    return minutes ? `${hours} h ${minutes} min` : `${hours} h`;
+  }
+  const days = Math.floor(delta / 86_400_000);
+  const hours = Math.floor((delta % 86_400_000) / 3_600_000);
+  return hours ? `${days} d ${hours} h` : `${days} d`;
+}
+
+function updateQuotaMeter(refs, label, window, fetchedAt, duration, now) {
+  refs.name.textContent = label;
+  refs.track.setAttribute('aria-label', `${label}: uso indisponível`);
+  refs.track.removeAttribute('aria-valuenow');
+  refs.track.removeAttribute('aria-valuetext');
+  refs.el.dataset.level = 'unknown';
+  refs.value.textContent = '—';
+  refs.fill.style.width = '0%';
+  refs.reset.textContent = window ? 'Uso atual desconhecido' : 'Sem leitura';
+
+  if (!window || !Number.isFinite(Number(window.utilization))) return;
+  const resetsAt = Number.isFinite(Number(window.resetsAt)) ? Number(window.resetsAt) : undefined;
+  const renewed = resetsAt !== undefined ? resetsAt <= now : now - fetchedAt >= duration;
+  if (renewed) {
+    refs.track.setAttribute('aria-label', `${label}: a janela renovou; uso atual desconhecido`);
+    refs.track.setAttribute('aria-valuetext', 'Janela renovada; o uso atual não foi informado.');
+    refs.reset.textContent = 'Janela renovada · uso desconhecido';
+    return;
+  }
+
+  const pct = Math.round(Math.max(0, Math.min(100, Number(window.utilization))) * 10) / 10;
+  const formattedPct = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(pct);
+  refs.el.dataset.level = pct >= 90 ? 'high' : pct >= 70 ? 'medium' : 'low';
+  refs.track.setAttribute('aria-label', `${label}: ${formattedPct}% usado`);
+  refs.track.setAttribute('aria-valuenow', String(pct));
+  refs.track.setAttribute('aria-valuetext', `${formattedPct}% usado`);
+  refs.value.textContent = `${formattedPct}% usado`;
+  refs.fill.style.width = `${pct}%`;
+  refs.reset.textContent = resetsAt === undefined ? 'Reinício não informado' : `Renova em ${quotaResetLabel(resetsAt, now)}`;
+}
+
+function updateQuotaCard(refs, account, now) {
+  const { provider, label: providerLabel, mark } = providerInfo(account);
+  const usage = account.usage;
+  const hasWindows = !!usage && QUOTA_WINDOWS.some(({ key }) => !!usage[key]);
+  const noQuota = usage?.noQuota === true;
+  const hasReading = hasWindows || noQuota;
+  const plan = account.plan || '';
+  const sessions = Number.isInteger(account.sessions) && account.sessions > 0
+    ? `${account.sessions} ${account.sessions === 1 ? 'sessão' : 'sessões'}`
+    : '';
+  const subtitle = [providerLabel, plan, sessions].filter(Boolean).join(' · ');
+
+  refs.el.dataset.provider = provider;
+  refs.el.style.setProperty('--quota-account-color', /^#[0-9a-f]{6}$/i.test(account.color || '') ? account.color : 'var(--accent)');
+  refs.badge.dataset.provider = provider;
+  refs.badge.textContent = mark;
+  refs.name.textContent = account.name || 'Conta';
+  refs.subtitle.textContent = subtitle;
+  refs.updated.textContent = usage ? `Última leitura ${quotaAge(usage.fetchedAt, now)}` : 'Dados de cota ainda não recebidos';
+
+  const state = noQuota ? 'noquota' : account.usageStatus === 'stale' ? 'stale' : hasReading ? 'ok' : 'empty';
+  refs.el.dataset.state = state;
+  refs.state.textContent = noQuota ? 'Sem cota' : state === 'stale' ? 'Dados antigos' : hasReading ? 'Recente' : 'Aguardando';
+
+  const supportsQuota = QUOTA_PROVIDER_LABELS.has(provider);
+  const specs = QUOTA_WINDOWS.filter(({ key }) => {
+    if (noQuota) return false;
+    if (usage?.[key]) return true;
+    return supportsQuota && (key === 'fiveHour' || key === 'sevenDay');
+  });
+  const specByKey = new Map(specs.map((spec) => [spec.key, spec]));
+  for (const [key, meter] of refs.meterRefs) {
+    const spec = specByKey.get(key);
+    meter.el.hidden = !spec;
+    if (spec) updateQuotaMeter(meter, spec.label, usage?.[key], usage?.fetchedAt || 0, spec.duration, now);
+  }
+  refs.meters.hidden = specs.length === 0;
+
+  if (noQuota) {
+    refs.note.textContent = 'A última leitura informou que esta conta está sem cota nem créditos para usar.';
+  } else if (!hasReading) {
+    refs.note.textContent = supportsQuota
+      ? 'Os limites aparecem assim que a CLI enviar a primeira leitura.'
+      : 'Este provedor ainda não fornece dados de cota ao AIOffice.';
+  } else if (state === 'stale') {
+    refs.note.textContent = 'Os números podem ter mudado desde esta leitura.';
+  } else {
+    refs.note.textContent = '';
+  }
+  refs.note.hidden = !refs.note.textContent;
+}
+
+function renderQuotas() {
+  const accounts = Array.isArray(officeSnapshot.accounts) ? officeSnapshot.accounts : [];
+  const now = Date.now();
+  const nextRefs = new Map();
+  const cards = accounts.map((account) => {
+    let refs = quotaCardRefs.get(account.id);
+    if (!refs) refs = createQuotaCard();
+    updateQuotaCard(refs, account, now);
+    nextRefs.set(account.id, refs);
+    return refs.el;
+  });
+  quotaCardRefs = nextRefs;
+  els.quotaCount.textContent = `${accounts.length} ${accounts.length === 1 ? 'conta' : 'contas'}`;
+  els.quotaEmpty.hidden = accounts.length > 0;
+  els.quotaEmpty.textContent = currentState.state === 'ready'
+    ? 'Nenhuma conta foi detectada. Abra uma CLI compatível e aguarde a primeira leitura.'
+    : 'Conecte o AIOffice para carregar as cotas das contas detectadas.';
+  els.quotaList.replaceChildren(...cards);
+  renderQuotaSync();
+}
+
+function refreshQuotaClock() {
+  const now = Date.now();
+  const accounts = new Map((officeSnapshot.accounts || []).map((account) => [account.id, account]));
+  for (const [id, refs] of quotaCardRefs) {
+    const account = accounts.get(id);
+    if (account) updateQuotaCard(refs, account, now);
+  }
 }
 
 function renderFilters() {
@@ -684,4 +922,5 @@ els.messageForm.addEventListener('submit', async (event) => {
   }
 });
 
+window.setInterval(refreshQuotaClock, 60_000);
 void initialize();
