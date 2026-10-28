@@ -75,7 +75,7 @@ O setup é estático e instala a versão incluída nele. O atualizador Windows b
 
 ### Artefatos atualmente publicados
 
-A release oficial atual é [`v2.4.6`](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.4.6), publicada após validar cinco assets: setup Windows, ZIP da extensão, AppImage/deb Linux e `latest-linux.yml`. A v2.4.3 anterior continua documentada como histórico; os pacotes macOS sem assinatura/notarização foram removidos e não devem ser usados. Reativar macOS exige builds assinadas e notarizadas, verificadas antes da publicação. O refresh manual sem tag continua atualizando somente Windows/Linux e não aciona o updater interno como versão superior.
+A release oficial atual é [v2.4.7](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.4.7), publicada após validar cinco assets: setup Windows, ZIP da extensão, AppImage/deb Linux e latest-linux.yml. A v2.4.3 anterior continua documentada como histórico; os pacotes macOS sem assinatura/notarização foram removidos e não devem ser usados. Reativar macOS exige builds assinadas e notarizadas, verificadas antes da publicação. O refresh manual sem tag continua atualizando somente Windows/Linux e não aciona o updater interno como versão superior.
 
 `.deb` não usa o atualizador AppImage: **Ajuda → Verificar atualizações** orienta abrir GitHub Releases para baixar o próximo `.deb` e atualizá-lo pelo gerenciador do sistema. Isso respeita a elevação de privilégios e o banco de pacotes da distribuição. A desinstalação NSIS declara que não apaga `userData`.
 
@@ -87,7 +87,7 @@ O cliente mantém o estado do escritório atualizado pelo stream SSE; em Quick T
 
 ## Releases e assinatura
 
-O workflow `.github/workflows/release-desktop.yml` verifica a aplicação, cria os pacotes Windows x64 e Linux x64 e publica somente depois de validar os assets no rascunho. A matriz atual não agenda builds macOS enquanto as credenciais Apple estiverem indisponíveis; nenhum instalador macOS sem assinatura é publicado. Para a v2.4.6, o contrato exato contém cinco arquivos: `AIOffice-Setup.exe`, `AIOffice-Chrome-Extension.zip`, `AIOffice-Setup-Linux-x64.AppImage`, `AIOffice-Setup-Linux-x64.deb` e `latest-linux.yml`. O workflow verifica nomes, tamanhos e SHA-256 dos arquivos enviados antes de publicar a release como latest.
+O workflow `.github/workflows/release-desktop.yml` verifica a aplicação, cria os pacotes Windows x64 e Linux x64 e publica somente depois de validar os assets no rascunho. A matriz atual não agenda builds macOS enquanto as credenciais Apple estiverem indisponíveis; nenhum instalador macOS sem assinatura é publicado. Para a v2.4.7, o contrato exato contém cinco arquivos: `AIOffice-Setup.exe`, `AIOffice-Chrome-Extension.zip`, `AIOffice-Setup-Linux-x64.AppImage`, `AIOffice-Setup-Linux-x64.deb` e `latest-linux.yml`. O workflow verifica nomes, tamanhos e SHA-256 dos arquivos enviados antes de publicar a release como latest.
 
 Configure estes valores nas configurações do repositório **antes** de enviar uma tag de release:
 

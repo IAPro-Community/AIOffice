@@ -1,7 +1,7 @@
 # ESPECIFICAÇÃO ATIVA — AIOffice
 
 ## Cotas do companion Chrome — versão v2.4.7
-- Status: implementação e preflight local aprovados; publicação no GitHub e QA visual do painel pendentes.
+- Status: v2.4.7 publicada como latest; implementação e verificações técnicas aprovadas. QA visual do painel no Chrome permanece pendente.
 - Comportamento: exibir contas detectadas com janelas de cinco horas, semana e limites por modelo quando fornecidos. Indicar atualização, renovação e dados antigos; janela renovada não pode ser apresentada como 0%.
 - Confiança/privacidade: validar a lista permitida no snapshot Native Messaging; ignorar token, e-mail, caminhos e demais campos privados.
 - Aceite técnico: 23 testes da extensão, validação de 23 categorias/5 permissões, desktop:verify e changelog dry-run aprovados. QA visual em Chrome permanece pendente.
@@ -22,7 +22,7 @@
 
 ## 1. Identificação do Projeto
 - **Nome**: AIOffice
-- **Status**: release estável latest [`v2.4.6`](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.4.6), publicada no commit `d04d4b1c9d825a8dde5d55a533bc756e107a339a`; workflow `40508543768` aprovou verificação, builds/smokes Windows/Linux, cinco assets e digests. A extensão Chrome, Native Messaging host e tutorial foram publicados. macOS permanece sem pacote até assinatura/notarização Apple verificadas; não orientar a contornar o Gatekeeper.
+- **Status**: release estável latest [v2.4.7](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.4.7), publicada no commit 1e1b18e5809460c23b536bd2b25fac473a9c7598; workflow 40627113405 aprovou verificação, builds/smokes Windows/Linux, cinco assets e digests. A extensão Chrome, Native Messaging host e tutorial foram publicados. macOS permanece sem pacote até assinatura/notarização Apple verificadas; não orientar a contornar o Gatekeeper.
 - **Localização**: Repositório AIOffice
 
 ## 2. Pilares de Integração

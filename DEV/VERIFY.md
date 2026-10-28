@@ -1,15 +1,23 @@
 # VERIFY — AIOffice
 
-## Preflight local v2.4.7 — 2026-10-28
+## Release v2.4.7 — publicada em 2026-10-28
 
 | Verificação | Evidência |
 |---|---|
-| Versão e changelog | package.json/package-lock.json em 2.4.7; manifesto Chrome em 0.1.1; npm run release -- --dry-run gerou as notas de v2.4.7. |
-| Dependências | npm ci concluído. A instalação reportou 3 vulnerabilidades no conjunto de dependências já definido pelo lockfile (1 moderada e 2 altas); nenhuma dependência foi alterada nesta versão. |
-| desktop:verify | Aprovado: typechecks e builds raiz/web, testes raiz/web/desktop/extensão, i18n:check, validador da extensão e testes Go do host. Web: 1.279 aprovados, 10 ignorados; desktop: 36 aprovados; extensão: 23 aprovados. |
-| Extensão | node --check para sidepanel.js/host-state.js, npm run extension:validate (23 categorias, 5 permissões, identidade Native Messaging sincronizada) e git diff --check aprovados. |
-| Publicação | Pendente: push de commit fast-forward para main e envio da tag v2.4.7; CI do GitHub será o gate de montagem/publicação. |
-| QA visual do Chrome | Pendente; não registrar a interface como visualmente verificada até conferir o painel carregado. |
+| Versão e changelog | package.json/package-lock.json em 2.4.7; manifesto Chrome em 0.1.1; release dry-run gerou as notas da versão. |
+| Dependências | npm ci concluído. Foram reportadas 3 vulnerabilidades já presentes no lockfile (1 moderada e 2 altas); esta release não alterou dependências. |
+| Preflight local | npm run desktop:verify aprovado: typechecks e builds raiz/web, suítes raiz/web/desktop/extensão, i18n, validador e testes Go do host. Web: 1.279 aprovados e 10 ignorados; desktop: 36; extensão: 23. |
+| GitHub Actions | [Run 40627113405](https://github.com/IAPro-Community/AIOffice/actions/runs/40627113405) success: desktop:verify, empacotamento, smokes Windows/Linux e validação final. |
+| Release pública | [AIOffice v2.4.7](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.4.7), latest; tag aponta para 1e1b18e5809460c23b536bd2b25fac473a9c7598. |
+| QA visual do Chrome | Pendente; recarregar a extensão e verificar o painel em Chrome antes de registrar validação visual. |
+
+| Asset público | Bytes | SHA-256 GitHub |
+|---|---:|---|
+| AIOffice-Setup.exe | 124610890 | 4f2ce1c8aa86c7511c765d2de5d1964d3a85f18a150284a96360d0f704a5436d |
+| AIOffice-Chrome-Extension.zip | 102622 | 8b60dc3627af14a9f7bf1298b9f25121e5b488bfdb82136a008bbf98bf3e6903 |
+| AIOffice-Setup-Linux-x64.AppImage | 133800412 | dcd37fe49531db4de970c8f4288b84786c59bfa4e1595e60e349300e59e5040a |
+| AIOffice-Setup-Linux-x64.deb | 106595548 | 391b08185adc58a85390de17a9f63502250ac5195c5a727c3b3f102a61ab1188 |
+| latest-linux.yml | 371 | 767fd5470fb7b65b379162d770f6a08e2548d4eee4ea707768b2b6d2b61b9917 |
 
 ## Release v2.4.6 — publicada em 2026-10-27
 

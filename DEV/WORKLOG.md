@@ -1,10 +1,10 @@
 # WORKLOG — AIOffice
 
-## 2026-10-28 — Cotas de IA no painel Chrome e preparação da v2.4.7
+## 2026-10-28 — Cotas de IA no painel Chrome e publicação da v2.4.7
 - Mudança: corrigido o snapshot sanitizado que descartava contas; adicionados cartões de cota com barras, reinício, idade da leitura, estados stale/desconhecido e respeito a movimento reduzido. Manifesto Chrome subiu para 0.1.1 e produto para 2.4.7.
 - Motivo: tornar visível o uso das contas conectadas sem inventar métricas nem expor dados de perfil.
 - Verificação: npm ci, npm run desktop:verify, npm run release -- --dry-run, testes de extensão (23), validador, sintaxe JS e git diff --check aprovados.
-- Próximo contexto: enviar o commit em fast-forward a main, publicar a tag v2.4.7 e conferir o workflow GitHub. QA visual do Chrome ainda pendente.
+- **Publicação**: commit 1e1b18e enviado em fast-forward a main; tag/release v2.4.7 publicada como latest. Workflow [40627113405](https://github.com/IAPro-Community/AIOffice/actions/runs/40627113405) concluiu com sucesso para desktop:verify, builds/smokes Windows/Linux e validação dos cinco assets. QA visual do Chrome ainda pendente.
 
 ## 2026-10-27 — Release AIOffice v2.4.6 publicada
 - **Escopo**: consolidar desde a v2.4.4 o mapa V2 como cenário padrão com V1 selecionável, novas artes pixel art e logos vetoriais de Claude, Codex, OMP e OpenCode nas referências do painel e mapa.

@@ -29,6 +29,7 @@ Hierarquia de documentação operacional do projeto AIOffice.
 | `apps/office-web/client/public/assets/providers/` | Logos SVG locais e notas de origem/licença dos provedores | Ativo |
 
 ## Estado da release
-- Candidata v2.4.7: cotas da extensão implementadas e desktop:verify aprovado; aguarda push/tag. A conferência visual no Chrome continua pendente.
-- Release latest [`v2.4.6`](https://github.com/IAPro-Community/AIOffice/releases/tag/v2.4.6) no commit `d04d4b1c9d825a8dde5d55a533bc756e107a339a`; workflow [40508543768](https://github.com/IAPro-Community/AIOffice/actions/runs/40508543768) aprovou verificação, builds/smokes e cinco assets Windows/Linux. Tamanhos e hashes em `DEV/VERIFY.md`.
+- Release latest v2.4.7: commit 1e1b18e5809460c23b536bd2b25fac473a9c7598; workflow 40627113405 passou e publicou cinco assets Windows/Linux e extensão. Hashes em DEV/VERIFY.md.
+- QA visual do painel de cotas no Chrome ainda pendente.
+- Release anterior v2.4.6: https://github.com/IAPro-Community/AIOffice/releases/tag/v2.4.6 no commit d04d4b1c9d825a8dde5d55a533bc756e107a339a.
 - A tentativa de tag `v2.4.5` não gerou release porque o workflow [40507831663](https://github.com/IAPro-Community/AIOffice/actions/runs/40507831663) falhou no gate de testes; a tag permanece sem assets. A v2.4.4 continua como release anterior publicada.
