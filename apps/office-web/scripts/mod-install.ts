@@ -987,7 +987,9 @@ export async function ensureMessagesPluginInstalled(
     // O boot só gere o plugin de mensagens e o marketplace. O resto continua sob controle do comando mod:install.
     const steps = cliSteps(plan).filter((step) =>
       step.plugin === MESSAGES_PLUGIN ||
-      (step.args[0] === 'plugin' && step.args[1] === 'marketplace' && ['add', 'update'].includes(step.args[2] ?? '') && step.args[3] === MARKETPLACE),
+      (step.args[0] === 'plugin' && step.args[1] === 'marketplace' &&
+        ((step.args[2] === 'add' && step.args[3] === ctx.root) ||
+          (step.args[2] === 'update' && step.args[3] === MARKETPLACE))),
     );
     let failure: string | undefined;
     for (const step of steps) {

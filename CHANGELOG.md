@@ -3,7 +3,9 @@
 All notable changes to AIOffice will be documented in this file.
 
 ## [Não lançado]
-Nenhuma mudança registrada.
+
+### Corrigido
+- A instalação automática do plugin de mensagens do Claude Code registra o marketplace local antes de instalá-lo quando ainda não existe na conta.
 
 ## [v2.4.7] - 2026-10-28
 

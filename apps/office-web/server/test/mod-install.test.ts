@@ -10,6 +10,7 @@ import {
   cliMessage,
   cliSteps,
   describeStatus,
+  ensureMessagesPluginInstalled,
   LEGACY_PLUGINS,
   MESSAGES_HINT,
   MESSAGES_PLUGIN,
@@ -895,5 +896,51 @@ describe('mod-install.ts (CLI falso, HOME falso)', () => {
     expect(fake.mutating).toEqual(['plugin marketplace update habblaud', `plugin update ${MOD_PLUGIN} --scope user`, `plugin update ${PERMISSIONS_PLUGIN} --scope user`]);
     expect(installed('.claude-conta2')[MESSAGES_PLUGIN]).toBeUndefined();
     expect(modHint(res)).toEqual([]);
+  });
+  it('instala automaticamente o plugin de mensagens após registrar o marketplace ausente', async () => {
+    const commands: string[] = [];
+    const claude = async (args: string[], env: NodeJS.ProcessEnv) => {
+      commands.push(args.join(' '));
+      return fake.runner(args, env);
+    };
+    const result = await ensureMessagesPluginInstalled([{ dir: join(home, '.claude'), label: 'Conta A' }], {
+      env: { HOME: home },
+      home,
+      root,
+      version: '0.2.0',
+      claude,
+    });
+    const add = `plugin marketplace add ${root}`;
+    const install = `plugin install ${MESSAGES_PLUGIN} --scope user`;
+
+    expect(result.installed).toBe(true);
+    expect(commands.indexOf(install)).toBeGreaterThan(commands.indexOf(add));
+    expect(fake.account(join(home, '.claude')).marketplaces.get('habblaud')).toBe(root);
+    expect(installed('.claude')[MESSAGES_PLUGIN]).toEqual({ version: '0.2.0', enabled: true });
+  });
+
+  it('atualiza o marketplace existente antes de instalar automaticamente o plugin', async () => {
+    const accountDir = join(home, '.claude');
+    fake.account(accountDir).marketplaces.set('habblaud', root);
+    const commands: string[] = [];
+    const claude = async (args: string[], env: NodeJS.ProcessEnv) => {
+      commands.push(args.join(' '));
+      return fake.runner(args, env);
+    };
+    const result = await ensureMessagesPluginInstalled([{ dir: accountDir, label: 'Conta A' }], {
+      env: { HOME: home },
+      home,
+      root,
+      version: '0.2.0',
+      claude,
+    });
+    const update = commands.indexOf('plugin marketplace update habblaud');
+    const install = commands.indexOf(`plugin install ${MESSAGES_PLUGIN} --scope user`);
+
+    expect(result.installed).toBe(true);
+    expect(update).toBeGreaterThanOrEqual(0);
+    expect(install).toBeGreaterThan(update);
+    expect(commands).not.toContain(`plugin marketplace add ${root}`);
+    expect(installed('.claude')[MESSAGES_PLUGIN]).toEqual({ version: '0.2.0', enabled: true });
   });
 });
